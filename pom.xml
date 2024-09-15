@@ -3,10 +3,20 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>gateway</artifactId>
+  <groupId>org.lite</groupId>
+  <artifactId>lite-gateway-application</artifactId>
   <version>1.0-SNAPSHOT</version>
-  <name>LightGateway-EurekaServer Maven Webapp</name>
+  <packaging>pom</packaging>
+  <name>Lite-Gateway-Application</name>
   <url>http://maven.apache.org</url>
+
+  <modules>
+    <module>discovery-server</module>
+    <module>api-gateway</module>
+    <module>product-service</module>
+    <module>inventory-service</module>
+    <module>mesh-service</module>
+  </modules>
 
   <parent>
     <groupId>org.springframework.boot</groupId>
@@ -37,11 +47,13 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.34</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   <build>
-    <finalName>LightGateway-EurekaServer</finalName>
+    <finalName>LiteGateway</finalName>
   </build>
 </project>

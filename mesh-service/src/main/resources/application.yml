@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: mesh-service
+
+server:
+  port: 0
+
+logging:
+  file:
+    name: logs/mesh-service.log
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@localhost:8761/eureka
+    enabled: true
+    register-with-eureka: true
+    fetch-registry: true
+  instance:
+    hostname: localhost
+    instance-id: ${spring.application.name}:${instanceId:${random.value}}

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{base}" lang="en"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.thymeleaf.org">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <title layout:fragment="title">About</title>
+</head>
+<body>
+
+<!-- Replacing the content fragment in the base template -->
+<div layout:fragment="content">
+    <div class="container mt-5">
+        <p th:text="'Contact Page!'"></p>
+    </div>
+</div>
+
+</body>
+</html>

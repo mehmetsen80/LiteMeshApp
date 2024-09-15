@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      httpserver:
+        wiretap: true
+      httpclient:
+        wiretap: true
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        ## Discover server route
+        # so, our gateway port is 7777, we access the discovery server through http://localhost:7777/eureka/web
+        # the filter is to reroute the request from http://localhost:7777/eureka/web to http://localhost:8761
+      - id: discovery-server
+        uri: http://localhost:8761
+        predicates:
+        - Path=/eureka/web
+        filters:
+        - SetPath=/
+
+        ## Discovery server static resources
+      - id: discovery-server-static
+        uri: http://localhost:8761
+        predicates:
+        - Path=/eureka/**
+
+        ## Mesh Service (Main Web User Interface)
+      - id: mesh-service
+        uri: lb://mesh-service
+        predicates:
+        - Path=/mesh/**
+
+        ## Product Service (Just to Test)
+      - id: product-service
+        uri: lb://product-service
+        predicates:
+        - Path=/product/**
+
+        ## Inventory Service (Just to Test)
+      - id: inventory-service
+        uri: lb://inventory-service
+        predicates:
+        - Path=/inventory/**
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8281/auth/realms/LiteMesh
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka:password@localhost:8761/eureka
+    enabled: true
+    register-with-eureka: true
+  instance:
+    hostname: localhost
+    instance-id: ${spring.application.name}:${instanceId:${random.value}}
+
+server:
+  port: 7777
+
+logging:
+  file:
+    name: logs/api-gateway.log
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.cloud.loadbalancer: TRACE
+    org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
