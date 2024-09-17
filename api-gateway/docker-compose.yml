@@ -3,7 +3,7 @@ version: '3.8'
 services:
   postgres:
     image: postgres
-    container_name: postgres_db
+    container_name: postgres_db_container
     restart: always
     ports:
       - "5432:5432"
@@ -50,6 +50,18 @@ services:
     ports:
       - 8281:8080
 
+  mongodb:
+    container_name: mongodb_container
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+    ports:
+      - 27017:27017
+    volumes:
+      - mongodb-data:/var/lib/mongo/data
+
 volumes:
   postgres_data:
   pgadmin-data:
+  mongodb-data:

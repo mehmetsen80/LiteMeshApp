@@ -1,6 +1,10 @@
 spring:
   application:
     name: api-gateway
+  data:
+    mongodb:
+      uri:  mongodb://root:mongopw@localhost
+      database: LiteMesh
   cloud:
     gateway:
       httpserver:
@@ -40,11 +44,11 @@ spring:
         predicates:
         - Path=/product/**
 
-        ## Inventory Service (Just to Test)
-      - id: inventory-service
-        uri: lb://inventory-service
-        predicates:
-        - Path=/inventory/**
+#        ## Inventory Service (Just to Test)
+#      - id: inventory-service
+#        uri: lb://inventory-service
+#        predicates:
+#        - Path=/inventory/**
   security:
     oauth2:
       resourceserver:
