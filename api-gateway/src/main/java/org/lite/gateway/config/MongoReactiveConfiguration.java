@@ -1,5 +1,6 @@
 package org.lite.gateway.config;
 
+import com.mongodb.lang.NonNull;
 import com.mongodb.reactivestreams.client.MongoClient;
 import com.mongodb.reactivestreams.client.MongoClients;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,11 +21,13 @@ public class MongoReactiveConfiguration extends AbstractReactiveMongoConfigurati
     @Value("${spring.data.mongodb.database}")
     private String databaseName = "LiteMesh";
 
+    @NonNull
     @Override
     protected String getDatabaseName() {
         return databaseName;
     }
 
+    @NonNull
     @Bean
     public MongoClient reactiveMongoClient() {
         return MongoClients.create(mongoDatabaseUri);

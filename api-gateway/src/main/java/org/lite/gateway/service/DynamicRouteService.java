@@ -7,11 +7,11 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Service
 public class DynamicRouteService {
 
-    //set initial white list paths
+    //set initial internal white list paths
     private final Set<String> whitelistedPaths = new CopyOnWriteArraySet<>(){{
         add("/eureka/**");
         add("/mesh/**");
-        add("routes/**");
+        add("/routes/**");
     }};
 
     // Get current whitelist paths

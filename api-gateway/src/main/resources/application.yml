@@ -44,7 +44,7 @@ spring:
         predicates:
         - Path=/product/**
 
-#        ## Inventory Service (Just to Test)
+#        ## Inventory Service (Just to Test) (This is being loaded dynamically from mongodb)
 #      - id: inventory-service
 #        uri: lb://inventory-service
 #        predicates:
