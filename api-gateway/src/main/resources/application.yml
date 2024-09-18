@@ -38,11 +38,11 @@ spring:
         predicates:
         - Path=/mesh/**
 
-        ## Product Service (Just to Test)
-      - id: product-service
-        uri: lb://product-service
-        predicates:
-        - Path=/product/**
+        ## Product Service (Just to Test) (This is being loaded dynamically from mongodb)
+#      - id: product-service
+#        uri: lb://product-service
+#        predicates:
+#        - Path=/product/**
 
 #        ## Inventory Service (Just to Test) (This is being loaded dynamically from mongodb)
 #      - id: inventory-service

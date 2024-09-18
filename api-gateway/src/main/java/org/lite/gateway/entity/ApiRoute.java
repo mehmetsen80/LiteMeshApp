@@ -5,5 +5,5 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 
 @Document("apiRoutes")
-public record ApiRoute(@Id Integer Id, String routeIdentifier, String uri, String method, String path) {
+public record ApiRoute(@Id String id, String routeIdentifier, String uri, String method, String path) {
 }

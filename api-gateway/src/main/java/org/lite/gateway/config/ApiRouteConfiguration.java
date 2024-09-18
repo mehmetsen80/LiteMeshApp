@@ -18,9 +18,9 @@ public class ApiRouteConfiguration {
     public RouterFunction<ServerResponse> route(ApiRouteHandler apiRouteHandler) {
         return RouterFunctions.route(POST("/routes")
                         .and(accept(MediaType.APPLICATION_JSON)), apiRouteHandler::create)
-                .andRoute(GET("/routes/:routeId")
+                .andRoute(GET("/routes/{routeId}")
                         .and(accept(MediaType.APPLICATION_JSON)), apiRouteHandler::getById)
-                .andRoute(GET("/routes/refresh-routes")
+                .andRoute(GET("/routes/refresh/routes")
                         .and(accept(MediaType.APPLICATION_JSON)), apiRouteHandler::refreshRoutes);
     }
 }
