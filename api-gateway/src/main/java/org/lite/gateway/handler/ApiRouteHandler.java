@@ -1,6 +1,7 @@
 package org.lite.gateway.handler;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.config.GatewayRoutesRefresher;
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.service.DynamicRouteService;
@@ -17,6 +18,7 @@ import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 
 @RequiredArgsConstructor
 @Component
+@Slf4j
 public class ApiRouteHandler {
     private final RouteService routeService;
 
@@ -44,15 +46,15 @@ public class ApiRouteHandler {
     }
 
     public Mono<ServerResponse> refreshRoutes(ServerRequest serverRequest) {
-        routeService.getAll()
+        return routeService.getAll()
                 .collectList()
                 .doOnSuccess(list -> {
                     list.forEach(apiRoute -> {
                         dynamicRouteService.addPath(apiRoute.path());
                         gatewayRoutesRefresher.refreshRoutes();
+                        log.info("Refreshed Path: " + apiRoute.path());
 
                     });
-        });
-        return ServerResponse.ok().body(fromValue("Routes reloaded successfully"));
+        }).then(ServerResponse.ok().body(fromValue("Routes reloaded successfully")));
     }
 }
