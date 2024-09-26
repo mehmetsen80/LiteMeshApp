@@ -45,29 +45,34 @@ public class JwtRoleValidationFilter extends OncePerRequestFilter {
         } else {
             //It's up to you which line do you want to enable, the latter one is more secure, as you don't force the call to use a jwt token
             //filterChain.doFilter(request, response); // No JWT token, continue request processing, i.e. calling the GET from browser
-            response.setStatus(HttpServletResponse.SC_FORBIDDEN); // Return 403 Forbidden if role check fails
+            response.setStatus(HttpServletResponse.SC_FORBIDDEN); // Return 403 Forbidden if role check fails, you are forcing to use the token
         }
     }
 
-    //We are checking either one of the realm or resource role exists, we can force later if both of them exist
+    //We force both realm and resource roles to exist in the token
     private boolean hasRequiredRole(Jwt jwt) {
         // Check realm roles
         Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
-        if(realmAccess != null){
+        boolean hasRealmRole = false;
+        if (realmAccess != null) {
             List<String> realmRoles = (List<String>) realmAccess.get("roles");
             if (realmRoles != null && realmRoles.contains("gateway_admin_realm")) {
-                return true;
+                hasRealmRole = true;
             }
         }
 
         // Check client roles for lite-mesh-gateway-client
+        boolean hasClientRole = false;
         Map<String, Object> resourceAccess = jwt.getClaimAsMap("resource_access");
         if (resourceAccess != null && resourceAccess.containsKey("lite-mesh-gateway-client")) {
             Map<String, List<String>> clientRoles = (Map<String, List<String>>) resourceAccess.get("lite-mesh-gateway-client");
-            return clientRoles.get("roles").contains("gateway_admin");
+            if (clientRoles.get("roles").contains("gateway_admin")) {
+                hasClientRole = true;
+            }
         }
 
-        return false;
+        // Both roles must be present
+        return hasRealmRole && hasClientRole;
     }
 }
 
