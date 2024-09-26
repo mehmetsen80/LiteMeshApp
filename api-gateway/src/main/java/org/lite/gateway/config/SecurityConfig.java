@@ -31,7 +31,7 @@ import java.util.Map;
 @EnableReactiveMethodSecurity
 @RequiredArgsConstructor
 @Slf4j
-public class SecurityConfiguration {
+public class SecurityConfig {
 
     private final DynamicRouteService dynamicRouteService;
 
@@ -72,7 +72,7 @@ public class SecurityConfiguration {
                     })
                     .onErrorResume(error -> {
                         log.error("Failed to authorize client: {}", error.getMessage());
-                        return chain.filter(exchange);
+                        return chain.filter(exchange); // Continue the filter chain even if token acquisition fails
                     });
         };
     }
@@ -93,29 +93,29 @@ public class SecurityConfiguration {
                 new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistrationRepository, authorizedClientService);
         authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
 
-        OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest.withClientRegistrationId("lite-mesh-gateway-client")
-                .principal("lite-mesh-gateway-client")  // Use a dummy principal for client_credentials
-                .build();
-
-
-        authorizedClientManager.authorize(authorizeRequest)
-                .flatMap(authorizedClient -> {
-                    if (authorizedClient != null) {
-                        OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
-                        if (accessToken != null) {
-                            log.info("Access Token: {}", accessToken.getTokenValue());
-                            return Mono.just(accessToken);
-                        } else {
-                            log.warn("Access token is null!");
-                        }
-                    } else {
-                        log.warn("Authorized client is null!");
-                    }
-                    return Mono.empty();
-                })
-                .doOnError(error -> log.error("Error during token retrieval", error))
-                .subscribe(token -> log.info("Token successfully retrieved at authorizedClientManager: {}", token.getTokenValue()),
-                        error -> log.error("Failed to retrieve token at authorizedClientManager", error));
+//        //This is just to test if we get the token or not, enable this to test
+//        OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest.withClientRegistrationId("lite-mesh-gateway-client")
+//                .principal("lite-mesh-gateway-client")  // Use a dummy principal for client_credentials
+//                .build();
+//
+//        authorizedClientManager.authorize(authorizeRequest)
+//                .flatMap(authorizedClient -> {
+//                    if (authorizedClient != null) {
+//                        OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
+//                        if (accessToken != null) {
+//                            log.info("Access Token: {}", accessToken.getTokenValue());
+//                            return Mono.just(accessToken);
+//                        } else {
+//                            log.warn("Access token is null!");
+//                        }
+//                    } else {
+//                        log.warn("Authorized client is null!");
+//                    }
+//                    return Mono.empty();
+//                })
+//                .doOnError(error -> log.error("Error during token retrieval", error))
+//                .subscribe(token -> log.info("Token successfully retrieved at authorizedClientManager: {}", token.getTokenValue()),
+//                        error -> log.error("Failed to retrieve token at authorizedClientManager", error));
 
         return authorizedClientManager;
     }
@@ -133,7 +133,7 @@ public class SecurityConfiguration {
         //if whitelist passes, check for roles in the JWT token for secured paths
         if (isWhitelisted) {
             return authenticationMono
-                    .doOnNext(auth -> log.info("Authentication object: " + auth))  // Debugging point
+                    .doOnNext(auth -> log.info("Evaluating JWT for path: {}", path))
                     .doOnError(error -> log.error("Error in authenticationMono: {}", error.toString()))
                     .filter(authentication -> authentication instanceof JwtAuthenticationToken) // Ensure it's a JWT auth token
                     .cast(JwtAuthenticationToken.class)
@@ -141,7 +141,9 @@ public class SecurityConfiguration {
                     .map(jwt -> {
                         // Extract roles from JWT claims (adjust based on your Keycloak setup)
                         // Keycloak roles are often under 'realm_access' or 'resource_access'
-                        var rolesRealm = jwt.getClaimAsMap("realm_access").get("roles");
+                        // Extract Keycloak roles
+                        var realmAccess = jwt.getClaimAsMap("realm_access");
+                        var rolesRealm = realmAccess != null ? realmAccess.get("roles") : null;
 
                         // Ensure roles are a list and check for the specific role
                         if (rolesRealm instanceof List) {
