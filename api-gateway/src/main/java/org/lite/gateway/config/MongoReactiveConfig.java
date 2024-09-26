@@ -11,7 +11,7 @@ import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRep
 
 @Configuration
 @EnableReactiveMongoRepositories(basePackages = "org.lite.gateway.repository.**")
-public class MongoReactiveConfiguration extends AbstractReactiveMongoConfiguration {
+public class MongoReactiveConfig extends AbstractReactiveMongoConfiguration {
 
     @Value("${spring.data.mongodb.uri}")
     private String mongoDatabaseUri = "mongodb://root:mongopw@localhost";
