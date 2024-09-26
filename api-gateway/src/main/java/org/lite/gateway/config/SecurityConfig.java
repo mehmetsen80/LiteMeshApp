@@ -16,7 +16,6 @@ import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -47,6 +46,7 @@ public class SecurityConfig {
         return serverHttpSecurity.build();
     }
 
+    //We are injecting the gateway token here
     @Bean
     @Order(Ordered.HIGHEST_PRECEDENCE)  // Ensure this runs early
     public WebFilter tokenRelayWebFilter(AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
@@ -62,11 +62,13 @@ public class SecurityConfig {
                     .doOnError(error -> log.error("Error authorizing client: {}", error.getMessage()))
                     .flatMap(authorizedClient -> {
                         if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
-                            String accessToken = authorizedClient.getAccessToken().getTokenValue();
-                            log.info("Access Token retrieved: {}", accessToken);
-                            exchange.getRequest().mutate().header("Authorization", "Bearer " + accessToken);
+                            String gatewayToken = authorizedClient.getAccessToken().getTokenValue();
+                            log.info("Gateway Token retrieved: {}", gatewayToken);
+                            // Forward the gateway's token to the downstream service
+                            exchange.getRequest().mutate().header("Authorization", "Bearer " + gatewayToken);
                         } else {
-                            log.warn("No access token available for the client");
+                            //log.warn("No access token available for the client");
+                            log.warn("No access token available for the gateway");
                         }
                         return chain.filter(exchange);
                     })

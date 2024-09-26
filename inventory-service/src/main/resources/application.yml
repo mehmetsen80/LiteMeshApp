@@ -1,7 +1,11 @@
 spring:
   application:
     name: inventory-service
-
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8281/realms/LiteMesh
 server:
   port: 0
 
