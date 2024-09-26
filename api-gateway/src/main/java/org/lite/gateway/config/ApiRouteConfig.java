@@ -12,7 +12,7 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
 
 @Configuration
-public class ApiRouteConfiguration {
+public class ApiRouteConfig {
 
     @Bean
     public RouterFunction<ServerResponse> route(ApiRouteHandler apiRouteHandler) {

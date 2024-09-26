@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Slf4j
-public class GatewayConfiguration {
+public class GatewayConfig {
 
     @Bean
     public RouteLocator routeLocator(RouteService routeService, RouteLocatorBuilder routeLocationBuilder) {
