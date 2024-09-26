@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-class KeycloakClientAuthoritiesConverter implements Converter<Jwt, Flux<GrantedAuthority>> {
+class ClientAuthoritiesConverter implements Converter<Jwt, Flux<GrantedAuthority>> {
 
     // we append "ROLE_" prefix to the client roles so that we can use it as method annotation later if needed.  i.e. @Authorized("ROLE_gateway_admin")
     // right now we don't use it anywhere
