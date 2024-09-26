@@ -14,9 +14,9 @@ spring:
             client-secret: 3AGSwhlLLIU6CaXa1ImtyydUEpBA7dUS
             authorization-grant-type: client_credentials
             scope: gateway.read
-            provider: keycloak  # Link to provider
+            provider: identity-provider  # Link to provider i.e. keycloak
         provider:
-          keycloak:
+          identity-provider:
             token-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token
             authorization-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/auth
             jwk-set-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/certs
