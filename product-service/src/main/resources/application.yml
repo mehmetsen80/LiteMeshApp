@@ -9,18 +9,40 @@ spring:
 
 server:
   port: 0
+  ssl:
+    enabled: true
+    key-store: classpath:client-keystore.jks
+    key-store-password: 123456
+    key-alias: client-app
+    key-store-type: PKCS12
+    trust-store: classpath:client-truststore.jks
+    trust-store-password: 123456
+    trust-store-type: JKS
+    client-auth: want
 
 logging:
   file:
     name: logs/product-service.log
+  level:
+    root: INFO
+    org.springframework.security: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.web.reactive.function.client: DEBUG
+    org.springframework.security.oauth2.client: DEBUG
+    org.springframework.cloud.gateway: TRACE
+    org.springframework.cloud.loadbalancer: TRACE
+    org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
 
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka:password@localhost:8761/eureka
+      defaultZone: https://localhost:8761/eureka
     enabled: true
     register-with-eureka: true
     fetch-registry: true
   instance:
     hostname: localhost
     instance-id: ${spring.application.name}:${instanceId:${random.value}}
+    non-secure-port-enabled: false   # Disable non-secure HTTP port
+    secure-port-enabled: true        # Enable secure HTTPS port
+    secure-port: ${server.port}

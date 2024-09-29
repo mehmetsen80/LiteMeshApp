@@ -3,20 +3,10 @@ package org.lite.gateway.config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.service.DynamicRouteService;
-import org.springframework.cloud.client.DefaultServiceInstance;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.loadbalancer.DefaultResponse;
-import org.springframework.cloud.client.loadbalancer.Request;
-import org.springframework.cloud.client.loadbalancer.Response;
-import org.springframework.cloud.loadbalancer.core.ReactorLoadBalancer;
-import org.springframework.cloud.loadbalancer.core.RoundRobinLoadBalancer;
-import org.springframework.cloud.loadbalancer.core.ServiceInstanceListSupplier;
-import org.springframework.cloud.loadbalancer.support.LoadBalancerClientFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
-import org.springframework.core.env.Environment;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -214,30 +204,5 @@ public class SecurityConfig {
 
         return Mono.just(new AuthorizationDecision(false));
     }
-
-//    @Bean
-//    public ReactorLoadBalancer<ServiceInstance> reactorServiceInstanceLoadBalancer(Environment environment, LoadBalancerClientFactory loadBalancerClientFactory) {
-//        String name = environment.getProperty(LoadBalancerClientFactory.PROPERTY_NAME);
-//        return new RoundRobinLoadBalancer(loadBalancerClientFactory.getLazyProvider(name, ServiceInstanceListSupplier.class), name) {
-//
-//            @Override
-//            public Mono<Response<ServiceInstance>> choose(Request request) {
-//                return super.choose(request)
-//                        .map(response -> {
-//                            // Modify the response ServiceInstance to use HTTPS
-//                            if (response.hasServer()) {
-//                                return new DefaultResponse(new DefaultServiceInstance(
-//                                        response.getServer().getInstanceId(),
-//                                        response.getServer().getServiceId(),
-//                                        response.getServer().getHost(),
-//                                        response.getServer().getPort(),
-//                                        true)) // true means HTTPSew DefaultServiceInstance(
-//                                ; // true means HTTPS
-//                            }
-//                            return response;
-//                        });
-//            }
-//        };
-//    }
 }
 

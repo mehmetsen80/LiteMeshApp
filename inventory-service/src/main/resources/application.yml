@@ -32,9 +32,6 @@ logging:
     org.springframework.cloud.loadbalancer: TRACE
     org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
 
-
-
-
 eureka:
   client:
     service-url:
