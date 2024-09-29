@@ -41,8 +41,8 @@ spring:
         wiretap: true
       discovery:
         locator:
-          enabled: true
-          lower-case-service-id: true
+          enabled: true # Enables service discovery with Eureka
+          lower-case-service-id: true  # This ensures service IDs are matched in lowercase
       routes:
         ## Discover server route
         # so, our gateway port is 7777, we access the discovery server through http://localhost:7777/eureka/web
@@ -82,15 +82,30 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka:password@localhost:8761/eureka
+      defaultZone: https://localhost:8761/eureka
     enabled: true
     register-with-eureka: true
+    fetch-registry: true
   instance:
     hostname: localhost
     instance-id: ${spring.application.name}:${instanceId:${random.value}}
+    non-secure-port-enabled: false   # Disable non-secure HTTP port
+    secure-port-enabled: true        # Enable secure HTTPS port
+    secure-port: ${server.port}
 
 server:
   port: 7777
+  ssl:
+    enabled: true
+    key-store: classpath:gateway-keystore.jks
+    key-store-password: 123456
+    key-alias: gateway-app
+    key-store-type: PKCS12
+    trust-store: classpath:gateway-truststore.jks
+    trust-store-password: 123456
+    trust-store-type: JKS
+    client-auth: want
+
 
 logging:
   file:

@@ -3,10 +3,20 @@ package org.lite.gateway.config;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.service.DynamicRouteService;
+import org.springframework.cloud.client.DefaultServiceInstance;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.loadbalancer.DefaultResponse;
+import org.springframework.cloud.client.loadbalancer.Request;
+import org.springframework.cloud.client.loadbalancer.Response;
+import org.springframework.cloud.loadbalancer.core.ReactorLoadBalancer;
+import org.springframework.cloud.loadbalancer.core.RoundRobinLoadBalancer;
+import org.springframework.cloud.loadbalancer.core.ServiceInstanceListSupplier;
+import org.springframework.cloud.loadbalancer.support.LoadBalancerClientFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
@@ -14,6 +24,10 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.MapReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.ReactiveUserDetailsService;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -38,12 +52,36 @@ public class SecurityConfig {
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity, AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
         serverHttpSecurity
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                .x509(x509 -> x509
+                        .principalExtractor(principal -> {
+                            // Extract the CN from the certificate (adjust this logic as needed)
+                            String dn = principal.getSubjectX500Principal().getName();
+                            log.info("dn: {}", dn);
+                            String cn = dn.split(",")[0].replace("CN=", "");
+                            return cn;  // Return the Common Name (CN) as the principal
+                        })
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
-                .addFilterAt(tokenRelayWebFilter(authorizedClientManager), SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE)
                 .authorizeExchange(exchange -> exchange
                         .anyExchange()
-                        .access(this::dynamicPathAuthorization)); // Dynamic authorization
+                        .access(this::dynamicPathAuthorization))
+                .addFilterAt(tokenRelayWebFilter(authorizedClientManager), SecurityWebFiltersOrder.SECURITY_CONTEXT_SERVER_WEB_EXCHANGE); // Dynamic authorization
         return serverHttpSecurity.build();
+    }
+
+    // Define a ReactiveUserDetailsService to map certificates to users
+    // Do not remove this, although it might seem it's not being used
+    // WebFluxSecurityConfiguration requires a bean of type 'org.springframework.security.core.userdetails.ReactiveUserDetailsService'
+    @Bean
+    public ReactiveUserDetailsService userDetailsService() {
+        // Example: Hardcoded user with role
+        UserDetails user = User.withUsername("example-cn")
+                .password("{noop}password")  // Password is not used in mTLS
+                .roles("USER", "ADMIN")
+                .build();
+
+        // A Map-based user details service
+        return new MapReactiveUserDetailsService(user);
     }
 
     //We are injecting the gateway token here
@@ -176,5 +214,30 @@ public class SecurityConfig {
 
         return Mono.just(new AuthorizationDecision(false));
     }
+
+//    @Bean
+//    public ReactorLoadBalancer<ServiceInstance> reactorServiceInstanceLoadBalancer(Environment environment, LoadBalancerClientFactory loadBalancerClientFactory) {
+//        String name = environment.getProperty(LoadBalancerClientFactory.PROPERTY_NAME);
+//        return new RoundRobinLoadBalancer(loadBalancerClientFactory.getLazyProvider(name, ServiceInstanceListSupplier.class), name) {
+//
+//            @Override
+//            public Mono<Response<ServiceInstance>> choose(Request request) {
+//                return super.choose(request)
+//                        .map(response -> {
+//                            // Modify the response ServiceInstance to use HTTPS
+//                            if (response.hasServer()) {
+//                                return new DefaultResponse(new DefaultServiceInstance(
+//                                        response.getServer().getInstanceId(),
+//                                        response.getServer().getServiceId(),
+//                                        response.getServer().getHost(),
+//                                        response.getServer().getPort(),
+//                                        true)) // true means HTTPSew DefaultServiceInstance(
+//                                ; // true means HTTPS
+//                            }
+//                            return response;
+//                        });
+//            }
+//        };
+//    }
 }
 

@@ -1,13 +1,30 @@
+spring:
+  application:
+    name: Eureka Server
+
 eureka:
+  server:
+    response-cache-update-interval-ms: 5000  # Adjust cache update interval
   instance:
     hostname: localhost
+    non-secure-port-enabled: true   # Disable non-secure HTTP port
+    secure-port-enabled: true        # Enable secure HTTPS port
+    secure-port: ${server.port}
+    # Use the HTTPS URL in the metadata for other services to discover
+    statusPageUrl: https://${eureka.instance.hostname}:${server.port}/actuator/info
+    healthCheckUrl: https://${eureka.instance.hostname}:${server.port}/actuator/health
+    secureHealthCheckUrl: https://${eureka.instance.hostname}:${server.port}/actuator/health
   client:
     register-with-eureka: false
     fetch-registry: false
-  username: ${EUREKA_USERNAME:eureka}
-  password: ${EUREKA_PASSWORD:password}
 
 server:
   port: 8761
+  ssl:
+    enabled: true
+    key-store: classpath:eureka-keystore.jks
+    key-store-password: 123456
+    key-alias: eureka-app
+    key-store-type: PKCS12
 
 

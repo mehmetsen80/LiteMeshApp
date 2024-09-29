@@ -12,7 +12,7 @@ logging:
 eureka:
   client:
     service-url:
-      defaultZone: http://eureka:password@localhost:8761/eureka
+      defaultZone: https://localhost:8761/eureka
     enabled: true
     register-with-eureka: true
     fetch-registry: true

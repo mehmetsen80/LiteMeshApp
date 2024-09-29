@@ -15,6 +15,7 @@ public class DynamicRouteService {
         add("/eureka/**");
         add("/mesh/**");
         add("/routes/**");
+        add("/favicon.ico");
     }};
 
     private final PathMatcher pathMatcher = new AntPathMatcher();
