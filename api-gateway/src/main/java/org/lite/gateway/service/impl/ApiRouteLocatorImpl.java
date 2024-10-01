@@ -1,37 +1,33 @@
 package org.lite.gateway.service.impl;
 
-import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.entity.FilterConfig;
-//import org.lite.gateway.filter.CircuitBreakerGatewayFilterFactory;
 import org.lite.gateway.service.RouteService;
-import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreaker;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
 import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
 import org.springframework.cloud.client.circuitbreaker.Customizer;
 import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
-import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 
 @RequiredArgsConstructor
 @Service
@@ -39,7 +35,6 @@ import java.util.function.Function;
 public class ApiRouteLocatorImpl implements RouteLocator {
     private final RouteLocatorBuilder routeLocatorBuilder;
     private final RouteService routeService;
-    //private final CircuitBreakerGatewayFilterFactory circuitBreakerFilterFactory;
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
 
     @Override
@@ -125,8 +120,11 @@ public class ApiRouteLocatorImpl implements RouteLocator {
                                     log.error("Circuit breaker triggered for {}: {}", apiRoute.getRouteIdentifier(), throwable.getMessage());
                                     if (fallbackUri != null) {
                                         log.info("Redirecting to fallback URI: {}", fallbackUri);
+                                        // Append the exception message to the fallback URL as a query parameter
+                                        String fallbackUrlWithException = fallbackUri + "?exceptionMessage=" + URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8);
                                         exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-                                        exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUri));
+                                        exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
+                                        exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUrlWithException));
                                         return exchange.getResponse().setComplete();
                                     }
                                     exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
@@ -144,38 +142,6 @@ public class ApiRouteLocatorImpl implements RouteLocator {
             });
         }
     }
-
-
-//    private void applyFilters(BooleanSpec booleanSpec, List<FilterConfig> filters) {
-//        if (filters != null && !filters.isEmpty()) {
-//            booleanSpec.filters(gatewayFilterSpec -> {
-//                for (FilterConfig filter : filters) {
-//                    switch (filter.getName()) {
-//                        case "CircuitBreaker" -> {
-//                            // Create CircuitBreaker config and apply it
-//                            CircuitBreakerGatewayFilterFactory.Config config =
-//                                    CircuitBreakerGatewayFilterFactory.Config.builder()
-//                                            .name(filter.getArgs().get("name"))
-//                                            .slidingWindowSize(filter.getArgs().get("slidingWindowSize"))
-//                                            .failureRateThreshold(filter.getArgs().get("failureRateThreshold"))
-//                                            .waitDurationInOpenState(filter.getArgs().get("waitDurationInOpenState"))
-//                                            .permittedNumberOfCallsInHalfOpenState(filter.getArgs().get("permittedNumberOfCallsInHalfOpenState"))
-//                                            .fallbackUri(filter.getArgs().get("fallbackUri"))
-//                                            .build();
-//                            GatewayFilter circuitBreakerGatewayFilter = circuitBreakerFilterFactory.apply(config);
-//                            gatewayFilterSpec.filter(circuitBreakerGatewayFilter);
-//                        }
-//                        case "RateLimiter" -> {
-//                            // Placeholder for future RateLimiter logic
-//                            // Example: gatewayFilterSpec.filter(rateLimiterFilterFactory.apply(rateLimiterConfig));
-//                        }
-//                        // Add more cases for future filters
-//                    }
-//                }
-//                return gatewayFilterSpec;
-//            });
-//        }
-//    }
 
     private Customizer<ReactiveResilience4JCircuitBreakerFactory> customizer(FilterConfig filter){
         return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
