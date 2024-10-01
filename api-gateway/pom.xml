@@ -24,6 +24,44 @@
             <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
 
+        <!-- CircuitBreaker Resilience4j -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot3</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-reactor</artifactId>
+        </dependency>
+
+<!--        &lt;!&ndash; io github resilience4j circuitbreaker &ndash;&gt;-->
+<!--        &lt;!&ndash; https://mvnrepository.com/artifact/io.github.resilience4j/resilience4j-circuitbreaker &ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>io.github.resilience4j</groupId>-->
+<!--            <artifactId>resilience4j-circuitbreaker</artifactId>-->
+<!--&lt;!&ndash;            <version>2.2.0</version>&ndash;&gt;-->
+<!--        </dependency>-->
+
+
+        <!--        &lt;!&ndash; github resilience4j spring boot3&ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>io.github.resilience4j</groupId>-->
+<!--            <artifactId>resilience4j-spring-boot3</artifactId>-->
+<!--            <version>2.2.0</version>-->
+<!--        </dependency>-->
+
+<!--        &lt;!&ndash; github resilience4j spring cloud2&ndash;&gt;-->
+<!--        <dependency>-->
+<!--            <groupId>io.github.resilience4j</groupId>-->
+<!--            <artifactId>resilience4j-spring-cloud2</artifactId>-->
+<!--            <version>1.7.0</version>-->
+<!--        </dependency>-->
+
         <!-- Spring Cloud Load Balancer -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -71,6 +109,8 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
         </dependency>
+
+
 
     </dependencies>
 

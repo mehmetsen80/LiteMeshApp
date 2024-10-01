@@ -50,9 +50,9 @@ public class ApiRouteHandler {
                 .collectList()
                 .doOnSuccess(list -> {
                     list.forEach(apiRoute -> {
-                        dynamicRouteService.addPath(apiRoute.path());
+                        dynamicRouteService.addPath(apiRoute.getPath());
                         gatewayRoutesRefresher.refreshRoutes();
-                        log.info("Refreshed Path: " + apiRoute.path());
+                        log.info("Refreshed Path: " + apiRoute.getPath());
 
                     });
         }).then(ServerResponse.ok().body(fromValue("Routes reloaded successfully")));

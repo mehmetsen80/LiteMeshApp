@@ -44,4 +44,22 @@ public class InventoryController {
         response.setUrl(request.getRequestURL().toString());
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+
+    //to test the fallback
+    @GetMapping("/items")
+    public ResponseEntity<String> getItems() throws InterruptedException {
+        // Simulate delay (e.g., 5 seconds)
+        Thread.sleep(20000);  // 5000 milliseconds = 5 seconds
+        return ResponseEntity.ok("Simulated slow response from inventory-service");
+    }
+
+    //to test the fallback
+    @GetMapping("/subitems")
+    public ResponseEntity<String> getSubItems() {
+        //return ResponseEntity.ok("Inventory subitems");
+        //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Simulated failure from inventory-service");
+        // Simulate a failure
+        throw new RuntimeException("Simulated inventory service failure");
+    }
 }

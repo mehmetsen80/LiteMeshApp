@@ -34,6 +34,9 @@ spring:
       uri:  mongodb://root:mongopw@localhost
       database: LiteMesh
   cloud:
+    circuitbreaker:
+      resilience4j:
+        enabled: true #enable the Resilience4J auto-configuration
     gateway:
       httpserver:
         wiretap: true
