@@ -50,7 +50,7 @@ public class InventoryController {
     @GetMapping("/items")
     public ResponseEntity<String> getItems() throws InterruptedException {
         // Simulate delay (e.g., 5 seconds)
-        Thread.sleep(20000);  // 5000 milliseconds = 5 seconds
+        Thread.sleep(10000);  // 10000 milliseconds = 5 seconds
         return ResponseEntity.ok("Simulated slow response from inventory-service");
     }
 

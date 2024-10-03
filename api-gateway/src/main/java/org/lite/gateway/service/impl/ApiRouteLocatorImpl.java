@@ -1,6 +1,8 @@
 package org.lite.gateway.service.impl;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
+import io.github.resilience4j.timelimiter.TimeLimiter;
+import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.entity.ApiRoute;
@@ -16,7 +18,9 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.*;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
@@ -29,6 +33,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 @RequiredArgsConstructor
@@ -97,8 +102,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
                                     if (throwable instanceof Exception) {
                                         // Check for Http status 5xx-like errors or specific exception types
                                         if (throwable.getMessage().contains("5xx") ||
-                                                throwable.getMessage().contains("Internal Server Error") ||
-                                                throwable instanceof TimeoutException) {
+                                                throwable.getMessage().contains("Internal Server Error")) {
                                             return true; // Record this exception as a failure
                                         }
                                     }
@@ -114,8 +118,20 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
                                     apiRoute.getRouteIdentifier(), slidingWindowSize, failureRateThreshold);
 
 
+                            //Add time limiter by default to the CircuitBreaker but never hit this because we are handling
+                            //the TimeLimiter in the next block. We've given 100 seconds to prevent the CircuitBreaker and TimeLimiter timeout conflict
+                            //The TimeLimiter hits first by this way, otherwise it throws "terminal signal within 1000ms in CircuitBreaker" error by default
+                            TimeLimiterConfig timeLimiterConfig = TimeLimiterConfig.custom()
+                                    .timeoutDuration(Duration.ofSeconds(100000)) // Set a big timeout duration i.e 100 seconds
+                                    .cancelRunningFuture(true) // Cancel running future on timeout
+                                    .build();
+
                             // Apply the custom CircuitBreakerConfig to the circuit breaker factory
-                            reactiveResilience4JCircuitBreakerFactory.configure(builder -> builder.circuitBreakerConfig(circuitBreakerConfig), cbName);
+                            reactiveResilience4JCircuitBreakerFactory.configure(builder ->
+                                    builder
+                                            .circuitBreakerConfig(circuitBreakerConfig)//Please do not forget that we handle the TimeLimiter later
+                                            .timeLimiterConfig(timeLimiterConfig).build(),
+                                    cbName);
                             ReactiveCircuitBreaker circuitBreaker = reactiveResilience4JCircuitBreakerFactory.create(cbName);
 
                             // Apply the circuit breaker to the route
@@ -153,6 +169,57 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
                                 config.setEmptyKeyStatus(HttpStatus.TOO_MANY_REQUESTS.name()); // Set response status to 429 when no key is resolved
                             }).filter(new CustomRateLimitResponseFilter());
                         }
+                        case "TimeLimiter" -> {
+                            // Extract TimeLimiter parameters from the filter config args
+                            int timeoutDuration = Integer.parseInt(Objects.requireNonNull(filter.getArgs().get("timeoutDuration")));
+                            boolean cancelRunningFuture = Boolean.parseBoolean(Objects.requireNonNull(filter.getArgs().get("cancelRunningFuture")));
+
+                            // Create the TimeLimiterConfig
+                            TimeLimiterConfig timeLimiterConfig = TimeLimiterConfig.custom()
+                                    .timeoutDuration(Duration.ofSeconds(5)) // Set the timeout duration
+                                    .cancelRunningFuture(cancelRunningFuture) // Whether to cancel running future on timeout
+                                    .build();
+
+                            log.info("Configuring TimeLimiter for route: {}, timeoutDuration: {}, cancelRunningFuture: {}",
+                                    apiRoute.getRouteIdentifier(), timeoutDuration, cancelRunningFuture);
+
+                            // Create the TimeLimiter using the Resilience4J factory
+                            TimeLimiter timeLimiter = TimeLimiter.of("timeLimiter-" + apiRoute.getRouteIdentifier(), timeLimiterConfig);
+
+                            // Apply the TimeLimiter to the route
+                            gatewayFilterSpec.filter((exchange, chain) -> {
+                                log.info("Applying TimeLimiter for route: {}", apiRoute.getRouteIdentifier());
+
+                                // Convert Mono to CompletableFuture and apply the TimeLimiter
+                                CompletableFuture<Void> future = Mono.from(chain.filter(exchange))
+                                        .toFuture();
+
+                                // Apply the TimeLimiter logic
+                                return Mono.fromSupplier(() -> {
+                                            try {
+                                                return timeLimiter.executeFutureSupplier(() -> future);
+                                            } catch (Exception e) {
+                                                if (e instanceof TimeoutException) {
+                                                    log.error("TimeoutException occurred: {}", e.getMessage());
+                                                    throw new RuntimeException(new TimeoutException("Request timed out after " + timeoutDuration + " seconds"));
+                                                }
+                                                throw new RuntimeException(e);
+                                            }
+                                        })
+                                        .flatMap(ignored -> Mono.empty()) // As we are dealing with `Void`, we just return an empty Mono on success
+                                        .onErrorResume(throwable -> {
+                                            if (throwable instanceof TimeoutException) {
+                                                log.info("Timeout occurred. Applying fallback logic for {}", apiRoute.getRouteIdentifier());
+                                                exchange.getResponse().setStatusCode(HttpStatus.GATEWAY_TIMEOUT);
+                                                String responseMessage = "Request timed out. Please try again later.";
+                                                DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(responseMessage.getBytes(StandardCharsets.UTF_8));
+                                                return exchange.getResponse().writeWith(Mono.just(buffer));
+                                            }
+                                            return Mono.error(throwable); // Propagate other exceptions
+                                        })
+                                        .then();
+                            });
+                        }
                         // Add more filters as needed
                     }
                 }
@@ -167,7 +234,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     }
 
     @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+    public void setApplicationContext(@NonNull ApplicationContext applicationContext) throws BeansException {
         this.applicationContext = applicationContext;
     }
 }
