@@ -1,6 +1,8 @@
 version: '3.8'
 
 services:
+
+  # postgres
   postgres:
     image: postgres
     container_name: postgres_db_container
@@ -14,6 +16,7 @@ services:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
 
+  # postgress admin
   pgadmin:
     image: dpage/pgadmin4
     container_name: pgadmin4_container
@@ -26,6 +29,7 @@ services:
     volumes:
       - pgadmin-data:/var/lib/pgadmin
 
+  # keycloak
   keycloak:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak_web
@@ -50,6 +54,7 @@ services:
     ports:
       - 8281:8080
 
+  # mongodb
   mongodb:
     container_name: mongodb_container
     image: mongo:latest
@@ -61,7 +66,17 @@ services:
     volumes:
       - mongodb-data:/var/lib/mongo/data
 
+  # redis
+  redis-service:
+    container_name: redis_container
+    image: redis/redis-stack:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/var/lib/redis/data
+
 volumes:
   postgres_data:
   pgadmin-data:
   mongodb-data:
+  redis-data:

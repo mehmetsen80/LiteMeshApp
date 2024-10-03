@@ -1,19 +1,21 @@
 package org.lite.gateway.service.impl;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
-import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.entity.FilterConfig;
+import org.lite.gateway.filter.CustomRateLimitResponseFilter;
 import org.lite.gateway.service.RouteService;
+import org.springframework.beans.BeansException;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
-import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
-import org.springframework.cloud.client.circuitbreaker.Customizer;
 import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
+import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.Route;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.*;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -32,10 +34,12 @@ import java.util.concurrent.TimeoutException;
 @RequiredArgsConstructor
 @Service
 @Slf4j
-public class ApiRouteLocatorImpl implements RouteLocator {
+public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAware {
     private final RouteLocatorBuilder routeLocatorBuilder;
     private final RouteService routeService;
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
+
+    private ApplicationContext applicationContext;
 
     @Override
     public Flux<Route> getRoutes() {
@@ -123,7 +127,6 @@ public class ApiRouteLocatorImpl implements RouteLocator {
                                         // Append the exception message to the fallback URL as a query parameter
                                         String fallbackUrlWithException = fallbackUri + "?exceptionMessage=" + URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8);
                                         exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-                                        exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
                                         exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUrlWithException));
                                         return exchange.getResponse().setComplete();
                                     }
@@ -132,8 +135,23 @@ public class ApiRouteLocatorImpl implements RouteLocator {
                                 });
                             });
                         }
-                        case "RateLimiter" -> {
-                            // Placeholder for RateLimiter logic (can be added in the future)
+                        case "RedisRateLimiter" -> {
+                            // Extract rate limiter parameters from the filter config args
+                            int replenishRate = Integer.parseInt(Objects.requireNonNull(filter.getArgs().get("replenishRate")));
+                            int burstCapacity = Integer.parseInt(Objects.requireNonNull(filter.getArgs().get("burstCapacity")));
+                            int requestedTokens = Integer.parseInt(Objects.requireNonNull(filter.getArgs().get("requestedTokens")));
+
+                            // Configure RedisRateLimiter with extracted parameters
+                            RedisRateLimiter redisRateLimiter = new RedisRateLimiter(replenishRate, burstCapacity, requestedTokens);
+                            redisRateLimiter.setApplicationContext(applicationContext);
+                            gatewayFilterSpec.requestRateLimiter().configure(config -> {
+                                config.setRouteId(apiRoute.getRouteIdentifier());
+                                config.setRateLimiter(redisRateLimiter); // Set the RedisRateLimiter
+                                //config.setKeyResolver(exchange -> Mono.just(Objects.requireNonNull(exchange.getRequest().getRemoteAddress()).getAddress().getHostAddress())); // Use IP address as the key for limiting
+                                config.setKeyResolver(exchange -> Mono.just(Objects.requireNonNull(apiRoute.getRouteIdentifier())));
+                                config.setDenyEmptyKey(true); // Deny requests that have no resolved key
+                                config.setEmptyKeyStatus(HttpStatus.TOO_MANY_REQUESTS.name()); // Set response status to 429 when no key is resolved
+                            }).filter(new CustomRateLimitResponseFilter());
                         }
                         // Add more filters as needed
                     }
@@ -143,24 +161,13 @@ public class ApiRouteLocatorImpl implements RouteLocator {
         }
     }
 
-    private Customizer<ReactiveResilience4JCircuitBreakerFactory> customizer(FilterConfig filter){
-        return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
-                .circuitBreakerConfig(CircuitBreakerConfig.custom()
-                        .slidingWindowSize(Integer.parseInt(filter.getArgs().get("slidingWindowSize")))
-                        .failureRateThreshold(Float.parseFloat(filter.getArgs().get("failureRateThreshold")))
-                        .waitDurationInOpenState(Duration.parse(filter.getArgs().get("waitDurationInOpenState")))
-                        .permittedNumberOfCallsInHalfOpenState(Integer.parseInt(filter.getArgs().get("permittedNumberOfCallsInHalfOpenState")))
-                        .build())
-                .timeLimiterConfig(TimeLimiterConfig.custom()
-                        .timeoutDuration(Duration.ofSeconds(1))
-                        .build())
-
-                .build()
-        );
-    }
-
     @Override
     public Flux<Route> getRoutesByMetadata(Map<String, Object> metadata) {
         return RouteLocator.super.getRoutesByMetadata(metadata);
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.applicationContext = applicationContext;
     }
 }

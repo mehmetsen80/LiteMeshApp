@@ -3,6 +3,9 @@ spring:
     name: api-gateway
   main:
     allow-bean-definition-overriding: true
+  redis:
+    host: localhost
+    port: 6379
   session:
     store-type: none #
   security:
@@ -55,7 +58,7 @@ spring:
         predicates:
         - Path=/eureka/web
         filters:
-        - SetPath=/
+          - SetPath=/
 
         ## Discovery server static resources
       - id: discovery-server-static
@@ -122,3 +125,5 @@ logging:
     org.springframework.cloud.gateway: TRACE
     org.springframework.cloud.loadbalancer: TRACE
     org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
+    org.springframework.cloud.gateway.filter.ratelimit: DEBUG
+    org.springframework.data.redis: DEBUG
