@@ -16,7 +16,8 @@ public class DynamicRouteService {
         add("/mesh/**");
         add("/routes/**");
         add("/favicon.ico");
-        add("/fallback/**");
+        add("/circuitbreaker/fallback/**");
+        add("/retry/fallback/**");
     }};
 
     private final PathMatcher pathMatcher = new AntPathMatcher();

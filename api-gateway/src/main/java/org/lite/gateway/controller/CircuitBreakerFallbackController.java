@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
 @RestController
-public class GatewayFallbackController {
+public class CircuitBreakerFallbackController {
 
-    // i.e "fallbackUri": "/fallback/inventory" or fallbackUri": "/fallback/product" in mongodb
+    // i.e "fallbackUri": "/circuitbreaker/fallback/inventory" or fallbackUri": "/circuitbreaker/fallback/product" in mongodb
     // This handles fallback for any service that fails
-    @GetMapping("/fallback/{serviceName}")
+    @GetMapping("/circuitbreaker/fallback/{serviceName}")
     public Mono<String> serviceFallback(@PathVariable String serviceName,
                                         @RequestParam(required = false) String exceptionMessage) {
-        String fallbackMessage = serviceName + " service is currently unavailable, please try again later.";
+        String fallbackMessage = "CircuitBreaker: " + serviceName + " service is currently unavailable, please try again later.";
         if (exceptionMessage != null) {
             fallbackMessage += " Cause: " + exceptionMessage;
         }

@@ -1,7 +1,8 @@
-package org.lite.gateway.filter;
+package org.lite.gateway.filter.ratelimiter;
 
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.entity.FilterConfig;
+import org.lite.gateway.filter.FilterStrategy;
 import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec;
 import org.springframework.context.ApplicationContext;
@@ -10,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.Objects;
 
-public class RedisRateLimiterFilterStrategy implements FilterStrategy{
+public class RedisRateLimiterFilterStrategy implements FilterStrategy {
 
     private final ApplicationContext applicationContext;
 

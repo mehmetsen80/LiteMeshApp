@@ -6,6 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.entity.FilterConfig;
 import org.lite.gateway.filter.*;
+import org.lite.gateway.filter.circuitbreaker.CircuitBreakerFilterStrategy;
+import org.lite.gateway.filter.ratelimiter.RedisRateLimiterFilterStrategy;
+//import org.lite.gateway.filter.retry.RetryFilterStrategy;
+import org.lite.gateway.filter.retry.RetryFilterStrategyOld2;
+import org.lite.gateway.filter.timelimiter.TimeLimiterFilterStrategy;
 import org.lite.gateway.service.RouteService;
 import org.springframework.beans.BeansException;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
@@ -31,6 +36,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     private final RouteLocatorBuilder routeLocatorBuilder;
     private final RouteService routeService;
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
+//    private final CustomRetryResponseFilter customRetryResponseFilter;
 
     private ApplicationContext applicationContext;
 
@@ -43,7 +49,8 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
         filterStrategyMap.put("CircuitBreaker", new CircuitBreakerFilterStrategy(reactiveResilience4JCircuitBreakerFactory));
         filterStrategyMap.put("RedisRateLimiter", new RedisRateLimiterFilterStrategy(applicationContext));
         filterStrategyMap.put("TimeLimiter", new TimeLimiterFilterStrategy());
-        filterStrategyMap.put("Retry", new RetryFilterStrategy());
+        //filterStrategyMap.put("Retry", new RetryFilterStrategy());
+        filterStrategyMap.put("Retry", new RetryFilterStrategyOld2());
 
         // Add more strategies here as needed
     }
@@ -77,9 +84,16 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
         if (filters != null && !filters.isEmpty()) {
             booleanSpec.filters(gatewayFilterSpec -> {
                 for (FilterConfig filter : filters) {
+
+//                    if(filter.getName().equals("Retry")){
+//                        gatewayFilterSpec
+//                                .filter(new RetryFilterStrategy(apiRoute, filter));
+//                    }
+
+
                     FilterStrategy strategy = filterStrategyMap.get(filter.getName());
                     if (strategy != null) {
-                        strategy.apply(apiRoute, gatewayFilterSpec, filter);
+                            strategy.apply(apiRoute, gatewayFilterSpec, filter);
                     } else {
                         log.warn("No strategy found for filter: {}", filter.getName());
                     }

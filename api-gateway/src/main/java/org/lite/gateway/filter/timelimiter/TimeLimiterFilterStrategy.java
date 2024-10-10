@@ -1,10 +1,11 @@
-package org.lite.gateway.filter;
+package org.lite.gateway.filter.timelimiter;
 
 import io.github.resilience4j.timelimiter.TimeLimiter;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.entity.FilterConfig;
+import org.lite.gateway.filter.FilterStrategy;
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
@@ -17,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
 
 @Slf4j
-public class TimeLimiterFilterStrategy implements FilterStrategy{
+public class TimeLimiterFilterStrategy implements FilterStrategy {
 
     @Override
     public void apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter) {
@@ -27,7 +28,7 @@ public class TimeLimiterFilterStrategy implements FilterStrategy{
 
         // Create the TimeLimiterConfig
         TimeLimiterConfig timeLimiterConfig = TimeLimiterConfig.custom()
-                .timeoutDuration(Duration.ofSeconds(5)) // Set the timeout duration
+                .timeoutDuration(Duration.ofSeconds(timeoutDuration)) // Set the timeout duration
                 .cancelRunningFuture(cancelRunningFuture) // Whether to cancel running future on timeout
                 .build();
 

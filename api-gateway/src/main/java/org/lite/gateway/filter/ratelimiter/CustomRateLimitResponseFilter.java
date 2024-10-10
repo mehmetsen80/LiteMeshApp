@@ -1,4 +1,4 @@
-package org.lite.gateway.filter;
+package org.lite.gateway.filter.ratelimiter;
 
 import com.nimbusds.jose.util.StandardCharset;
 import lombok.extern.slf4j.Slf4j;

@@ -2,7 +2,9 @@ package org.lite.inventory.controller;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
+import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.servlet.http.HttpServletRequest;
+import org.lite.inventory.exception.InventoryServiceException;
 import org.lite.inventory.model.GreetingResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/inventory")
@@ -47,7 +51,7 @@ public class InventoryController {
 
 
     //to test the fallback
-    @GetMapping("/items")
+    @GetMapping("/testratelimiter")
     public ResponseEntity<String> getItems() throws InterruptedException {
         // Simulate delay (e.g., 5 seconds)
         Thread.sleep(10000);  // 10000 milliseconds = 5 seconds
@@ -55,11 +59,30 @@ public class InventoryController {
     }
 
     //to test the fallback
-    @GetMapping("/subitems")
+    @GetMapping("/testcircuitbreaker")
     public ResponseEntity<String> getSubItems() {
         //return ResponseEntity.ok("Inventory subitems");
         //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Simulated failure from inventory-service");
         // Simulate a failure
         throw new RuntimeException("Simulated inventory service failure");
+    }
+
+    @GetMapping("/testretry")
+    //@Retry(name = "inventory-service")
+    public ResponseEntity<String> testRetry() throws IOException {
+        //throw new RuntimeException(new IOException("Simulated network error"));//always throw RuntimeException to the upstream
+
+        throw new IOException("Simulated IOException network error"); // Simulated exception
+
+        //throw new InventoryServiceException("Simulated network IOException error"); // Simulated exception
+//        try {
+//            // Your business logic
+//            throw new IOException("Simulated network error"); // Simulated exception
+//        } catch (IOException ex) {
+//            log.error("IOException occurred: {}", ex.getMessage());
+//            // Propagate the exception as a 500 (or other appropriate status) with the exception message
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                    .body("Custom error message: " + ex.getMessage());
+//        }
     }
 }

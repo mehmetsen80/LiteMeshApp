@@ -1,10 +1,11 @@
-package org.lite.gateway.filter;
+package org.lite.gateway.filter.circuitbreaker;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.entity.FilterConfig;
+import org.lite.gateway.filter.FilterStrategy;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
 import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec;
@@ -18,7 +19,7 @@ import java.time.Duration;
 import java.util.Objects;
 
 @Slf4j
-public class CircuitBreakerFilterStrategy implements FilterStrategy{
+public class CircuitBreakerFilterStrategy implements FilterStrategy {
 
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
 
@@ -53,8 +54,8 @@ public class CircuitBreakerFilterStrategy implements FilterStrategy{
                 // Check for any Exception (this can be made more granular)
                 if (throwable instanceof Exception) {
                     // Check for Http status 5xx-like errors or specific exception types
-                    if (throwable.getMessage().contains("5xx") ||
-                            throwable.getMessage().contains("Internal Server Error")) {
+                    if (throwable.getMessage() != null && (throwable.getMessage().contains("5xx") ||
+                            throwable.getMessage().contains("Internal Server Error"))) {
                         return true; // Record this exception as a failure
                     }
                 }
@@ -90,7 +91,7 @@ public class CircuitBreakerFilterStrategy implements FilterStrategy{
         gatewayFilterSpec.filter((exchange, chain) -> {
             return circuitBreaker.run(chain.filter(exchange), throwable -> {
                 log.error("Circuit breaker triggered for {}: {}", apiRoute.getRouteIdentifier(), throwable.getMessage());
-                if (fallbackUri != null) {
+                if (fallbackUri != null && throwable.getMessage() != null) {
                     log.info("Redirecting to fallback URI: {}", fallbackUri);
                     // Append the exception message to the fallback URL as a query parameter
                     String fallbackUrlWithException = fallbackUri + "?exceptionMessage=" + URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8);
