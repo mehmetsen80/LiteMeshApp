@@ -87,15 +87,6 @@ public class BodyCaptureResponse extends  ServerHttpResponseDecorator {
                     return super.writeWith(Flux.just(newBuffer));
                 });
     }
-//
-//    @Override
-//    public @NonNull Mono<Void> writeAndFlushWith(@NonNull Publisher<? extends Publisher<? extends DataBuffer>> body) {
-//        return writeWith(Flux.from(body).flatMapSequential(p -> p));
-//    }
-
-
-
-
 
     public String getFullBody() {
         log.info("inside getFullBody()");

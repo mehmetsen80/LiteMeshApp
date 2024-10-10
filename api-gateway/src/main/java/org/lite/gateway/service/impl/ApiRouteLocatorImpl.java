@@ -8,8 +8,7 @@ import org.lite.gateway.entity.FilterConfig;
 import org.lite.gateway.filter.*;
 import org.lite.gateway.filter.circuitbreaker.CircuitBreakerFilterStrategy;
 import org.lite.gateway.filter.ratelimiter.RedisRateLimiterFilterStrategy;
-//import org.lite.gateway.filter.retry.RetryFilterStrategy;
-import org.lite.gateway.filter.retry.RetryFilterStrategyOld2;
+import org.lite.gateway.filter.retry.RetryFilterStrategy;
 import org.lite.gateway.filter.timelimiter.TimeLimiterFilterStrategy;
 import org.lite.gateway.service.RouteService;
 import org.springframework.beans.BeansException;
@@ -49,8 +48,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
         filterStrategyMap.put("CircuitBreaker", new CircuitBreakerFilterStrategy(reactiveResilience4JCircuitBreakerFactory));
         filterStrategyMap.put("RedisRateLimiter", new RedisRateLimiterFilterStrategy(applicationContext));
         filterStrategyMap.put("TimeLimiter", new TimeLimiterFilterStrategy());
-        //filterStrategyMap.put("Retry", new RetryFilterStrategy());
-        filterStrategyMap.put("Retry", new RetryFilterStrategyOld2());
+        filterStrategyMap.put("Retry", new RetryFilterStrategy());
 
         // Add more strategies here as needed
     }
@@ -84,13 +82,6 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
         if (filters != null && !filters.isEmpty()) {
             booleanSpec.filters(gatewayFilterSpec -> {
                 for (FilterConfig filter : filters) {
-
-//                    if(filter.getName().equals("Retry")){
-//                        gatewayFilterSpec
-//                                .filter(new RetryFilterStrategy(apiRoute, filter));
-//                    }
-
-
                     FilterStrategy strategy = filterStrategyMap.get(filter.getName());
                     if (strategy != null) {
                             strategy.apply(apiRoute, gatewayFilterSpec, filter);

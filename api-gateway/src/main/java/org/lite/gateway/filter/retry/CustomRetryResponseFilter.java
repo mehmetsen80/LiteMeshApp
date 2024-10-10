@@ -9,6 +9,7 @@ import org.lite.gateway.model.RetryRecord;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -25,11 +26,11 @@ import java.time.Instant;
 
 @Slf4j
 @Data
-public class CustomRetryResponseFilterOld implements GatewayFilter, Ordered {
+public class CustomRetryResponseFilter implements GatewayFilter, Ordered  {
 
     RetryRecord retryRecord;
 
-    public CustomRetryResponseFilterOld(RetryRecord retryRecord){
+    public CustomRetryResponseFilter(RetryRecord retryRecord){
         this.retryRecord = retryRecord;
     }
 
@@ -61,9 +62,10 @@ public class CustomRetryResponseFilterOld implements GatewayFilter, Ordered {
                         log.error("Upstream error encountered: {}", throwable.getMessage());
                         return Mono.error(throwable);
                     })
-                    .then(Mono.defer(() -> handleResponse(responseDecorator, exchange)))
+                    .then(Mono.defer(() -> handleResponse(responseDecorator, mutatedExchange)))
                     .retryWhen(retryBackoffSpec)  // Retry on errors
-                    .onErrorResume(throwable -> handleErrorFallback(exchange, fallbackUri, throwable));
+                    .onErrorResume(throwable -> handleErrorFallback(mutatedExchange, fallbackUri, throwable))
+                    .then();
 
         } catch (Throwable e) {
             throw new RuntimeException(e);
@@ -97,6 +99,8 @@ public class CustomRetryResponseFilterOld implements GatewayFilter, Ordered {
             exchange.getResponse().writeWith(Mono.just(buffer));
             return Mono.error(new RuntimeException(errorMessage));
         }
+
+        log.info("Success response, no retry required");
         return Mono.empty();
     }
 
@@ -107,8 +111,8 @@ public class CustomRetryResponseFilterOld implements GatewayFilter, Ordered {
         exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
         String fallbackUrlWithException = fallbackUri + "?exceptionMessage=" + URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8);
         exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUrlWithException));
-        return exchange.getResponse().setComplete();
-        //return Mono.error(throwable);  // Re-throw or handle fallback as required
+        //return exchange.getResponse().setComplete();
+        return Mono.error(throwable);  // Re-throw or handle fallback as required
     }
 
     private RetryBackoffSpec buildRetryBackoffSpec(int maxAttempts, Duration waitDuration, RetryConfig retryConfig) {
