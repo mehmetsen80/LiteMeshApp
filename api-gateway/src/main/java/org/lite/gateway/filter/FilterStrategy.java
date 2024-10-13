@@ -5,5 +5,5 @@ import org.lite.gateway.entity.FilterConfig;
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec;
 
 public interface FilterStrategy {
-    void apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter);
+    GatewayFilterSpec apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter);
 }

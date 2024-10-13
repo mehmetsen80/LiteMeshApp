@@ -13,7 +13,7 @@ import java.time.Duration;
 public class RetryFilterStrategy implements FilterStrategy {
 
     @Override
-    public void apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter) {
+    public GatewayFilterSpec apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter) {
 
         // Extract Retry parameters from FilterConfig
         int maxAttempts = Integer.parseInt(filter.getArgs().get("maxAttempts"));
@@ -27,5 +27,6 @@ public class RetryFilterStrategy implements FilterStrategy {
 
         CustomRetryResponseFilter customRetryResponseFilter = new CustomRetryResponseFilter(new RetryRecord(routeId, maxAttempts, waitDuration, retryExceptions, fallbackUri));
         gatewayFilterSpec.filter(customRetryResponseFilter);
+        return gatewayFilterSpec;
     }
 }

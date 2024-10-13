@@ -20,7 +20,7 @@ public class RedisRateLimiterFilterStrategy implements FilterStrategy {
     }
 
     @Override
-    public void apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter) {
+    public GatewayFilterSpec apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter) {
         // Extract rate limiter parameters from the filter config args
         int replenishRate = Integer.parseInt(Objects.requireNonNull(filter.getArgs().get("replenishRate")));
         int burstCapacity = Integer.parseInt(Objects.requireNonNull(filter.getArgs().get("burstCapacity")));
@@ -37,5 +37,6 @@ public class RedisRateLimiterFilterStrategy implements FilterStrategy {
             config.setDenyEmptyKey(true); // Deny requests that have no resolved key
             config.setEmptyKeyStatus(HttpStatus.TOO_MANY_REQUESTS.name()); // Set response status to 429 when no key is resolved
         }).filter(new CustomRateLimitResponseFilter());
+        return gatewayFilterSpec;
     }
 }

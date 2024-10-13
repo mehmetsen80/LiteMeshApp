@@ -2,6 +2,7 @@ package org.lite.gateway.filter;
 
 import java.nio.charset.StandardCharsets;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.lang.NonNull;
@@ -10,21 +11,25 @@ import reactor.core.publisher.Flux;
 //NOT USED RIGHT NOW BUT WE MIGHT NEED IT IN THE FUTURE
 public class BodyCaptureRequest extends ServerHttpRequestDecorator {
 
-    private final StringBuilder body = new StringBuilder();
-
     public BodyCaptureRequest(ServerHttpRequest delegate) {
         super(delegate);
     }
 
-    public @NonNull Flux<DataBuffer> getBody() {
-        return super.getBody().doOnNext(this::capture);
+    @Override
+    public HttpHeaders getHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.addAll(super.getHeaders());
+
+        // Ensure that the Authorization header is copied
+        if (super.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+            headers.set(HttpHeaders.AUTHORIZATION, super.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
+        }
+
+        return headers;
     }
 
-    private void capture(DataBuffer buffer) {
-        this.body.append(StandardCharsets.UTF_8.decode(buffer.toByteBuffer()));
-    }
-
-    public String getFullBody() {
-        return this.body.toString();
+    @Override
+    public Flux<DataBuffer> getBody() {
+        return super.getBody();
     }
 }

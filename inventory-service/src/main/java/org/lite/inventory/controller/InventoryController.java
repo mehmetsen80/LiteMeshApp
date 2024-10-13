@@ -13,9 +13,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/inventory")
@@ -38,9 +40,16 @@ public class InventoryController {
     }
 
     @GetMapping("/greet")
-    public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request) {
+    public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request, @RequestParam(required = false) String triggerError) throws InterruptedException {
         log.info("Greetings from Inventory Service!");
         InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
+
+        if ("true".equals(triggerError)) {
+            TimeUnit.SECONDS.sleep(12);  // Wait for 10 seconds before responding
+            // Simulate a server error (e.g., 500 Internal Server Error)
+            throw new RuntimeException("Simulated server greet error");
+        }
+
         GreetingResponse response = new GreetingResponse();
         response.setGreeting("Hello from Inventory service !!");
         response.setInstanceId(instanceId);
@@ -51,21 +60,30 @@ public class InventoryController {
 
 
     //to test the fallback
-    @GetMapping("/testratelimiter")
-    public ResponseEntity<String> getItems() throws InterruptedException {
-        // Simulate delay (e.g., 5 seconds)
-        Thread.sleep(10000);  // 10000 milliseconds = 5 seconds
-        return ResponseEntity.ok("Simulated slow response from inventory-service");
-    }
-
-    //to test the fallback
     @GetMapping("/testcircuitbreaker")
     public ResponseEntity<String> getSubItems() {
         //return ResponseEntity.ok("Inventory subitems");
         //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Simulated failure from inventory-service");
         // Simulate a failure
-        throw new RuntimeException("Simulated inventory service failure");
+        throw new RuntimeException("Simulated inventory service failure falls to circuit breaker");
     }
+
+    //to test the fallback
+    @GetMapping("/testratelimiter")
+    public ResponseEntity<String> testRateLimiter() throws InterruptedException {
+        //TODO: change the below
+        // Simulate delay (e.g., 5 seconds)
+        Thread.sleep(10000);  // 10000 milliseconds = 5 seconds
+        return ResponseEntity.ok("Simulated slow response from inventory-service");
+    }
+
+    @GetMapping("/testtimelimiter")
+    public ResponseEntity<String> testTimeLimiter() throws InterruptedException {
+        // Simulate delay (e.g., 5 seconds)
+        Thread.sleep(10000);  // 10000 milliseconds = 5 seconds
+        return ResponseEntity.ok("Simulated slow response from inventory-service");
+    }
+
 
     @GetMapping("/testretry")
     //@Retry(name = "inventory-service")

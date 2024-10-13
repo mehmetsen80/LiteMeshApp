@@ -10,7 +10,6 @@ import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4
 import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
 import org.springframework.cloud.gateway.route.builder.GatewayFilterSpec;
 import org.springframework.http.HttpStatus;
-import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -28,7 +27,7 @@ public class CircuitBreakerFilterStrategy implements FilterStrategy {
     }
 
     @Override
-    public void apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter) {
+    public GatewayFilterSpec apply(ApiRoute apiRoute, GatewayFilterSpec gatewayFilterSpec, FilterConfig filter) {
 
         // Extract circuit breaker parameters from the filter config args
         String cbName = filter.getArgs().get("name");
@@ -88,19 +87,31 @@ public class CircuitBreakerFilterStrategy implements FilterStrategy {
         ReactiveCircuitBreaker circuitBreaker = reactiveResilience4JCircuitBreakerFactory.create(cbName);
 
         // Apply the circuit breaker to the route
-        gatewayFilterSpec.filter((exchange, chain) -> {
+        return gatewayFilterSpec.filter((exchange, chain) -> {
             return circuitBreaker.run(chain.filter(exchange), throwable -> {
                 log.error("Circuit breaker triggered for {}: {}", apiRoute.getRouteIdentifier(), throwable.getMessage());
-                if (fallbackUri != null && throwable.getMessage() != null) {
+                // Check if there is a fallback URI configured
+                if (fallbackUri != null) {
                     log.info("Redirecting to fallback URI: {}", fallbackUri);
-                    // Append the exception message to the fallback URL as a query parameter
-                    String fallbackUrlWithException = fallbackUri + "?exceptionMessage=" + URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8);
+
+                    // Redirect to the fallback URL with the exception message, if available
+                    String exceptionMessage = throwable.getMessage() != null ?
+                            URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8) : "";
+                    String fallbackUrlWithException = fallbackUri + "?exceptionMessage=" + exceptionMessage;
+
                     exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
                     exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUrlWithException));
-                    return exchange.getResponse().setComplete();
+
+                    // Ensure the response is completed properly
+                    return exchange.getResponse().setComplete();  // This sends the response
+                    //return Mono.empty();
                 }
+
+                // Default behavior if no fallback is configured
+                log.warn("No fallback URI configured. Responding with SERVICE_UNAVAILABLE.");
                 exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
-                return Mono.empty();
+                return exchange.getResponse().setComplete(); // Ensure we complete the response
+                //return Mono.empty();
             });
         });
     }

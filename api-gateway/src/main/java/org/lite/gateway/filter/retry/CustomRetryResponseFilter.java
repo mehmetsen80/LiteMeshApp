@@ -9,7 +9,6 @@ import org.lite.gateway.model.RetryRecord;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.Ordered;
-import org.springframework.core.annotation.Order;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -64,8 +63,8 @@ public class CustomRetryResponseFilter implements GatewayFilter, Ordered  {
                     })
                     .then(Mono.defer(() -> handleResponse(responseDecorator, mutatedExchange)))
                     .retryWhen(retryBackoffSpec)  // Retry on errors
-                    .onErrorResume(throwable -> handleErrorFallback(mutatedExchange, fallbackUri, throwable))
-                    .then();
+                    //.then(Mono.defer(() -> finalResponseHandling(responseDecorator, mutatedExchange)))
+                    .onErrorResume(throwable -> handleErrorFallback(mutatedExchange, fallbackUri, throwable));
 
         } catch (Throwable e) {
             throw new RuntimeException(e);
@@ -88,21 +87,55 @@ public class CustomRetryResponseFilter implements GatewayFilter, Ordered  {
         return false;
     }
 
+//    private Mono<Void> handleResponse(BodyCaptureResponse responseDecorator, ServerWebExchange exchange) {
+//        HttpStatusCode statusCode = responseDecorator.getStatusCode();
+//        log.info("Downstream response status: {}", statusCode);
+//
+//        if (statusCode != null && statusCode.is5xxServerError()) {
+//            String errorMessage = responseDecorator.getFullBody();
+//            DataBuffer buffer = exchange.getResponse().bufferFactory()
+//                    .wrap(errorMessage.getBytes(StandardCharsets.UTF_8));
+//            exchange.getResponse().writeWith(Mono.just(buffer));
+//            return Mono.error(new RuntimeException(errorMessage));
+//        }
+//
+//        log.info("Success response, no retry required");
+//        return Mono.empty();
+//    }
+
     private Mono<Void> handleResponse(BodyCaptureResponse responseDecorator, ServerWebExchange exchange) {
-        HttpStatusCode statusCode = responseDecorator.getStatusCode();
-        log.info("Downstream response status: {}", statusCode);
+        return responseDecorator.getBody()
+                .flatMap(fullBody -> {
+                    HttpStatusCode statusCode = responseDecorator.getStatusCode();
+                    log.info("Downstream response status: {}", statusCode);
 
-        if (statusCode != null && statusCode.is5xxServerError()) {
-            String errorMessage = responseDecorator.getFullBody();
-            DataBuffer buffer = exchange.getResponse().bufferFactory()
-                    .wrap(errorMessage.getBytes(StandardCharsets.UTF_8));
-            exchange.getResponse().writeWith(Mono.just(buffer));
-            return Mono.error(new RuntimeException(errorMessage));
-        }
+                    // Check for 5xx server errors to trigger retry
+                    if (statusCode != null && statusCode.is5xxServerError()) {
+                        String errorMessage = responseDecorator.getFullBody();
+                        log.error("Downstream 5xx error, retrying: {}", errorMessage);
+                        return Mono.error(new RuntimeException(errorMessage)); // Trigger retry
+                    }
 
-        log.info("Success response, no retry required");
-        return Mono.empty();
+                    // Successful response, proceed normally
+                    return Mono.just(responseDecorator).flatMap(resp -> {
+                        DataBuffer buffer = exchange.getResponse().bufferFactory()
+                                .wrap(resp.getFullBody().getBytes(StandardCharsets.UTF_8));
+                        return exchange.getResponse().writeWith(Mono.just(buffer));  // Send the final response
+                    });
+                });
     }
+
+//    private Mono<Void> finalResponseHandling(BodyCaptureResponse responseDecorator, ServerWebExchange exchange) {
+//        // Final processing of the response after retries are exhausted or completed
+//        String fullBody = responseDecorator.getFullBody();
+//        if (fullBody != null) {
+//            DataBuffer buffer = exchange.getResponse().bufferFactory()
+//                    .wrap(fullBody.getBytes(StandardCharsets.UTF_8));
+//            return exchange.getResponse().writeWith(Mono.just(buffer));  // Write the final response body
+//        }
+//
+//        return exchange.getResponse().setComplete();  // Complete the response if no body is available
+//    }
 
     private Mono<Void> handleErrorFallback(ServerWebExchange exchange, String fallbackUri, Throwable throwable) {
         log.error("Retries failed for route: {}", retryRecord.routeId());
@@ -111,8 +144,8 @@ public class CustomRetryResponseFilter implements GatewayFilter, Ordered  {
         exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
         String fallbackUrlWithException = fallbackUri + "?exceptionMessage=" + URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8);
         exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUrlWithException));
-        //return exchange.getResponse().setComplete();
-        return Mono.error(throwable);  // Re-throw or handle fallback as required
+        return exchange.getResponse().setComplete();
+        //return Mono.error(throwable);  // Re-throw or handle fallback as required
     }
 
     private RetryBackoffSpec buildRetryBackoffSpec(int maxAttempts, Duration waitDuration, RetryConfig retryConfig) {
