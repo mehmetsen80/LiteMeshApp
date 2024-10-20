@@ -4,6 +4,7 @@ import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
 import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.lite.inventory.exception.InventoryServiceException;
 import org.lite.inventory.model.GreetingResponse;
 import org.slf4j.Logger;
@@ -18,12 +19,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/inventory")
+@Slf4j
 public class InventoryController {
 
-    private static final Logger log = LoggerFactory.getLogger(InventoryController.class);
+    private int requestCount = 0;
 
     @Value("${eureka.instance.instance-id}")
     private String instanceId;
@@ -34,13 +37,15 @@ public class InventoryController {
     // Only work if the discovery client is Eureka
     private final EurekaClient eurekaClient;
 
+    AtomicInteger i = new AtomicInteger(1);
+
     // Wiring the Eureka Client
     public InventoryController(EurekaClient eurekaClient) {
         this.eurekaClient = eurekaClient;
     }
 
     @GetMapping("/greet")
-    public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request, @RequestParam(required = false) String triggerError) throws InterruptedException {
+    public ResponseEntity<String> getInventory(HttpServletRequest request, @RequestParam(required = false) String triggerError) throws InterruptedException {
         log.info("Greetings from Inventory Service!");
         InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
 
@@ -50,22 +55,28 @@ public class InventoryController {
             throw new RuntimeException("Simulated server greet error");
         }
 
-        GreetingResponse response = new GreetingResponse();
-        response.setGreeting("Hello from Inventory service !!");
-        response.setInstanceId(instanceId);
-        response.setPort(service.getPort());
-        response.setUrl(request.getRequestURL().toString());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+//        GreetingResponse response = new GreetingResponse();
+//        response.setGreeting("Hello from Inventory service !!");
+//        response.setInstanceId(instanceId);
+//        response.setPort(service.getPort());
+//        response.setUrl(request.getRequestURL().toString());
+
+        return new ResponseEntity<>(i.getAndIncrement() + "- Greetings from Inventory Service\n", HttpStatus.OK);
     }
 
 
     //to test the fallback
     @GetMapping("/testcircuitbreaker")
-    public ResponseEntity<String> getSubItems() {
-        //return ResponseEntity.ok("Inventory subitems");
-        //return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Simulated failure from inventory-service");
-        // Simulate a failure
-        throw new RuntimeException("Simulated inventory service failure falls to circuit breaker");
+    public ResponseEntity<String> getSubItems() throws IOException, InterruptedException {
+//        requestCount++;
+//        if (requestCount < 5) {
+//            throw new RuntimeException("Simulating failure on request #" + requestCount);
+//        }
+//        return ResponseEntity.ok("List of inventory items");
+
+
+        //Thread.sleep(1000);
+        throw new RuntimeException("Simulating failure on request");
     }
 
     //to test the fallback
@@ -79,8 +90,8 @@ public class InventoryController {
 
     @GetMapping("/testtimelimiter")
     public ResponseEntity<String> testTimeLimiter() throws InterruptedException {
-        // Simulate delay (e.g., 5 seconds)
-        Thread.sleep(10000);  // 10000 milliseconds = 5 seconds
+        // Simulate delay (e.g., 10 seconds)
+        Thread.sleep(20000);  // 10000 milliseconds = 10 seconds
         return ResponseEntity.ok("Simulated slow response from inventory-service");
     }
 

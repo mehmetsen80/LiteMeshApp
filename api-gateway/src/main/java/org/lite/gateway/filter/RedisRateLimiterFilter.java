@@ -7,11 +7,11 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import java.util.Objects;
 
 @Slf4j
 public class RedisRateLimiterFilter implements GatewayFilter, Ordered {
@@ -26,6 +26,7 @@ public class RedisRateLimiterFilter implements GatewayFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
         log.info("Apply the RedisRateLimiter filter {}", redisRateLimiterRecord.toString());
+
         return chain.filter(exchange).then(Mono.defer(() -> {
             // Check if response status is 429 (TOO_MANY_REQUESTS)
             if (exchange.getResponse().getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
@@ -33,15 +34,27 @@ public class RedisRateLimiterFilter implements GatewayFilter, Ordered {
                 log.info("Custom RateLimiter triggered: 429 TOO_MANY_REQUESTS");
 
                 // Customize the response for rate limit exceeded
-                String responseMessage = "Rate limit exceeded. Please try again later.";
+                String responseMessage = "Rate limit exceeded, too many requests!!!";
                 DataBuffer buffer = exchange.getResponse().bufferFactory()
                         .wrap(responseMessage.getBytes(StandardCharset.UTF_8));
 
-                // Write custom message to the response body
-                return exchange.getResponse().writeWith(Mono.just(buffer));
+                // Set response status to 429 (it might already be set, but ensure it's correct)
+                exchange.getResponse().setStatusCode(HttpStatus.TOO_MANY_REQUESTS);
+
+                HttpHeaders headers = exchange.getRequest().getHeaders();
+                if (headers.containsKey(HttpHeaders.AUTHORIZATION)) {
+                    log.info("Propagating Authorization header after retries.");
+                    exchange.getRequest().mutate().header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION));
+                }
+
+                // Return the response directly and short-circuit further processing
+                return exchange.getResponse().writeWith(Mono.just(buffer))
+                        .doOnTerminate(() -> exchange.getResponse().setComplete());
+
             }
+            // If the rate limit is not exceeded, continue the filter chain
             return Mono.empty();
-        }));
+        })).then(Mono.empty());
     }
 
     @Override

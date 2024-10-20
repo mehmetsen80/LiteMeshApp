@@ -86,6 +86,12 @@ spring:
 #        - Path=/inventory/**
 
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,loggers,threaddump, metrics
+
 eureka:
   client:
     service-url:
@@ -123,8 +129,10 @@ logging:
     org.springframework.web: DEBUG
     org.springframework.web.reactive.function.client: DEBUG
     org.springframework.security.oauth2.client: DEBUG
-    org.springframework.cloud.gateway: TRACE
+    org.springframework.cloud.gateway: DEBUG
     org.springframework.cloud.loadbalancer: TRACE
+    io.github.resilience4j.circuitbreaker: DEBUG
+    io.github.resilience4j.circuitbreaker.internal: DEBUG
     org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
     org.springframework.cloud.gateway.filter.ratelimit: DEBUG
     org.springframework.data.redis: DEBUG

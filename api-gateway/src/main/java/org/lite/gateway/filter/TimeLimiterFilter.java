@@ -8,7 +8,9 @@ import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -41,42 +43,67 @@ public class TimeLimiterFilter implements GatewayFilter, Ordered {
         // Create the TimeLimiter using the Resilience4J factory
         TimeLimiter timeLimiter = TimeLimiter.of("timeLimiter-" + timeLimiterRecord.routeId(), timeLimiterConfig);
 
-
         // Apply the TimeLimiter to the route
-            log.info("Applying TimeLimiter for route: {}", timeLimiterRecord.routeId());
+        log.info("Applying TimeLimiter for route: {}", timeLimiterRecord.routeId());
 
-            // Convert Mono to CompletableFuture and apply the TimeLimiter
-            CompletableFuture<Void> future = Mono.from(chain.filter(exchange))
-                    .toFuture();
+        // Convert Mono to CompletableFuture and apply the TimeLimiter
+        CompletableFuture<Void> future = Mono.from(chain.filter(exchange))
+                .toFuture();
 
-            // Apply the TimeLimiter logic
-            return Mono.fromSupplier(() -> {
-                        try {
-                            return timeLimiter.executeFutureSupplier(() -> future);
-                        } catch (Exception e) {
-                            if (e instanceof TimeoutException) {
-                                log.error("TimeoutException occurred: {}", e.getMessage());
-                                throw new RuntimeException(new TimeoutException("Request timed out after " + timeLimiterRecord.timeoutDuration() + " seconds"));
-                            }
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .flatMap(ignored -> Mono.empty()) // As we are dealing with `Void`, we just return an empty Mono on success
-                    .onErrorResume(throwable -> {
-                        if (throwable instanceof TimeoutException) {
-                            log.info("Timeout occurred. Applying fallback logic for {}", timeLimiterRecord.routeId());
-                            exchange.getResponse().setStatusCode(HttpStatus.GATEWAY_TIMEOUT);
-                            String responseMessage = "Request timed out. Please try again later.";
-                            DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(responseMessage.getBytes(StandardCharsets.UTF_8));
-                            return exchange.getResponse().writeWith(Mono.just(buffer));
-                        }
-                        return Mono.error(throwable); // Propagate other exceptions
-                    })
-                    .then();
+        // Apply the TimeLimiter logic
+        return Mono.fromSupplier(() -> {
+                    try {
+                        return timeLimiter.executeFutureSupplier(() -> future);
+                    } catch (Exception e) {
+                        log.error("Exception occurred in TimeLimiter: {}", e.getMessage());
+                        throw new RuntimeException(e); //throw the actual error that occurred, not TimeoutException (this will jump to onErrorResume)
+                    }
+                })
+                .flatMap(ignored -> Mono.empty()) // As we are dealing with `Void`, we just return an empty Mono on success
+                .onErrorResume(throwable -> handleException(exchange, throwable))// Handle errors
+                .then();
+    }
+
+    private Mono<Void> handleException(ServerWebExchange exchange, Throwable throwable) {
+        HttpHeaders headers = exchange.getRequest().getHeaders();
+        if (headers.containsKey(HttpHeaders.AUTHORIZATION)) {
+            log.info("Propagating Authorization header after retries.");
+            exchange.getRequest().mutate().header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION));
+            log.info(exchange.getRequest().getHeaders().toString());
+        }
+
+        String errorMessage = "Unknown error occurred";
+
+        if(throwable instanceof RuntimeException){
+            throwable = throwable.getCause();
+        }
+
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR; // Default to 500 Internal Server Error
+        errorMessage = throwable.getMessage() != null ? throwable.getMessage() : errorMessage;
+        if (throwable instanceof TimeoutException) {
+            status = HttpStatus.GATEWAY_TIMEOUT; // 504 Gateway Timeout
+        } else if (throwable instanceof IllegalArgumentException) {
+            status = HttpStatus.BAD_REQUEST; // 400 Bad Request
+        } else if (throwable instanceof org.springframework.web.server.ResponseStatusException &&
+                ((org.springframework.web.server.ResponseStatusException) throwable).getStatusCode() == HttpStatus.NOT_FOUND) {
+            status = HttpStatus.NOT_FOUND; // 404 Not Found
+        } else if (errorMessage.contains("Unable to find instance")) {
+            log.info("Inside Unable to find instance if statement");
+            status = HttpStatus.SERVICE_UNAVAILABLE; // 503 Service Unavailable
+        }
+        log.error("Error handling in TimeLimiterFilter: {}, Status: {}", errorMessage, status);
+        return writeResponse(exchange, status, errorMessage);
+    }
+
+    private Mono<Void> writeResponse(ServerWebExchange exchange, HttpStatus status, String message) {
+        exchange.getResponse().setStatusCode(status);
+        DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(message.getBytes(StandardCharsets.UTF_8));
+        return exchange.getResponse().writeWith(Mono.just(buffer));
+
     }
 
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE + 3;
+        return Ordered.HIGHEST_PRECEDENCE + 2;
     }
 }

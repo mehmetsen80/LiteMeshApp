@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,15 +19,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
         // Log the exception for debugging purposes
-        log.error("Handling RuntimeException: {}", ex.getMessage());
+        String message = ex.getMessage() != null ? ex.getMessage() : "";
+        log.error("Handling RuntimeException: {}", message);
+
         // Return 500 Internal Server Error with a custom message
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .header(HttpHeaders.CONTENT_TYPE, "application/json")
-                .body(ex.getMessage());
+                //.header(HttpHeaders.CONTENT_TYPE, MediaType.ALL_VALUE)
+                .body(message);
     }
 
-//    private final ObjectMapper objectMapper = new ObjectMapper(); // Jackson object mapper to convert objects to JSON
-//
+    private final ObjectMapper objectMapper = new ObjectMapper(); // Jackson object mapper to convert objects to JSON
+
 //    @ExceptionHandler(RuntimeException.class)
 //    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
 //        // Log the exception for debugging purposes

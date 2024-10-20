@@ -4,13 +4,16 @@ import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.model.CircuitBreakerRecord;
-import org.lite.gateway.model.RetryRecord;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
 import org.springframework.cloud.client.circuitbreaker.ReactiveCircuitBreaker;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.support.NotFoundException;
 import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -18,6 +21,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 public class CircuitBreakerFilter implements GatewayFilter, Ordered {
@@ -26,34 +30,62 @@ public class CircuitBreakerFilter implements GatewayFilter, Ordered {
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
     private final CircuitBreakerRecord circuitBreakerRecord;
 
-    public CircuitBreakerFilter(ReactiveResilience4JCircuitBreakerFactory circuitBreakerFactory, CircuitBreakerRecord circuitBreakerRecord) {
-        this.reactiveResilience4JCircuitBreakerFactory = circuitBreakerFactory;
+    public CircuitBreakerFilter(ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory, CircuitBreakerRecord circuitBreakerRecord) {
+        this.reactiveResilience4JCircuitBreakerFactory = reactiveResilience4JCircuitBreakerFactory;
         this.circuitBreakerRecord = circuitBreakerRecord;
     }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
         // Create the CircuitBreaker config based on the data from mongodb
         CircuitBreakerConfig.Builder cbConfigBuilder = CircuitBreakerConfig.custom()
                 .slidingWindowSize(circuitBreakerRecord.slidingWindowSize())
                 .failureRateThreshold(circuitBreakerRecord.failureRateThreshold())
                 .waitDurationInOpenState(circuitBreakerRecord.waitDurationInOpenState())
                 .permittedNumberOfCallsInHalfOpenState(circuitBreakerRecord.permittedCallsInHalfOpenState())
+                .recordExceptions(TimeoutException.class, NotFoundException.class, WebClientResponseException.InternalServerError.class, HttpServerErrorException.InternalServerError.class)
                 .automaticTransitionFromOpenToHalfOpenEnabled(circuitBreakerRecord.automaticTransition());
 
         // Apply custom failure predicate (e.g., HttpResponsePredicate)
+        //statusCode >= 500
         if ("HttpResponsePredicate".equals(circuitBreakerRecord.recordFailurePredicate())) {
-            cbConfigBuilder.recordException((throwable ->{
-                // Check for any Exception (this can be made more granular)
-                if (throwable instanceof Exception) {
-                    // Check for Http status 5xx-like errors or specific exception types
-                    if (throwable.getMessage() != null && (throwable.getMessage().contains("5xx") ||
-                            throwable.getMessage().contains("Internal Server Error"))) {
-                        return true; // Record this exception as a failure
+            cbConfigBuilder.recordException(throwable -> {
+                log.info("inside recordException: {}", throwable.getMessage());
+
+                // Treat TimeoutException as a failure
+                if (throwable instanceof TimeoutException) {
+                    log.info("Recording TimeoutException in CircuitBreaker as a failure.");
+                    return true; // Record the timeout as a failure for CircuitBreaker
+                }
+
+                // Handle 429 TOO_MANY_REQUESTS response
+                if (throwable instanceof WebClientResponseException responseException) {
+                    if (responseException.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                        log.info("Recording 429 TOO_MANY_REQUESTS in CircuitBreaker.");
+                        return true; // Record the 429 status as a failure
                     }
                 }
-                return false;
-            }));
+
+                if(throwable instanceof RuntimeException runtimeException){
+                    if(runtimeException.getMessage().contains("429 TOO_MANY_REQUESTS")){
+                        log.info("Recording  429 TOO_MANY_REQUESTS in CircuitBreaker.");
+                        return true;
+                    }
+                }
+
+                // Record other exceptions as failures based on conditions
+                if (throwable instanceof Exception) {
+                    if (throwable.getMessage() != null &&
+                            (throwable.getMessage().contains("5xx") ||
+                                    throwable.getMessage().contains("recorded a timeout exception"))) {
+                        log.info("Recording 503 Service Unavailable or 504 errors in CircuitBreaker.");
+                        return true; // Short-circuit for 503 and 504 errors
+                    }
+                }
+
+                return false; // Do not record other exceptions
+            });
         } else {
             log.info("No valid recordFailurePredicate provided. Using default failure recording behavior.");
         }
@@ -85,32 +117,40 @@ public class CircuitBreakerFilter implements GatewayFilter, Ordered {
             log.error("Circuit breaker triggered for {}: {}", circuitBreakerRecord.routeId(), throwable.getMessage());
             // Check if there is a fallback URI configured
             if (circuitBreakerRecord.fallbackUri() != null) {
-                log.info("Redirecting to fallback URI: {}", circuitBreakerRecord.fallbackUri());
-
-                // Redirect to the fallback URL with the exception message, if available
                 String exceptionMessage = throwable.getMessage() != null ?
-                        URLEncoder.encode(throwable.getMessage(), StandardCharsets.UTF_8) : "";
-                String fallbackUrlWithException = circuitBreakerRecord.fallbackUri() + "?exceptionMessage=" + exceptionMessage;
+                         URLEncoder.encode("CircuitBreaker: " + throwable.getMessage(), StandardCharsets.UTF_8) : "";
 
-                exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
-                exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUrlWithException));
+                HttpHeaders headers = exchange.getRequest().getHeaders();
+                if (headers.containsKey(HttpHeaders.AUTHORIZATION)) {
+                    log.info("Propagating Authorization header after retries.");
+                    exchange.getRequest().mutate().header(HttpHeaders.AUTHORIZATION, headers.getFirst(HttpHeaders.AUTHORIZATION));
+                }
 
-                // Ensure the response is completed properly
-                return exchange.getResponse().setComplete();  // This sends the response
-                //return Mono.empty();
+                if(exchange.getResponse().isCommitted()){
+                    log.info("The response is already committed! {}", exceptionMessage);
+                    return exchange.getResponse().setComplete();
+                }else{
+                    // Redirect to the fallback URL with the exception message, if available
+                    log.info("Redirecting to fallback URI: {}", circuitBreakerRecord.fallbackUri());
+                    log.info("The response has not been committed yet!");
+                    String fallbackUrlWithException = circuitBreakerRecord.fallbackUri() + "?exceptionMessage=" + exceptionMessage;
+                    exchange.getResponse().setStatusCode(HttpStatus.TEMPORARY_REDIRECT);
+                    exchange.getResponse().getHeaders().setLocation(URI.create(fallbackUrlWithException));
+                    // Ensure the response is completed properly
+                    return exchange.getResponse().setComplete();  // This sends the response
+                }
             }
 
             // Default behavior if no fallback is configured
             log.warn("No fallback URI configured. Responding with SERVICE_UNAVAILABLE.");
             exchange.getResponse().setStatusCode(HttpStatus.SERVICE_UNAVAILABLE);
             return exchange.getResponse().setComplete(); // Ensure we complete the response
-            //return Mono.empty();
         });
 
     }
 
     @Override
     public int getOrder() {
-        return Ordered.HIGHEST_PRECEDENCE;
+        return Ordered.HIGHEST_PRECEDENCE + 3;
     }
 }

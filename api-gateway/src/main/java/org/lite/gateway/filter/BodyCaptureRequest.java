@@ -1,6 +1,7 @@
 package org.lite.gateway.filter;
 
-import java.nio.charset.StandardCharsets;
+
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -8,7 +9,7 @@ import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Flux;
 
-//NOT USED RIGHT NOW BUT WE MIGHT NEED IT IN THE FUTURE
+@Slf4j
 public class BodyCaptureRequest extends ServerHttpRequestDecorator {
 
     public BodyCaptureRequest(ServerHttpRequest delegate) {
@@ -16,12 +17,13 @@ public class BodyCaptureRequest extends ServerHttpRequestDecorator {
     }
 
     @Override
-    public HttpHeaders getHeaders() {
+    public @NonNull HttpHeaders getHeaders() {
         HttpHeaders headers = new HttpHeaders();
         headers.addAll(super.getHeaders());
 
         // Ensure that the Authorization header is copied
         if (super.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+            log.info("Inside BodyCaptureRequest");
             headers.set(HttpHeaders.AUTHORIZATION, super.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
         }
 
@@ -29,7 +31,7 @@ public class BodyCaptureRequest extends ServerHttpRequestDecorator {
     }
 
     @Override
-    public Flux<DataBuffer> getBody() {
+    public @NonNull Flux<DataBuffer> getBody() {
         return super.getBody();
     }
 }

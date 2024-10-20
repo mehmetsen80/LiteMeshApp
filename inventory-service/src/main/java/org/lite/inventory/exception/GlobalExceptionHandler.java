@@ -18,21 +18,19 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
         // Log the exception for debugging purposes
         log.debug("Handling RuntimeException: {}", ex.getMessage());
+
         // Return 500 Internal Server Error with a custom message
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error occurred: " + ex.getMessage());
+                .body("[Inventory-Service] Error occurred: " + ex.getMessage());
     }
 
     @ExceptionHandler(IOException.class)
     public ResponseEntity<?> handleIOException(IOException ex) {
         log.error("IOException: {}", ex.getMessage());
-//        Map<String, String> response = new HashMap<>();
-//        response.put("error", "IOExceptionnn");
-//        response.put("message", ex.getMessage());//.body("Custom error message: Database connection failed");
-        ResponseEntity responseEntity = new ResponseEntity<>(ex, HttpStatus.HTTP_VERSION_NOT_SUPPORTED);
-//        log.info(String.valueOf(responseEntity.hasBody()));
-        //return ResponseEntity.status(HttpStatus.HTTP_VERSION_NOT_SUPPORTED).body("Custom error message: Database connection failed");
-        return responseEntity;
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "IOException");
+        response.put("message", ex.getMessage());//.body("Custom error message: Database connection failed");
+        return new ResponseEntity<>(response, HttpStatus.HTTP_VERSION_NOT_SUPPORTED);
     }
 
     // You can add more specific handlers for different exceptions

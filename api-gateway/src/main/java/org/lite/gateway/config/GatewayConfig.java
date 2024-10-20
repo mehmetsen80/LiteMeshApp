@@ -14,11 +14,10 @@ import org.springframework.context.annotation.Configuration;
 public class GatewayConfig {
 
     @Bean
-    public RouteLocator routeLocator(RouteService routeService,
-                                     RouteLocatorBuilder routeLocationBuilder,
+    public RouteLocator routeLocator(RouteLocatorBuilder routeLocationBuilder,
+                                     RouteService routeService,
                                      ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory) {
         return new ApiRouteLocatorImpl(routeLocationBuilder,
-                routeService,
-                reactiveResilience4JCircuitBreakerFactory);
+                routeService, reactiveResilience4JCircuitBreakerFactory);
     }
 }

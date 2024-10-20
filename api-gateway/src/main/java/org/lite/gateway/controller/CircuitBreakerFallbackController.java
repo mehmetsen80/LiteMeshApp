@@ -11,13 +11,13 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class CircuitBreakerFallbackController {
 
-    // i.e "fallbackUri": "/circuitbreaker/fallback/inventory" or fallbackUri": "/circuitbreaker/fallback/product" in mongodb
+    // i.e "fallbackUri": "/fallback/inventory" or fallbackUri": "/fallback/product" in mongodb
     // This handles fallback for any service that fails
-    @GetMapping("/circuitbreaker/fallback/{serviceName}")
+    @GetMapping("/fallback/{serviceName}")
     public Mono<String> serviceFallback(@PathVariable String serviceName,
                                         @RequestParam(required = false) String exceptionMessage) {
         log.info("inside circuitbreaker");
-        String fallbackMessage = "CircuitBreaker: " + serviceName + " service is currently unavailable, please try again later.";
+        String fallbackMessage = "CircuitBreaker " + serviceName + " service is currently unavailable, please try again later.";
         if (exceptionMessage != null) {
             fallbackMessage += " Cause: " + exceptionMessage;
         }
