@@ -6,7 +6,7 @@ While other competitors offer complex and heavyweight solutions,
 LiteMesh provides a lean, developer-friendly platform that can grow to meet the demands of modern microservices and 
 serverless architectures—positioning itself to become a leading solution as the API ecosystem evolves.
 
-<div style="text-align: center;">
+<div align="center">
 <a href="assets/LiteMesh.jpg"> <img class="w-100" alt="LiteMesh" src="assets/LiteMesh.jpg"></a>
 </div>
 
@@ -50,7 +50,7 @@ Dynamic routing offers several benefits, especially in modern distributed system
    With static routing, you need to manually update configurations when services or endpoints change. Dynamic routing eliminates this overhead by automatically adjusting to service changes.
    ``
 
-<div style="text-align: center;">
+<div align="center">
 <a href="assets/DynamicRouting.jpg"> <img alt="LiteMesh Dynamic Routing" src="assets/DynamicRouting.jpg"></a>
 </div>
 
@@ -82,13 +82,16 @@ communications are locked down tightly. This makes the platform secure at scale.
 - By validating tokens at the gateway and enforcing mTLS for internal communication, LiteMesh reduces the attack 
 surface, making it harder for attackers to breach or compromise any part of the system.
 
-> In summary, the client-to-gateway security ensures that only trusted clients with valid credentials can access the APIs,
+
+In summary, the client-to-gateway security ensures that only trusted clients with valid credentials can access the APIs,
 while the gateway-to-service security guarantees secure and trusted communication within the system.
 This holistic approach creates a robust, secure API management platform, protecting both external and internal 
 interactions across the microservices architecture.
 
 
+<div align="center">
 <a href="assets/Security.jpg"> <img alt="LiteMesh Security" src="assets/Security.jpg"></a>
+</div>
 
 
 
