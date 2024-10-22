@@ -6,7 +6,9 @@ While other competitors offer complex and heavyweight solutions,
 LiteMesh provides a lean, developer-friendly platform that can grow to meet the demands of modern microservices and 
 serverless architectures—positioning itself to become a leading solution as the API ecosystem evolves.
 
+<div style="text-align: center;">
 <a href="assets/LiteMesh.jpg"> <img class="w-100" alt="LiteMesh" src="assets/LiteMesh.jpg"></a>
+</div>
 
 ## DYNAMIC ROUTING
 We chose dynamic routing because of its ability to handle the challenges of modern API management systems, especially 
@@ -48,9 +50,9 @@ Dynamic routing offers several benefits, especially in modern distributed system
    With static routing, you need to manually update configurations when services or endpoints change. Dynamic routing eliminates this overhead by automatically adjusting to service changes.
    ``
 
-
+<div style="text-align: center;">
 <a href="assets/DynamicRouting.jpg"> <img alt="LiteMesh Dynamic Routing" src="assets/DynamicRouting.jpg"></a>
-
+</div>
 
 
 ## SECURITY
