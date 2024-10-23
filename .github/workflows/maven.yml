@@ -16,9 +16,7 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
     - name: Set up JDK 21
@@ -30,6 +28,13 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
+  dependency-review:
+    # Run this job only for pull requests, because it requires comparison between branches
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
     - name: Dependency Review
       uses: actions/dependency-review-action@v4
       with:
