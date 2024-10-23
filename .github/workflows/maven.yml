@@ -30,6 +30,12 @@ jobs:
     - name: Build with Maven
       run: mvn -B package --file pom.xml
 
-    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
-    - name: Update dependency graph
-      uses: advanced-security/maven-dependency-submission-action@v4
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      with:
+        # Possible values: "critical", "high", "moderate", "low"
+        fail-on-severity: high
+
+#    # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
+#    - name: Update dependency graph
+#      uses: advanced-security/maven-dependency-submission-action@v4
