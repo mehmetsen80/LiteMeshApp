@@ -1,10 +1,53 @@
-**<h1>What is LiteMesh?</h1>**
+# What is LiteMesh?
 LiteMesh is designed as a lightweight, highly adaptable API gateway that addresses the challenges of dynamic routing, 
 security, and resilience with simplicity and speed.
 
 While other competitors offer complex and heavyweight solutions, 
 LiteMesh provides a lean, developer-friendly platform that can grow to meet the demands of modern microservices and 
 serverless architectures—positioning itself to become a leading solution as the API ecosystem evolves.
+
+## HOW IT WORKS
+LiteMesh operates at the center of the API ecosystem, serving as the primary gateway for all microservices communication. 
+Instead of allowing direct interactions between services, LiteMesh channels all requests through the gateway, creating 
+a streamlined workflow that reduces potential conflicts and enhances security. 
+
+LiteMesh serves as the core of the entire API architecture, acting as the dynamic gateway for all microservices communication. 
+It ensures that microservices interact through the gateway, preventing direct service-to-service communication and 
+improving security and manageability. 
+
+Dynamic routing allows LiteMesh to route requests efficiently based on service discovery, load balancing, and 
+application-specific rules. Both the gateway and microservices register themselves with the Service Discovery component, 
+enabling seamless discovery and routing based on service names, while also supporting load balancing across instances.
+
+Security is enforced on two fronts: Client-to-Gateway security, using JWT validation with OAuth2 through an identity 
+provider (e.g., Keycloak), and Gateway-to-Service security through mTLS (Mutual TLS), ensuring a secure and encrypted 
+channel between services.
+
+LiteMesh also supports comprehensive resiliency mechanisms, including:
+
+- RedisRateLimiter
+    ``
+    which uses Redis to manage temporary rate-limiting data, even in distributed systems, controlling traffic and protecting services from overload.
+    ``
+
+- TimeLimiter,
+    ``
+    which prevents long-running requests by enforcing a timeout for each API call.
+    ``
+
+- CircuitBreaker
+    ``
+    which opens after detecting a failure threshold, preventing repeated failures from overwhelming services.
+    ``
+
+- Retry
+    ``
+    which retries failed calls a set number of times before giving up, improving reliability.
+    ``
+
+All these configurations—routing, security, and resiliency—are dynamically managed and stored in MongoDB, allowing 
+LiteMesh to adapt in real-time and protect APIs from attacks, overload, and vulnerabilities.
+
 
 <div align="center">
 <a href="assets/LiteMesh.jpg"> <img class="w-100" alt="LiteMesh" src="assets/LiteMesh.jpg"></a>
