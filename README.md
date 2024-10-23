@@ -48,10 +48,115 @@ LiteMesh also supports comprehensive resiliency mechanisms, including:
 All these configurations—routing, security, and resiliency—are dynamically managed and stored in MongoDB, allowing 
 LiteMesh to adapt in real-time and protect APIs from attacks, overload, and vulnerabilities.
 
+See below for the high level of LiteMesh architecture:
 
 <div align="center">
 <a href="assets/LiteMesh.jpg"> <img class="w-100" alt="LiteMesh" src="assets/LiteMesh.jpg"></a>
 </div>
+
+## HOW CONFIGURATION DATA LOOK LIKE IN MONGODB?
+
+As previously mentioned, the configuration is stored in MongoDB, allowing LiteMesh to load them dynamically. 
+Below is an example snippet for the inventory-service and product-service microservices, demonstrating how routing 
+and resilience configurations are stored and can be updated dynamically.
+
+```
+{
+  "_id": "1",
+  "routeIdentifier": "inventory-service",
+  "uri": "lb://inventory-service",
+  "method": "",
+  "path": "/inventory/**",
+  "filters": [
+    {
+      "name": "RedisRateLimiter",
+      "args": {
+        "replenishRate": "10",
+        "burstCapacity": "20",
+        "requestedTokens": "1"
+      }
+    },
+    {
+      "name": "TimeLimiter",
+      "args": {
+        "timeoutDuration": "30",
+        "cancelRunningFuture": "true"
+      }
+    },
+    {
+      "name": "CircuitBreaker",
+      "args": {
+        "name": "inventoryCircuitBreaker",
+        "fallbackUri": "/fallback/inventory",
+        "slidingWindowSize": "2",
+        "failureRateThreshold": "10",
+        "waitDurationInOpenState": "PT10S",
+        "permittedNumberOfCallsInHalfOpenState": "1",
+        "recordFailurePredicate": "HttpResponsePredicate",
+        "automaticTransitionFromOpenToHalfOpenEnabled": "true"
+      }
+    },
+    {
+      "name": "Retry",
+      "args": {
+        "maxAttempts": "3",
+        "waitDuration": "PT2S",
+        "retryExceptions": "java.io.IOException, java.net.SocketTimeoutException, java.lang.RuntimeException"
+      }
+    }
+  ],
+  "_class": "org.lite.gateway.entity.ApiRoute"
+}
+
+{
+  "_id": "2",
+  "routeIdentifier": "product-service",
+  "uri": "lb://product-service",
+  "method": "",
+  "path": "/product/**",
+  "filters": [
+    {
+      "name": "RedisRateLimiter",
+      "args": {
+        "replenishRate": "10",
+        "burstCapacity": "20",
+        "requestedTokens": "1"
+      }
+    },
+    {
+      "name": "TimeLimiter",
+      "args": {
+        "timeoutDuration": "30",
+        "cancelRunningFuture": "true"
+      }
+    },
+    {
+      "name": "CircuitBreaker",
+      "args": {
+        "name": "productCircuitBreaker",
+        "fallbackUri": "/fallback/product",
+        "slidingWindowSize": "2",
+        "failureRateThreshold": "10",
+        "waitDurationInOpenState": "PT210S",
+        "permittedNumberOfCallsInHalfOpenState": "3",
+        "recordFailurePredicate": "HttpResponsePredicate",
+        "automaticTransitionFromOpenToHalfOpenEnabled": "true"
+      }
+    },
+    {
+      "name": "Retry",
+      "args": {
+        "maxAttempts": "3",
+        "waitDuration": "PT2S",
+        "retryExceptions": "java.io.IOException, java.net.SocketTimeoutException, java.lang.RuntimeException"
+      }
+    }
+  ],
+  "_class": "org.lite.gateway.entity.ApiRoute"
+}
+
+```
+
 
 ## DYNAMIC ROUTING
 We chose dynamic routing because of its ability to handle the challenges of modern API management systems, especially 
@@ -139,3 +244,65 @@ interactions across the microservices architecture.
 
 
 ## RESILIENCY
+
+When an API call is routed through LiteMesh, it passes through several layers of resiliency mechanisms before reaching 
+the final destination service. This flow ensures that the system can gracefully handle failures, traffic spikes, 
+and timeouts. Here’s how it works:
+
+1. **RedisRateLimiter:**
+   ``
+   The first layer of defense is the RedisRateLimiter, which manages the rate at which API requests
+   are allowed to reach the microservices. Using Redis, the rate limiter stores the rate and burst capacities even in a
+   distributed system, ensuring that limits are enforced consistently across multiple instances.
+   ``
+
+   * _How it works:_ Each API call consumes a token from a bucket (representing allowed requests). If the bucket is empty,
+     the call is rejected with a 429 Too Many Requests error. This prevents overloading services during high traffic and
+     protects against denial-of-service (DoS) attacks.
+   * _Purpose:_ Controls traffic flow to prevent services from being overwhelmed by too many requests in a short time frame.
+   
+
+2. **TimeLimiter:**
+   ``
+   If the request passes the rate limiter, it then goes through the TimeLimiter. This mechanism imposes a
+   maximum time for each request to complete.
+   ``
+
+   * _How it works:_ The TimeLimiter enforces a timeout duration for API calls. If a request exceeds this time limit 
+   (e.g., due to network delays or slow services), it will be terminated, and an error will be returned to the client.
+   * _Purpose:_ Prevents long-running requests from blocking system resources and ensures that slow services don't 
+   degrade the overall performance of the system.
+   
+
+3. **CircuitBreaker:**
+   ``
+   After passing the time limit check, the request moves to the CircuitBreaker. This mechanism monitors
+   the success and failure rates of API calls and trips the circuit (i.e., temporarily blocks further requests) when
+   failures exceed a defined threshold.
+   ``
+
+   * _How it works:_ If a service starts failing consistently (e.g., due to a crash or a high error rate), the 
+   CircuitBreaker will open, blocking new requests to that service until it recovers. This prevents additional strain 
+   on the failing service and allows it time to recover. Once the system stabilizes, the CircuitBreaker transitions to 
+   a half-open state, allowing limited traffic to pass through to test if the service has recovered.
+   * _Purpose:_ Protects services from cascading failures and ensures that a service experiencing issues doesn’t affect 
+   the rest of the system.
+
+
+4. **Retry:**
+   ``
+   The Retry mechanism provides one last safety net by attempting to retry failed requests before giving up.
+   If the request fails due to network issues or temporary errors, the Retry mechanism can re-attempt the call a specified
+   number of times with a wait duration between retries.
+   ``
+
+   * _How it works:_ If a request fails due to transient errors (e.g., timeouts, network issues), the system 
+   automatically retries the request up to a configurable number of attempts. Each retry is spaced out by a set wait 
+   duration, allowing the system time to stabilize before trying again.
+   * _Purpose:_ Improves resiliency by automatically recovering from temporary issues without requiring user intervention, 
+   providing a smoother experience for clients.
+
+
+<div align="center">
+<a href="assets/Resiliency.jpg"> <img alt="LiteMesh Dynamic Routing" src="assets/Resiliency.jpg"></a>
+</div>
