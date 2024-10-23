@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>org.lite</groupId>
-        <artifactId>lite-gateway-application</artifactId>
-        <version>1.0-SNAPSHOT</version>
+        <artifactId>lite-mesh</artifactId>
+        <version>0.2</version>
     </parent>
 
     <artifactId>discovery-server</artifactId>
