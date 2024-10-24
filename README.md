@@ -6,6 +6,54 @@ While other competitors offer complex and heavyweight solutions,
 LiteMesh provides a lean, developer-friendly platform that can grow to meet the demands of modern microservices and 
 serverless architectures—positioning itself to become a leading solution as the API ecosystem evolves.
 
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue)
+
+Go to the root folder where the root pom.xml resides and run the below to create all jar files;
+```shell
+cd ~/IdeaProjects/LiteMeshApp/
+mvn clean package
+```
+This will create the following jar files
+
+| Application       |       Jar File       |     Type     | Essential |
+|-------------------|:--------------------:|:------------:|:---------:|
+| api-gateway       |   LiteGateway.jar    |   Gateway    |    Yes    |
+| discovery-server  | DiscoveryService.jar |  Discovery   |    Yes    |
+| inventory-service | InventoryService.jar | Microservice | Optional  |
+| mesh-service      |   MeshService.jar    |    Web UI    | Optional  |
+| product-service   |  ProductService.jar  | Microservice | Optional  |
+
+
+The api-gateway acts as the entry point for handling requests from the inventory-service and product-service. These services are simple microservices designed to demonstrate the gateway’s connectivity and functionality.
+
+The mesh-service serves as the user interface, but it's optional to run—whether you include it or not is up to you.
+
+
+## PREREQUISITES
+
+
+## HOW TO RUN
+
+You don't need to run all the services to validate the system's functionality. To test the core functionality, follow this order when starting the applications:
+Please do not forget that we run even the localhost on https:
+
+1. Start discovery-server
+```shell
+   cd ~/IdeaProjects/LiteMeshApp/discovery-server/target
+   java -jar DiscoveryService.jar
+```
+2. Start api-gateway
+```shell
+   cd ~/IdeaProjects/LiteMeshApp/api-gateway/target
+   java -Djavax.net.ssl.trustStore=../src/main/resources/gateway-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456   -jar LiteGateway.jar
+```
+3. Start inventory-service
+```shell
+   cd ~/IdeaProjects/LiteMeshApp/inventory-service/target
+   java -Djavax.net.ssl.trustStore=../src/main/resources/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456   -jar InventoryService.jar
+```
+
+
 ## HOW IT WORKS
 LiteMesh operates at the center of the API ecosystem, serving as the primary gateway for all microservices communication. 
 Instead of allowing direct interactions between services, LiteMesh channels all requests through the gateway, creating 
