@@ -8,6 +8,78 @@ serverless architectures—positioning itself to become a leading solution as th
 
 ![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue)
 
+
+## PREREQUISITES
+To get started, ensure you're in the root directory and use the docker-compose.yml file to run the necessary services locally. For production, you'll need to set up your own instances of Redis, MongoDB, PostgreSQL, and an Identity Provider (such as Keycloak).
+
+You are free to choose how to configure your Identity Provider. In this setup, we use PostgreSQL to store Keycloak's data.
+```shell
+cd ~/IdeaProjects/LiteMeshApp/
+/usr/local/bin/docker-compose -f docker-compose.yml -p litemeshapp up
+```
+Running this command will spin up the following local services:
+
+* **MongoDB:** Stores application resilience data.
+* **PostgreSQL:** Stores Keycloak data.
+* **Redis: Manages** temporary data for RedisRateLimiter resilience.
+  
+The Keycloak configuration is the only thing that requires manual setup. We've already provided the necessary JKS 
+files (self sign certificates) for local development. For production, you will need to generate your own JKS files. 
+We'll cover that in a later section.
+
+### DOCKER ENDPOINTS:
+**Keycloak**: 
+```shell
+http://localhost:8281/  (admin, admin)
+```
+**Postgress Admin UI**
+```shell
+Admin UI: http://localhost:9090/browser/ (user-name@domain-name.com, strong-password)
+```
+
+## KEYCLOAK SETUP
+Create new Realm: _LiteMesh_
+<div align="center">
+<a href="assets/keycloak/create_new_realm.png"> <img alt="Create New Realm" src="assets/keycloak/create_new_realm.png"></a>
+</div>
+
+
+Create a New Client: _lite-mesh-gateway-client_
+<div align="center">
+<a href="assets/keycloak/create_new_client_settings_1.png"> <img alt="Create New Client" src="assets/keycloak/create_new_client_settings_1.png"></a>
+<a href="assets/keycloak/create_new_client_settings_2.png"> <img alt="Create New Client" src="assets/keycloak/create_new_client_settings_2.png"></a>
+<a href="assets/keycloak/create_new_client_settings_3.png"> <img alt="Create New Client" src="assets/keycloak/create_new_client_settings_3.png"></a>
+</div>
+
+Create Client Role: _gateway_admin_
+<div align="center">
+<a href="assets/keycloak/create_new_client_role.png"> <img alt="Create New Client Role" src="assets/keycloak/create_new_client_role.png"></a>
+</div>
+
+Create Realm Role: _gateway_admin_realm_
+<div align="center">
+<a href="assets/keycloak/create_new_realm_role.png"> <img alt="Create New Realm Role" src="assets/keycloak/create_new_realm_role.png"></a>
+</div>
+
+Assign Service Account Roles: _gateway-admin_ and _gateway-admin-realm_
+(Make sure to "Filter by client" role and then "Filter by realm roles" to select the respective roles)
+<div align="center">
+<a href="assets/keycloak/assign_service_account_roles.png"> <img alt="Assign Service Account Role" src="assets/keycloak/assign_service_account_roles.png"></a>
+</div>
+
+Create new Client Scope: _gateway.read_
+<div align="center">
+<a href="assets/keycloak/create_client_scope.png"> <img alt="Create Client Scope" src="assets/keycloak/create_client_scope.png"></a>
+</div>
+
+Assign scope roles for gateway.read; _gateway-admin_ and _gateway-admin-realm_
+(Make sure to "Filter by client" role and then "Filter by realm roles" to select the respective roles)
+<div align="center">
+<a href="assets/keycloak/assign_scope_roles.png"> <img alt="Assign Scope Roles" src="assets/keycloak/assign_scope_roles.png"></a>
+</div>
+
+
+## CREATE THE JAR FILES
 Go to the root folder where the root pom.xml resides and run the below to create all jar files;
 ```shell
 cd ~/IdeaProjects/LiteMeshApp/
@@ -29,7 +101,6 @@ The api-gateway acts as the entry point for handling requests from the inventory
 The mesh-service serves as the user interface, but it's optional to run—whether you include it or not is up to you.
 
 
-## PREREQUISITES
 
 
 ## HOW TO RUN

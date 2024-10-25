@@ -32,7 +32,7 @@ services:
   # keycloak
   keycloak:
     image: quay.io/keycloak/keycloak:latest
-    container_name: keycloak_web
+    container_name: keycloak_container
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
