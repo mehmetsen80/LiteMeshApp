@@ -2,31 +2,23 @@ package org.lite.inventory.controller;
 
 import com.netflix.appinfo.InstanceInfo;
 import com.netflix.discovery.EurekaClient;
-import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-import org.lite.inventory.exception.InventoryServiceException;
 import org.lite.inventory.model.GreetingResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
 @RequestMapping("/inventory")
 @Slf4j
 public class InventoryController {
-
-    private int requestCount = 0;
 
     @Value("${eureka.instance.instance-id}")
     private String instanceId;
@@ -37,7 +29,7 @@ public class InventoryController {
     // Only work if the discovery client is Eureka
     private final EurekaClient eurekaClient;
 
-    AtomicInteger i = new AtomicInteger(1);
+    AtomicInteger requestCount = new AtomicInteger(1);
 
     // Wiring the Eureka Client
     public InventoryController(EurekaClient eurekaClient) {
@@ -45,23 +37,16 @@ public class InventoryController {
     }
 
     @GetMapping("/greet")
-    public ResponseEntity<String> getInventory(HttpServletRequest request, @RequestParam(required = false) String triggerError) throws InterruptedException {
+    public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request) {
         log.info("Greetings from Inventory Service!");
         InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
-
-        if ("true".equals(triggerError)) {
-            TimeUnit.SECONDS.sleep(12);  // Wait for 10 seconds before responding
-            // Simulate a server error (e.g., 500 Internal Server Error)
-            throw new RuntimeException("Simulated server greet error");
-        }
-
-//        GreetingResponse response = new GreetingResponse();
-//        response.setGreeting("Hello from Inventory service !!");
-//        response.setInstanceId(instanceId);
-//        response.setPort(service.getPort());
-//        response.setUrl(request.getRequestURL().toString());
-
-        return new ResponseEntity<>(i.getAndIncrement() + "- Greetings from Inventory Service\n", HttpStatus.OK);
+        GreetingResponse response = new GreetingResponse();
+        response.setIndex(requestCount.getAndIncrement());
+        response.setGreeting("Hello from Inventory service !!");
+        response.setInstanceId(instanceId);
+        response.setPort(service.getPort());
+        response.setUrl(request.getRequestURL().toString());
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 

@@ -15,12 +15,12 @@ spring:
         registration:
           lite-mesh-gateway-client:
             client-id: lite-mesh-gateway-client
-            client-secret: 3AGSwhlLLIU6CaXa1ImtyydUEpBA7dUS
+            client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
             authorization-grant-type: client_credentials
             scope: gateway.read
-            provider: identity-provider  # Link to provider i.e. keycloak
+            provider: keycloak  # identity-provider
         provider:
-          identity-provider:
+          keycloak:
             token-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token
             authorization-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/auth
             jwk-set-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/certs
@@ -29,7 +29,7 @@ spring:
         opaquetoken:
           introspection-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token/introspect
           client-id: lite-mesh-gateway-client
-          client-secret: 3AGSwhlLLIU6CaXa1ImtyydUEpBA7dUS
+          client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
         jwt:
           issuer-uri: http://localhost:8281/realms/LiteMesh
           jwk-set-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/certs

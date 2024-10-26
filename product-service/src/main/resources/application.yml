@@ -20,6 +20,9 @@ server:
     trust-store-type: JKS
     client-auth: want
 
+gateway:
+  base-url: https://localhost:7777
+
 logging:
   file:
     name: logs/product-service.log

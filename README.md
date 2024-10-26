@@ -1,3 +1,5 @@
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue)
+
 # What is LiteMesh?
 LiteMesh is designed as a lightweight, highly adaptable API gateway that addresses the challenges of dynamic routing, 
 security, and resilience with simplicity and speed.
@@ -6,13 +8,14 @@ While other competitors offer complex and heavyweight solutions,
 LiteMesh provides a lean, developer-friendly platform that can grow to meet the demands of modern microservices and 
 serverless architectures—positioning itself to become a leading solution as the API ecosystem evolves.
 
-![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue)
 
 
 ## PREREQUISITES
 To get started, ensure you're in the root directory and use the docker-compose.yml file to run the necessary services locally. For production, you'll need to set up your own instances of Redis, MongoDB, PostgreSQL, and an Identity Provider (such as Keycloak).
 
 You are free to choose how to configure your Identity Provider. In this setup, we use PostgreSQL to store Keycloak's data.
+
+Now run the docker-compose.yml file in the root folder:
 ```shell
 cd ~/IdeaProjects/LiteMeshApp/
 /usr/local/bin/docker-compose -f docker-compose.yml -p litemeshapp up
@@ -21,7 +24,7 @@ Running this command will spin up the following local services:
 
 * **MongoDB:** Stores application resilience data.
 * **PostgreSQL:** Stores Keycloak data.
-* **Redis: Manages** temporary data for RedisRateLimiter resilience.
+* **Redis:** Manages temporary data for RedisRateLimiter resilience.
   
 The Keycloak configuration is the only thing that requires manual setup. We've already provided the necessary JKS 
 files (self sign certificates) for local development. For production, you will need to generate your own JKS files. 
@@ -78,9 +81,39 @@ Assign scope roles for gateway.read; _gateway-admin_ and _gateway-admin-realm_
 <a href="assets/keycloak/assign_scope_roles.png"> <img alt="Assign Scope Roles" src="assets/keycloak/assign_scope_roles.png"></a>
 </div>
 
+Finally, add client scope "gateway.read" to the client "lite-mesh-gateway-client" as Default
+<div align="center">
+<a href="assets/keycloak/add_client_scope_to_the_client.png"> <img alt="Assign Scope Roles" src="assets/keycloak/add_client_scope_to_the_client.png"></a>
+</div>
+
+Don't forget to copy-paste the Client Secret from Credentials to your Postman or Application
+<div align="center">
+<a href="assets/keycloak/client_secret.png"> <img alt="Assign Scope Roles" src="assets/keycloak/client_secret.png"></a>
+</div>
+
+
+Don't forget to update the client secret inside api-gateway application.yml file:
+(2 places)
+```shell
+client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
+```
+
+## ACCESS TOKEN
+Let's generate the token in Postman (client secret varies in your own keycloak)
+
+- POST: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token
+- grant_type: client_credentials
+- client_id: lite-mesh-gateway-client
+- client_secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
+- scope: gateway.read
+
+<div align="center">
+<a href="assets/keycloak/access_token.png"> <img alt="Assign Scope Roles" src="assets/keycloak/access_token.png"></a>
+</div>
+
 
 ## CREATE THE JAR FILES
-Go to the root folder where the root pom.xml resides and run the below to create all jar files;
+Keep in the root folder where the root pom.xml resides and run the below to create all jar files;
 ```shell
 cd ~/IdeaProjects/LiteMeshApp/
 mvn clean package
@@ -101,29 +134,329 @@ The api-gateway acts as the entry point for handling requests from the inventory
 The mesh-service serves as the user interface, but it's optional to run—whether you include it or not is up to you.
 
 
-
-
 ## HOW TO RUN
 
 You don't need to run all the services to validate the system's functionality. To test the core functionality, follow this order when starting the applications:
 Please do not forget that we run even the localhost on https:
 
-1. Start discovery-server
+1. Start Eureka discovery-server
 ```shell
    cd ~/IdeaProjects/LiteMeshApp/discovery-server/target
    java -jar DiscoveryService.jar
 ```
+Check the Eureka discovery-server end point: https://localhost:8761/
+<div align="center">
+<a href="assets/discovery_server.png"> <img alt="Discovery Server" src="assets/discovery_server.png"></a>
+</div>
+
+
 2. Start api-gateway
 ```shell
    cd ~/IdeaProjects/LiteMeshApp/api-gateway/target
-   java -Djavax.net.ssl.trustStore=../src/main/resources/gateway-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456   -jar LiteGateway.jar
+   java -Djavax.net.ssl.keyStore=../src/main/resources/gateway-keystore.jks -Djavax.net.ssl.keyStorePassword=123456 -Djavax.net.ssl.trustStore=../src/main/resources/gateway-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar LiteGateway.jar
 ```
 3. Start inventory-service
 ```shell
    cd ~/IdeaProjects/LiteMeshApp/inventory-service/target
-   java -Djavax.net.ssl.trustStore=../src/main/resources/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456   -jar InventoryService.jar
+   java -Djavax.net.ssl.keyStore=../src/main/resources/client-keystore.jks  -Djavax.net.ssl.keyStorePassword=123456 -Djavax.net.ssl.trustStore=../src/main/resources/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar InventoryService.jar
 ```
 
+Now check the Eureka again, both api-gateway and inventory-service should be registered:
+<div align="center">
+<a href="assets/eureka_server.png"> <img alt="Eureka Server" src="assets/eureka_server.png"></a>
+</div>
+
+
+3. Start product-service
+```shell
+   cd ~/IdeaProjects/LiteMeshApp/product-service/target
+   java -Djavax.net.ssl.keyStore=../src/main/resources/client-keystore.jks  -Djavax.net.ssl.keyStorePassword=123456 -Djavax.net.ssl.trustStore=../src/main/resources/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar ProductService.jar
+```
+
+Check Eureka again, you should see 3 registered services; api-gateway, inventory-service and product-service
+<div align="center">
+<a href="assets/eureka_server_all.png"> <img alt="Eureka Server All Services" src="assets/eureka_server_all.png"></a>
+</div>
+
+## LET'S RUN IT ON POSTMAN
+
+Let's refresh the routes:
+- GET: https://localhost:7777/routes/refresh/routes
+<div align="center">
+<a href="assets/postman/refresh_routes.png"> <img alt="Refresh Routes" src="assets/postman/refresh_routes.png"></a>
+</div>
+
+
+
+We need to first post the inventory-service and product-service document data to the MongoDB
+
+#### Add Inventory Service Data
+- POST: https://localhost:7777/routes
+- inventory-service Body Json:
+```
+{
+  "id": "1",
+  "routeIdentifier": "inventory-service",
+  "uri": "lb://inventory-service",
+  "method": "",
+  "path": "/inventory/**",
+  "filters": [
+    {
+      "name": "RedisRateLimiter",
+      "args": {
+        "replenishRate": "10",
+        "burstCapacity": "20",
+        "requestedTokens": "1"
+      }
+    },
+    {
+      "name": "TimeLimiter",
+      "args": {
+        "timeoutDuration": "30",
+        "cancelRunningFuture": "true"
+      }
+    },
+    {
+      "name": "CircuitBreaker",
+      "args": {
+        "name": "inventoryCircuitBreaker",
+        "fallbackUri": "/fallback/inventory",
+        "slidingWindowSize": "2",
+        "failureRateThreshold": "10",
+        "waitDurationInOpenState": "PT10S",
+        "permittedNumberOfCallsInHalfOpenState": "1",
+        "recordFailurePredicate": "HttpResponsePredicate",
+        "automaticTransitionFromOpenToHalfOpenEnabled": "true"
+      }
+    },
+    {
+      "name": "Retry",
+      "args": {
+        "maxAttempts": "3",
+        "waitDuration": "PT2S",
+        "retryExceptions": "java.io.IOException, java.net.SocketTimeoutException, java.lang.RuntimeException"
+      }
+    }
+  ]
+}
+```
+
+<div align="center">
+<a href="assets/postman/post_inventory_service.png"> <img alt="Post Inventory Service" src="assets/postman/post_inventory_service.png"></a>
+</div>
+
+#### Add Product Service Data
+
+- POST: https://localhost:7777/routes
+- product-service Body Json
+```
+{
+  "id": "2",
+  "routeIdentifier": "product-service",
+  "uri": "lb://product-service",
+  "method": "",
+  "path": "/product/**",
+  "filters": [
+    {
+      "name": "RedisRateLimiter",
+      "args": {
+        "replenishRate": "10",
+        "burstCapacity": "20",
+        "requestedTokens": "1"
+      }
+    },
+    {
+      "name": "TimeLimiter",
+      "args": {
+        "timeoutDuration": "30",
+        "cancelRunningFuture": "true"
+      }
+    },
+    {
+      "name": "CircuitBreaker",
+      "args": {
+        "name": "productCircuitBreaker",
+        "fallbackUri": "/fallback/product",
+        "slidingWindowSize": "2",
+        "failureRateThreshold": "10",
+        "waitDurationInOpenState": "PT210S",
+        "permittedNumberOfCallsInHalfOpenState": "3",
+        "recordFailurePredicate": "HttpResponsePredicate",
+        "automaticTransitionFromOpenToHalfOpenEnabled": "true"
+      }
+    },
+    {
+      "name": "Retry",
+      "args": {
+        "maxAttempts": "3",
+        "waitDuration": "PT2S",
+        "retryExceptions": "java.io.IOException, java.net.SocketTimeoutException, java.lang.RuntimeException"
+      }
+    }
+  ]
+}
+
+```
+<div align="center">
+<a href="assets/postman/post_product_service.png"> <img alt="Post Product Service" src="assets/postman/post_product_service.png"></a>
+</div>
+
+Let's check the inserted inventory-service and product-service in the MongoDB Compass. (You can view through any MongoDB tool)
+<div align="center">
+<a href="assets/mongodb_compass.png"> <img alt="Check services" src="assets/mongodb_compass.png"></a>
+</div>
+
+Let's refresh the routes again:
+- GET: https://localhost:7777/routes/refresh/routes
+
+
+### VALIDATE GATEWAY
+It's expected that once inventory-service is called, it should run through the gateway. 
+
+- GET:  https://localhost:7777/inventory/greet
+
+InventoryController.java
+```java
+@RestController
+@RequestMapping("/inventory")
+@Slf4j
+public class InventoryController {
+
+    @Value("${eureka.instance.instance-id}")
+    private String instanceId;
+
+    @Value("${spring.application.name}")
+    private String appName;
+
+    // Only work if the discovery client is Eureka
+    private final EurekaClient eurekaClient;
+
+    AtomicInteger requestCount = new AtomicInteger(1);
+
+    // Wiring the Eureka Client
+    public InventoryController(EurekaClient eurekaClient) {
+        this.eurekaClient = eurekaClient;
+    }
+
+    @GetMapping("/greet")
+    public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request) {
+        log.info("Greetings from Inventory Service!");
+        InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
+        GreetingResponse response = new GreetingResponse();
+        response.setIndex(requestCount.getAndIncrement());
+        response.setGreeting("Hello from Inventory service !!");
+        response.setInstanceId(instanceId);
+        response.setPort(service.getPort());
+        response.setUrl(request.getRequestURL().toString());
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+    
+}
+```
+
+Remember port 7777 is the gateway, so as you see the inventory is called through the gateway
+<div align="center">
+<a href="assets/postman/inventory_greet.png"> <img alt="inventory-service greet" src="assets/postman/inventory_greet.png"></a>
+</div>
+
+
+
+Same for the product-service, it runs through the gateway
+- GET: https://localhost:7777/product/greet
+
+ProductController.java
+```java
+package org.lite.product.controller;
+
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClient;
+import jakarta.servlet.http.HttpServletRequest;
+import org.lite.product.model.GreetingResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+@RestController
+@RequestMapping("/product")
+public class ProductController {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductController.class);
+
+    @Value("${eureka.instance.instance-id}")
+    private String instanceId;
+
+    @Value("${spring.application.name}")
+    private String appName;
+
+    @Value("${gateway.base-url}")
+    private String gatewayBaseUrl; // Inject gateway base URL
+
+    // Only work if the discovery client is Eureka
+    private final EurekaClient eurekaClient;
+    private final RestTemplate restTemplate;
+
+    AtomicInteger requestCount = new AtomicInteger(1);
+
+    // Wiring the Eureka Client
+    @Autowired
+    public ProductController(EurekaClient eurekaClient, RestTemplate restTemplate) {
+        this.eurekaClient = eurekaClient;
+        this.restTemplate = restTemplate;
+    }
+
+    @GetMapping("/greet")
+    public ResponseEntity<GreetingResponse> getProduct(HttpServletRequest request) {
+        log.info("Greetings from Product Service!");
+        InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
+        GreetingResponse response = new GreetingResponse();
+        response.setIndex(requestCount.getAndIncrement());
+        response.setGreeting("Hello from Product service !!");
+        response.setInstanceId(instanceId);
+        response.setPort(service.getPort());
+        response.setUrl(request.getRequestURL().toString());
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // Method to call Inventory Service from Product Service
+    @GetMapping("/callInventory")
+    public ResponseEntity<GreetingResponse> callInventoryService(){
+        String url = gatewayBaseUrl + "/inventory/greet";  // Build the full URL dynamically as Inventory endpoint URL
+        try {
+            GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
+            log.info("Response from Inventory Service: {}", response);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error calling Inventory Service", e);
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+}
+
+```
+
+<div align="center">
+<a href="assets/postman/product_greet.png"> <img alt="product-service greet" src="assets/postman/product_greet.png"></a>
+</div>
+
+
+Let's call inventory-service greet end point from the product-service
+<div align="center">
+<a href="assets/postman/call_inventory_from_product_service.png"> <img alt="call inventory from product service" src="assets/postman/call_inventory_from_product_service.png"></a>
+</div>
+
+
+## TEST RESILIENCY
+
+- TODO: 
 
 ## HOW IT WORKS
 LiteMesh operates at the center of the API ecosystem, serving as the primary gateway for all microservices communication. 
@@ -179,7 +512,7 @@ As previously mentioned, the configuration is stored in MongoDB, allowing LiteMe
 Below is an example snippet for the inventory-service and product-service microservices, demonstrating how routing 
 and resilience configurations are stored and can be updated dynamically.
 
-```
+```json
 {
   "_id": "1",
   "routeIdentifier": "inventory-service",
@@ -226,7 +559,6 @@ and resilience configurations are stored and can be updated dynamically.
   ],
   "_class": "org.lite.gateway.entity.ApiRoute"
 }
-
 {
   "_id": "2",
   "routeIdentifier": "product-service",
@@ -273,7 +605,6 @@ and resilience configurations are stored and can be updated dynamically.
   ],
   "_class": "org.lite.gateway.entity.ApiRoute"
 }
-
 ```
 
 
