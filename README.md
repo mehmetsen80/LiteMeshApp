@@ -30,17 +30,13 @@ The Keycloak configuration is the only thing that requires manual setup. We've a
 files (self sign certificates) for local development. For production, you will need to generate your own JKS files. 
 We'll cover that in a later section.
 
-### DOCKER ENDPOINTS:
-**Keycloak**: 
+## KEYCLOAK SETUP
+
+#### END POINT: 
 ```shell
 http://localhost:8281/  (admin, admin)
 ```
-**Postgress Admin UI**
-```shell
-Admin UI: http://localhost:9090/browser/ (user-name@domain-name.com, strong-password)
-```
 
-## KEYCLOAK SETUP
 Create new Realm: _LiteMesh_
 <div align="center">
 <a href="assets/keycloak/create_new_realm.png"> <img alt="Create New Realm" src="assets/keycloak/create_new_realm.png"></a>
@@ -98,8 +94,8 @@ Don't forget to update the client secret inside api-gateway application.yml file
 client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
 ```
 
-## ACCESS TOKEN
-Let's generate the token in Postman (client secret varies in your own keycloak)
+## VALIDATE ACCESS TOKEN
+Let's generate the token in Postman (as we mentioned client secret varies in your own keycloak)
 
 - POST: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token
 - grant_type: client_credentials
@@ -181,14 +177,18 @@ Check Eureka again, you should see 3 registered services; api-gateway, inventory
 ## LET'S RUN IT ON POSTMAN
 
 Let's refresh the routes:
+That's the end point where the routes will be dynamically loaded.
+
 - GET: https://localhost:7777/routes/refresh/routes
 <div align="center">
 <a href="assets/postman/refresh_routes.png"> <img alt="Refresh Routes" src="assets/postman/refresh_routes.png"></a>
 </div>
 
 
+Every time you add a new microservice to the mongodb, you need to call the refresh end point.
 
-We need to first post the inventory-service and product-service document data to the MongoDB
+So, let's first post the inventory-service and product-service document data to the MongoDB.
+(You can add the json content to MongoDB manually as well.)
 
 #### Add Inventory Service Data
 - POST: https://localhost:7777/routes
@@ -453,6 +453,8 @@ Let's call inventory-service greet end point from the product-service
 <a href="assets/postman/call_inventory_from_product_service.png"> <img alt="call inventory from product service" src="assets/postman/call_inventory_from_product_service.png"></a>
 </div>
 
+As you see above, we called the inventory service from the product service and get the result successfully from the inventory-service.
+So the microservices call each other through the gateway!
 
 ## TEST RESILIENCY
 
