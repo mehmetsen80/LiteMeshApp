@@ -1,4 +1,4 @@
-![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Version](https://img.shields.io/badge/version-{VERSION}-brightgreen)
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Version](https://img.shields.io/badge/version-0.2-brightgreen)
  ![Java 21](https://img.shields.io/badge/Java-21-blue)
 
 # What is LiteMesh?
