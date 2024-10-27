@@ -36,7 +36,7 @@ jobs:
         # Possible values: "critical", "high", "moderate", "low"
         fail-on-severity: high
 
-  update-readme:
+  update-version:
     if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
@@ -47,33 +47,15 @@ jobs:
         id: extract_version
         run: |
           VERSION=$(grep -m1 "<version>" pom.xml | sed -E 's/.*<version>(.*)<\/version>.*/\1/')
+          echo "$VERSION" > version.txt
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Update README.md with version badge
-        run: |
-          # Make a temporary copy of README.md
-          cp README.md README_TEMP.md
-          # Replace {VERSION} with the actual version in the temp file
-          sed -i "s/{VERSION}/$VERSION/" README_TEMP.md
-          # Move the temp file to README.md for commit
-          mv README_TEMP.md README.md
-
-      - name: Commit and push changes
+      - name: Commit updated version file
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git add README.md
-          git commit -m "Update README version badge to $VERSION"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Restore README.md template
-        run: |
-          # Replace the version back with {VERSION} placeholder after commit
-          sed -i "s/$VERSION/{VERSION}/" README.md
-          git add README.md
-          git commit -m "Restore README version placeholder"
+          git add version.txt
+          git commit -m "Update version to $VERSION in version.txt"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
