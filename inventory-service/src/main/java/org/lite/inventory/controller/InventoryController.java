@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,14 +27,19 @@ public class InventoryController {
     @Value("${spring.application.name}")
     private String appName;
 
+    @Value("${gateway.base-url}")
+    private String gatewayBaseUrl; // Inject gateway base URL
+
     // Only work if the discovery client is Eureka
     private final EurekaClient eurekaClient;
+    private final RestTemplate restTemplate;
 
     AtomicInteger requestCount = new AtomicInteger(1);
 
     // Wiring the Eureka Client
-    public InventoryController(EurekaClient eurekaClient) {
+    public InventoryController(EurekaClient eurekaClient, RestTemplate restTemplate) {
         this.eurekaClient = eurekaClient;
+        this.restTemplate = restTemplate;
     }
 
     @GetMapping("/greet")
@@ -47,6 +53,20 @@ public class InventoryController {
         response.setPort(service.getPort());
         response.setUrl(request.getRequestURL().toString());
         return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    // Method to call Inventory Service from Product Service
+    @GetMapping("/callProduct")
+    public ResponseEntity<GreetingResponse> callInventoryService(){
+        String url = gatewayBaseUrl + "/product/greet";  // Build the full URL dynamically as Inventory endpoint URL
+        try {
+            GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
+            log.info("Response from Product Service: {}", response);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error calling Product Service", e);
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
 

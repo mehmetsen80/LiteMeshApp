@@ -130,16 +130,21 @@ The api-gateway acts as the entry point for handling requests from the inventory
 The mesh-service serves as the user interface, but it's optional to run—whether you include it or not is up to you.
 
 
-## HOW TO RUN
+## RUN THE JAR FILES
 
 You don't need to run all the services to validate the system's functionality. To test the core functionality, follow this order when starting the applications:
 Please do not forget that we run even the localhost on https:
 
 1. Start Eureka discovery-server
+Go to the target folder
 ```shell
    cd ~/IdeaProjects/LiteMeshApp/discovery-server/target
-   java -jar DiscoveryService.jar
 ```
+Run the jar file
+```shell
+java -jar DiscoveryService.jar
+```
+
 Check the Eureka discovery-server end point: https://localhost:8761/
 <div align="center">
 <a href="assets/discovery_server.png"> <img alt="Discovery Server" src="assets/discovery_server.png"></a>
@@ -147,14 +152,23 @@ Check the Eureka discovery-server end point: https://localhost:8761/
 
 
 2. Start api-gateway
+Go to the target folder
 ```shell
    cd ~/IdeaProjects/LiteMeshApp/api-gateway/target
-   java -Djavax.net.ssl.keyStore=../src/main/resources/gateway-keystore.jks -Djavax.net.ssl.keyStorePassword=123456 -Djavax.net.ssl.trustStore=../src/main/resources/gateway-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar LiteGateway.jar
 ```
+Run the jar file along with the truststore jks file
+```shell
+java -Djavax.net.ssl.trustStore=../../keys/gateway-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar LiteGateway.jar
+```
+
 3. Start inventory-service
+Go to the target folder
 ```shell
    cd ~/IdeaProjects/LiteMeshApp/inventory-service/target
-   java -Djavax.net.ssl.keyStore=../src/main/resources/client-keystore.jks  -Djavax.net.ssl.keyStorePassword=123456 -Djavax.net.ssl.trustStore=../src/main/resources/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar InventoryService.jar
+```
+Run the jar file along with the truststore jks file
+```shell
+java  -Djavax.net.ssl.trustStore=../../keys/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar InventoryService.jar
 ```
 
 Now check the Eureka again, both api-gateway and inventory-service should be registered:
@@ -163,11 +177,16 @@ Now check the Eureka again, both api-gateway and inventory-service should be reg
 </div>
 
 
-3. Start product-service
+4. Start product-service
+Go to the target folder
 ```shell
    cd ~/IdeaProjects/LiteMeshApp/product-service/target
-   java -Djavax.net.ssl.keyStore=../src/main/resources/client-keystore.jks  -Djavax.net.ssl.keyStorePassword=123456 -Djavax.net.ssl.trustStore=../src/main/resources/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar ProductService.jar
 ```
+Run the jar file along with the truststore jks file
+```shell
+java -Djavax.net.ssl.trustStore=../../keys/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456  -jar ProductService.jar
+```
+
 
 Check Eureka again, you should see 3 registered services; api-gateway, inventory-service and product-service
 <div align="center">
@@ -193,7 +212,7 @@ So, let's first post the inventory-service and product-service document data to 
 #### Add Inventory Service Data
 - POST: https://localhost:7777/routes
 - inventory-service Body Json:
-```
+```json
 {
   "id": "1",
   "routeIdentifier": "inventory-service",
@@ -249,7 +268,7 @@ So, let's first post the inventory-service and product-service document data to 
 
 - POST: https://localhost:7777/routes
 - product-service Body Json
-```
+```json
 {
   "id": "2",
   "routeIdentifier": "product-service",
