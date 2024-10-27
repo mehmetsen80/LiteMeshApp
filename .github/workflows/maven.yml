@@ -51,7 +51,12 @@ jobs:
 
       - name: Update README.md with version badge
         run: |
-          sed -i "s/{VERSION}/$VERSION/" README.md
+          # Make a temporary copy of README.md
+          cp README.md README_TEMP.md
+          # Replace {VERSION} with the actual version in the temp file
+          sed -i "s/{VERSION}/$VERSION/" README_TEMP.md
+          # Move the temp file to README.md for commit
+          mv README_TEMP.md README.md
 
       - name: Commit and push changes
         run: |
@@ -62,4 +67,16 @@ jobs:
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore README.md template
+        run: |
+          # Replace the version back with {VERSION} placeholder after commit
+          sed -i "s/$VERSION/{VERSION}/" README.md
+          git add README.md
+          git commit -m "Restore README version placeholder"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
 
