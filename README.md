@@ -1,5 +1,5 @@
-![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue)
-Version: **0.2**
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Version](https://img.shields.io/badge/version-{VERSION}-brightgreen)
+ ![Java 21](https://img.shields.io/badge/Java-21-blue)
 
 # What is LiteMesh?
 LiteMesh is designed as a lightweight, highly adaptable API gateway that addresses the challenges of dynamic routing, 
