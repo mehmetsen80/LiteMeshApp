@@ -19,17 +19,16 @@ environments.
 # PREREQUISITES
 
 ## ENVIRONMENTAL VARIABLES
-We will cover the ssl key files generation in another section. The keys have been already created for you to run 
-the apps locally. 
+SSL key file generation will be covered in a later section, but keys have already been provided for running the applications locally.
 
-Let's set the environment variables:
+To set the necessary environment variables, open your profile configuration:
 ```shell
 nano ~/.zshrc
 ```
 
-The below is the environment variables that holds the java, maven and ssl key store files.
-You should consider your own path when you point your jks files. The jks files are under "keys" folder. 
-It's up to you where you hold your keys.
+Below are the environment variables needed for Java, Maven, and SSL keystore paths. Be sure to adjust the paths to 
+match the location of your ``` .jks ``` files, which are stored in the "keys" folder by default. However, you can choose an 
+alternative location for your keys if preferred.
 
 ```editorconfig
 # Java and Maven
