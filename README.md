@@ -16,6 +16,17 @@ Whether used as a standalone gateway or as part of a larger infrastructure, Lite
 evolving API ecosystems, making it a practical choice for both current needs and future demands in scalable microservice 
 environments.
 
+### Service Descriptions
+
+| Service                | Description                                                                                                      |
+|------------------------|------------------------------------------------------------------------------------------------------------------|
+| **discovery-server**   | A Eureka server responsible for service discovery, enabling routing by dynamically resolving service addresses.  |
+| **api-gateway**        | The central hub of the API ecosystem, managing all request flows with dynamic routing and built-in resilience.   |
+| **inventory-service**  | A sample microservice that demonstrates API integration within the ecosystem.                                    |
+| **product-service**    | Another sample microservice with API integration, showcasing service communication.                              |
+| **mesh-service**       | A user interface that will display metrics and statistics in detail (currently under development).               |
+
+
 # PREREQUISITES
 
 ## ENVIRONMENTAL VARIABLES
