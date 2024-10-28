@@ -349,7 +349,7 @@ GATEWAY_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystor
 #### Inventory, Product and Mesh Service:
 VM Options:
 ```shell 
--Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks -Djavax.net.ssl.trustStorePassword=123456
+-Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks -Djavax.net.ssl.trustStorePassword=123456
 ```
 
 Environmental Variables (EV):
