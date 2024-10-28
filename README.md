@@ -1,6 +1,6 @@
 ![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.2-brightgreen)
 
-## License
+# LICENSE
 
 LiteMesh is distributed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. This allows for open-source use with certain conditions on modifications and distribution.
 
