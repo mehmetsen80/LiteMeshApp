@@ -264,29 +264,29 @@ If you just want to run the applications through IntelliJ then follow the below 
 #### discovery-server: (Only EV)
 Environmental Variables (EV):
 ```shell 
-EUREKA_KEY_STORE_PASSWORD=123456;EUREKA_KEY_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks 
+EUREKA_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks;EUREKA_KEY_STORE_PASSWORD=123456
 ```
 
 #### api-gateway:
 VM Options:
 ```shell 
--Djavax.net.ssl.trustStore=$GATEWAY_TRUST_STORE -Djavax.net.ssl.trustStorePassword=$GATEWAY_TRUST_STORE_PASSWORD 
+-Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks -Djavax.net.ssl.trustStorePassword=123456
 ```
 
 Environmental Variables (EV):
 ```shell 
-GATEWAY_KEY_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks;GATEWAY_KEY_STORE_PASSWORD=123456;GATEWAY_TRUST_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks;GATEWAY_TRUST_STORE_PASSWORD=123456 
+GATEWAY_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks;GATEWAY_KEY_STORE_PASSWORD=123456;GATEWAY_TRUST_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks;GATEWAY_TRUST_STORE_PASSWORD=123456
 ```
 
 #### Inventory, Product and Mesh Service:
 VM Options:
 ```shell 
--Djavax.net.ssl.trustStore=$CLIENT_TRUST_STORE -Djavax.net.ssl.trustStorePassword=$CLIENT_TRUST_STORE_PASSWORD 
+-Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks -Djavax.net.ssl.trustStorePassword=123456
 ```
 
 Environmental Variables (EV):
 ```shell 
-CLIENT_KEY_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks;CLIENT_KEY_STORE_PASSWORD=123456;CLIENT_TRUST_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks;CLIENT_TRUST_STORE_PASSWORD=123456 
+CLIENT_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks;CLIENT_KEY_STORE_PASSWORD=123456;CLIENT_TRUST_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks;CLIENT_TRUST_STORE_PASSWORD=123456
 ```
 
 
