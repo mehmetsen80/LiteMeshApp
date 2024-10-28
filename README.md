@@ -105,20 +105,23 @@ export PATH=$JAVA_HOME/bin:$PATH
 export M2_HOME="/Applications/IntelliJ IDEA CE.app/Contents/plugins/maven/lib/maven3"
 export PATH="$M2_HOME/bin:$PATH"
 
-# SSL environmental variables for Eureka Discovery Server
-export EUREKA_KEY_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks"
+# Base directory for SSL keys, please create your keys directory first and then copy paste all the keys there
+export KEY_BASE_DIR="/etc/keys"
+
+# SSL environment variables for Eureka Discovery Server
+export EUREKA_KEY_STORE="$KEY_BASE_DIR/eureka-keystore.jks"
 export EUREKA_KEY_STORE_PASSWORD="123456"
 
-# SSL environmental variables for API GatewayAPI Gateway
-export GATEWAY_KEY_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks"
+# SSL environment variables for API Gateway
+export GATEWAY_KEY_STORE="$KEY_BASE_DIR/gateway-keystore.jks"
 export GATEWAY_KEY_STORE_PASSWORD="123456"
-export GATEWAY_TRUST_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks"
+export GATEWAY_TRUST_STORE="$KEY_BASE_DIR/gateway-truststore.jks"
 export GATEWAY_TRUST_STORE_PASSWORD="123456"
 
 # SSL environment variables for client microservices
-export CLIENT_KEY_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks"
+export CLIENT_KEY_STORE="$KEY_BASE_DIR/client-keystore.jks"
 export CLIENT_KEY_STORE_PASSWORD="123456"
-export CLIENT_TRUST_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks"
+export CLIENT_TRUST_STORE="$KEY_BASE_DIR/client-truststore.jks"
 export CLIENT_TRUST_STORE_PASSWORD="123456"
 ```
 
@@ -127,17 +130,11 @@ Run the source file
 source ~/.zshrc
 ```
 
-Validate environment variables
+Validate environment variables, you should see your own "keys" path
 ```shell
 echo $EUREKA_KEY_STORE
 echo $GATEWAY_KEY_STORE
 echo $CLIENT_KEY_STORE
-```
-You should see this:
-```textmate
-/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks
-/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks
-/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks
 ```
 
 
@@ -252,37 +249,8 @@ Check Eureka again, you should see 3 registered services; api-gateway, inventory
 </div>
 
 
-## RUN THE JAR FILES FROM INTELLIJ
-If you just want to run the applications through IntelliJ then follow the below setups;
-
-#### discovery-server: (Only EV)
-Environmental Variables (EV):
-```shell 
-EUREKA_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks;EUREKA_KEY_STORE_PASSWORD=123456
-```
-
-#### api-gateway:
-VM Options:
-```shell 
--Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks -Djavax.net.ssl.trustStorePassword=123456
-```
-
-Environmental Variables (EV):
-```shell 
-GATEWAY_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks;GATEWAY_KEY_STORE_PASSWORD=123456;GATEWAY_TRUST_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks;GATEWAY_TRUST_STORE_PASSWORD=123456
-```
-
-#### Inventory, Product and Mesh Service:
-VM Options:
-```shell 
--Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks -Djavax.net.ssl.trustStorePassword=123456
-```
-
-Environmental Variables (EV):
-```shell 
-CLIENT_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks;CLIENT_KEY_STORE_PASSWORD=123456;CLIENT_TRUST_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks;CLIENT_TRUST_STORE_PASSWORD=123456
-```
-
+## INTELLIJ SETTINGS
+For detailed Keycloak setup instructions, see the [IntelliJ Settings](INTELLIJ.md).
 
 ## LET'S RUN IT ON POSTMAN
 
