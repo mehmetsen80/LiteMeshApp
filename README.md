@@ -1,13 +1,5 @@
 ![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.2-brightgreen)
 
-# LICENSE
-
-LiteMesh is distributed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. This allows for open-source use with certain conditions on modifications and distribution.
-
-For any commercial use—such as including LiteMesh in paid services or products—please contact us for a commercial license at msen@dipme.app.
-
-For full details, see the [LICENSE](./LICENSE) file.
-
 
 # What is LiteMesh
 LiteMesh is a lightweight, highly adaptable API gateway built to streamline the complexities of dynamic routing, 
@@ -23,6 +15,14 @@ robust service resilience.
 Whether used as a standalone gateway or as part of a larger infrastructure, LiteMesh is positioned to grow alongside 
 evolving API ecosystems, making it a practical choice for both current needs and future demands in scalable microservice 
 environments.
+
+# LICENSE
+
+LiteMesh is distributed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. This allows for open-source use with certain conditions on modifications and distribution.
+
+For any commercial use—such as including LiteMesh in paid services or products—please contact us for a commercial license at msen@dipme.app.
+
+For full details, see the [LICENSE](./LICENSE) file.
 
 # SERVICES
 
