@@ -2,12 +2,19 @@
 
 
 # What is LiteMesh
-LiteMesh is designed as a lightweight, highly adaptable API gateway that addresses the challenges of dynamic routing, 
-security, and resilience with simplicity and speed.
+LiteMesh is a lightweight, highly adaptable API gateway built to streamline the complexities of dynamic routing, 
+security, and resilience, all with an emphasis on simplicity and speed. Designed for developers and Site Reliability 
+Engineers (SREs), LiteMesh is a tool that teams can download, build, and deploy quickly to support microservices or 
+serverless architectures.
 
-While other competitors offer complex and heavyweight solutions, 
-LiteMesh provides a lean, developer-friendly platform that can grow to meet the demands of modern microservices and 
-serverless architectures—positioning itself to become a leading solution as the API ecosystem evolves.
+While many competing solutions are heavyweight and complex, LiteMesh focuses on a developer-friendly experience, 
+offering a lean framework that integrates seamlessly with existing workflows. By providing essential functionality 
+without the overhead, LiteMesh allows teams to efficiently manage traffic, enforce security protocols, and achieve 
+robust service resilience.
+
+Whether used as a standalone gateway or as part of a larger infrastructure, LiteMesh is positioned to grow alongside 
+evolving API ecosystems, making it a practical choice for both current needs and future demands in scalable microservice 
+environments.
 
 # PREREQUISITES
 
