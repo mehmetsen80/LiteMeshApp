@@ -4,7 +4,7 @@
 
 LiteMesh is distributed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**. This allows for open-source use with certain conditions on modifications and distribution.
 
-For any commercial use—such as including LiteMesh in paid services or products—please contact us for a commercial license at [msen@dipme.app].
+For any commercial use—such as including LiteMesh in paid services or products—please contact us for a commercial license at msen@dipme.app.
 
 For full details, see the [LICENSE](./LICENSE) file.
 
