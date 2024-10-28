@@ -162,83 +162,9 @@ The Keycloak configuration is the only thing that requires manual setup. We've a
 files (self sign certificates) for local development. For production, you will need to generate your own JKS files. 
 As mentioned before, we'll cover that in a later section.
 
+
 ## KEYCLOAK SETUP
-
-#### END POINT: 
-```shell
-http://localhost:8281/  (admin, admin)
-```
-
-Create new Realm: _LiteMesh_
-<div align="center">
-<a href="assets/keycloak/create_new_realm.png"> <img alt="Create New Realm" src="assets/keycloak/create_new_realm.png"></a>
-</div>
-
-
-Create a New Client: _lite-mesh-gateway-client_
-<div align="center">
-<a href="assets/keycloak/create_new_client_settings_1.png"> <img alt="Create New Client" src="assets/keycloak/create_new_client_settings_1.png"></a>
-<a href="assets/keycloak/create_new_client_settings_2.png"> <img alt="Create New Client" src="assets/keycloak/create_new_client_settings_2.png"></a>
-<a href="assets/keycloak/create_new_client_settings_3.png"> <img alt="Create New Client" src="assets/keycloak/create_new_client_settings_3.png"></a>
-</div>
-
-Create Client Role: _gateway_admin_
-<div align="center">
-<a href="assets/keycloak/create_new_client_role.png"> <img alt="Create New Client Role" src="assets/keycloak/create_new_client_role.png"></a>
-</div>
-
-Create Realm Role: _gateway_admin_realm_
-<div align="center">
-<a href="assets/keycloak/create_new_realm_role.png"> <img alt="Create New Realm Role" src="assets/keycloak/create_new_realm_role.png"></a>
-</div>
-
-Assign Service Account Roles: _gateway-admin_ and _gateway-admin-realm_
-(Make sure to "Filter by client" role and then "Filter by realm roles" to select the respective roles)
-<div align="center">
-<a href="assets/keycloak/assign_service_account_roles.png"> <img alt="Assign Service Account Role" src="assets/keycloak/assign_service_account_roles.png"></a>
-</div>
-
-Create new Client Scope: _gateway.read_
-<div align="center">
-<a href="assets/keycloak/create_client_scope.png"> <img alt="Create Client Scope" src="assets/keycloak/create_client_scope.png"></a>
-</div>
-
-Assign scope roles for gateway.read; _gateway-admin_ and _gateway-admin-realm_
-(Make sure to "Filter by client" role and then "Filter by realm roles" to select the respective roles)
-<div align="center">
-<a href="assets/keycloak/assign_scope_roles.png"> <img alt="Assign Scope Roles" src="assets/keycloak/assign_scope_roles.png"></a>
-</div>
-
-Finally, add client scope "gateway.read" to the client "lite-mesh-gateway-client" as Default
-<div align="center">
-<a href="assets/keycloak/add_client_scope_to_the_client.png"> <img alt="Assign Scope Roles" src="assets/keycloak/add_client_scope_to_the_client.png"></a>
-</div>
-
-Don't forget to copy-paste the Client Secret from Credentials to your Postman or Application
-<div align="center">
-<a href="assets/keycloak/client_secret.png"> <img alt="Assign Scope Roles" src="assets/keycloak/client_secret.png"></a>
-</div>
-
-
-Don't forget to update the client secret inside api-gateway application.yml file:
-(2 places)
-```shell
-client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
-```
-
-## VALIDATE ACCESS TOKEN
-Let's generate the token in Postman (as we mentioned client secret varies in your own keycloak)
-
-- POST: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token
-- grant_type: client_credentials
-- client_id: lite-mesh-gateway-client
-- client_secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
-- scope: gateway.read
-
-<div align="center">
-<a href="assets/keycloak/access_token.png"> <img alt="Assign Scope Roles" src="assets/keycloak/access_token.png"></a>
-</div>
-
+For detailed Keycloak setup instructions, see the [Keycloak Setup](KEYCLOAK.md).
 
 ## CREATE THE JAR FILES
 Keep in the root folder where the root pom.xml resides and run the below to create all jar files;
