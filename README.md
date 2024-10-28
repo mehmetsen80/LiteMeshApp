@@ -9,9 +9,66 @@ While other competitors offer complex and heavyweight solutions,
 LiteMesh provides a lean, developer-friendly platform that can grow to meet the demands of modern microservices and 
 serverless architectures—positioning itself to become a leading solution as the API ecosystem evolves.
 
+# PREREQUISITES
+
+## ENVIRONMENTAL VARIABLES
+We will cover the ssl key files generation in another section. The keys have been already created for you to run 
+the apps locally. 
+
+Let's set the environment variables:
+```shell
+nano ~/.zshrc
+```
+
+The below is the environment variables that holds the java, maven and ssl key store files.
+You should consider your own path when you point your jks files. The jks files are under "keys" folder. 
+It's up to you where you hold your keys.
+
+```editorconfig
+# Java and Maven
+export JAVA_HOME=$(/usr/libexec/java_home -v 21)
+export PATH=$JAVA_HOME/bin:$PATH
+export M2_HOME="/Applications/IntelliJ IDEA CE.app/Contents/plugins/maven/lib/maven3"
+export PATH="$M2_HOME/bin:$PATH"
+
+# SSL environmental variables for Eureka Discovery Server
+export EUREKA_KEY_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks"
+export EUREKA_KEY_STORE_PASSWORD="123456"
+
+# SSL environmental variables for API GatewayAPI Gateway
+export GATEWAY_KEY_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks"
+export GATEWAY_KEY_STORE_PASSWORD="123456"
+export GATEWAY_TRUST_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks"
+export GATEWAY_TRUST_STORE_PASSWORD="123456"
+
+# SSL environment variables for client microservices
+export CLIENT_KEY_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks"
+export CLIENT_KEY_STORE_PASSWORD="123456"
+export CLIENT_TRUST_STORE="/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks"
+export CLIENT_TRUST_STORE_PASSWORD="123456"
+```
+
+Run the source file
+```shell
+source ~/.zshrc
+```
+
+Validate environment variables
+```shell
+echo $EUREKA_KEY_STORE
+echo $GATEWAY_KEY_STORE
+echo $CLIENT_KEY_STORE
+```
+You should see this:
+```textmate
+/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks
+/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks
+/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks
+```
 
 
-## PREREQUISITES
+
+## DOCKER SETUP
 To get started, ensure you're in the root directory and use the docker-compose.yml file to run the necessary services locally. For production, you'll need to set up your own instances of Redis, MongoDB, PostgreSQL, and an Identity Provider (such as Keycloak).
 
 You are free to choose how to configure your Identity Provider. In this setup, we use PostgreSQL to store Keycloak's data.
@@ -29,7 +86,7 @@ Running this command will spin up the following local services:
   
 The Keycloak configuration is the only thing that requires manual setup. We've already provided the necessary JKS 
 files (self sign certificates) for local development. For production, you will need to generate your own JKS files. 
-We'll cover that in a later section.
+As mentioned before, we'll cover that in a later section.
 
 ## KEYCLOAK SETUP
 
@@ -131,7 +188,7 @@ The api-gateway acts as the entry point for handling requests from the inventory
 The mesh-service serves as the user interface, but it's optional to run—whether you include it or not is up to you.
 
 
-## RUN THE JAR FILES
+## RUN THE JAR FILES FROM TERMINAL
 
 You don't need to run all the services to validate the system's functionality. To test the core functionality, follow this order when starting the applications:
 Please do not forget that we run even the localhost on https:
@@ -159,7 +216,7 @@ Go to the target folder
 ```
 Run the jar file along with the truststore jks file
 ```shell
-java -Djavax.net.ssl.trustStore=../../keys/gateway-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar LiteGateway.jar
+java -Djavax.net.ssl.trustStore="$GATEWAY_TRUST_STORE"  -Djavax.net.ssl.trustStorePassword="$GATEWAY_TRUST_STORE_PASSWORD" -jar LiteGateway.jar
 ```
 
 3. Start inventory-service
@@ -169,7 +226,7 @@ Go to the target folder
 ```
 Run the jar file along with the truststore jks file
 ```shell
-java  -Djavax.net.ssl.trustStore=../../keys/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456 -jar InventoryService.jar
+java  -Djavax.net.ssl.trustStore="$CLIENT_TRUST_STORE"  -Djavax.net.ssl.trustStorePassword="$CLIENT_TRUST_STORE_PASSWORD" -jar InventoryService.jar
 ```
 
 Now check the Eureka again, both api-gateway and inventory-service should be registered:
@@ -185,7 +242,7 @@ Go to the target folder
 ```
 Run the jar file along with the truststore jks file
 ```shell
-java -Djavax.net.ssl.trustStore=../../keys/client-truststore.jks  -Djavax.net.ssl.trustStorePassword=123456  -jar ProductService.jar
+java  -Djavax.net.ssl.trustStore="$CLIENT_TRUST_STORE"  -Djavax.net.ssl.trustStorePassword="$CLIENT_TRUST_STORE_PASSWORD"  -jar ProductService.jar
 ```
 
 
@@ -193,6 +250,39 @@ Check Eureka again, you should see 3 registered services; api-gateway, inventory
 <div align="center">
 <a href="assets/eureka_server_all.png"> <img alt="Eureka Server All Services" src="assets/eureka_server_all.png"></a>
 </div>
+
+
+## RUN THE JAR FILES FROM INTELLIJ
+If you just want to run the applications through IntelliJ then follow the below setups;
+
+#### discovery-server: (Only EV)
+Environmental Variables (EV):
+```shell 
+EUREKA_KEY_STORE_PASSWORD=123456;EUREKA_KEY_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/eureka-keystore.jks 
+```
+
+#### api-gateway:
+VM Options:
+```shell 
+-Djavax.net.ssl.trustStore=$GATEWAY_TRUST_STORE -Djavax.net.ssl.trustStorePassword=$GATEWAY_TRUST_STORE_PASSWORD 
+```
+
+Environmental Variables (EV):
+```shell 
+GATEWAY_KEY_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks;GATEWAY_KEY_STORE_PASSWORD=123456;GATEWAY_TRUST_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks;GATEWAY_TRUST_STORE_PASSWORD=123456 
+```
+
+#### Inventory, Product and Mesh Service:
+VM Options:
+```shell 
+-Djavax.net.ssl.trustStore=$CLIENT_TRUST_STORE -Djavax.net.ssl.trustStorePassword=$CLIENT_TRUST_STORE_PASSWORD 
+```
+
+Environmental Variables (EV):
+```shell 
+CLIENT_KEY_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks;CLIENT_KEY_STORE_PASSWORD=123456;CLIENT_TRUST_STORE=file:/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks;CLIENT_TRUST_STORE_PASSWORD=123456 
+```
+
 
 ## LET'S RUN IT ON POSTMAN
 
@@ -370,6 +460,20 @@ public class InventoryController {
         response.setUrl(request.getRequestURL().toString());
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
+
+    // Method to call Inventory Service from Product Service
+    @GetMapping("/callProduct")
+    public ResponseEntity<GreetingResponse> callInventoryService(){
+        String url = gatewayBaseUrl + "/product/greet";  // Build the full URL dynamically as Inventory endpoint URL
+        try {
+            GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
+            log.info("Response from Product Service: {}", response);
+            return new ResponseEntity<>(response, HttpStatus.OK);
+        } catch (Exception e) {
+            log.error("Error calling Product Service", e);
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
     
 }
 ```
@@ -377,6 +481,12 @@ public class InventoryController {
 Remember port 7777 is the gateway, so as you see the inventory is called through the gateway
 <div align="center">
 <a href="assets/postman/inventory_greet.png"> <img alt="inventory-service greet" src="assets/postman/inventory_greet.png"></a>
+</div>
+
+
+Let's call product-service greet end point from the inventory-service
+<div align="center">
+<a href="assets/postman/call_product_from_inventory_service.png"> <img alt="call product from inventory service" src="assets/postman/call_product_from_inventory_service.png"></a>
 </div>
 
 

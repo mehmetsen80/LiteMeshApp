@@ -110,12 +110,12 @@ server:
   port: 7777
   ssl:
     enabled: true
-    key-store: file:../../keys/gateway-keystore.jks
-    key-store-password: 123456
+    key-store: ${GATEWAY_KEY_STORE}
+    key-store-password: ${GATEWAY_KEY_STORE_PASSWORD}
     key-alias: gateway-app
     key-store-type: PKCS12
-    trust-store: file:../../keys/gateway-truststore.jks
-    trust-store-password: 123456
+    trust-store: ${GATEWAY_TRUST_STORE}
+    trust-store-password: ${GATEWAY_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
 

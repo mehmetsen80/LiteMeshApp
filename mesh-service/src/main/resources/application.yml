@@ -6,12 +6,12 @@ server:
   port: 0
   ssl:
     enabled: true
-    key-store: file:../../keys/client-keystore.jks
-    key-store-password: 123456
+    key-store: ${CLIENT_KEY_STORE}
+    key-store-password: ${CLIENT_KEY_STORE_PASSWORD}
     key-alias: client-app
     key-store-type: PKCS12
-    trust-store: file:../../keys/client-truststore.jks
-    trust-store-password: 123456
+    trust-store: ${CLIENT_TRUST_STORE}
+    trust-store-password: ${CLIENT_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
 
