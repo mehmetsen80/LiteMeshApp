@@ -34,3 +34,7 @@ build/
 .DS_Store
 /.idea/
 /logs/
+/.kube/mongodb/data/**
+/.kube/postgres/data/**
+/.kube/pgadmin/data/**
+/.kube/redis/data/**

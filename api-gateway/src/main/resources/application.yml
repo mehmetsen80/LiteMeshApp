@@ -5,7 +5,7 @@ spring:
     allow-bean-definition-overriding: true
     allow-circular-references: true
   redis:
-    host: localhost
+    host: ${REDIS_GATEWAY_URL:localhost}
     port: 6379
   session:
     store-type: none #
@@ -15,32 +15,34 @@ spring:
         registration:
           lite-mesh-gateway-client:
             client-id: lite-mesh-gateway-client
-            client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
+            client-secret: isqNmjKiNlYpL1bNCY2Gs68k8Q3wj8wz
             authorization-grant-type: client_credentials
             scope: gateway.read
             provider: keycloak  # identity-provider
         provider:
           keycloak:
-            token-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token
-            authorization-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/auth
-            jwk-set-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/certs
-            issuer-uri: http://localhost:8281/realms/LiteMesh
+            token-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/token
+            authorization-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/auth
+            jwk-set-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/certs
+            issuer-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh
       resourceserver:
         opaquetoken:
-          introspection-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/token/introspect
+          introspection-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/token/introspect
           client-id: lite-mesh-gateway-client
-          client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
+          client-secret: isqNmjKiNlYpL1bNCY2Gs68k8Q3wj8wz
         jwt:
-          issuer-uri: http://localhost:8281/realms/LiteMesh
-          jwk-set-uri: http://localhost:8281/realms/LiteMesh/protocol/openid-connect/certs
+          issuer-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh
+          jwk-set-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/certs
   data:
     mongodb:
-      uri:  mongodb://root:mongopw@localhost
+      uri:  mongodb://root:mongopw@${MONGO_GATEWAY_URL:localhost}
       database: LiteMesh
   cloud:
     circuitbreaker:
       resilience4j:
         enabled: true #enable the Resilience4J auto-configuration
+    loadbalancer:
+      enabled: true # Enable Spring Cloud LoadBalancer for service-to-service discovery
     gateway:
       httpserver:
         wiretap: true
@@ -55,7 +57,7 @@ spring:
         # so, our gateway port is 7777, we access the discovery server through http://localhost:7777/eureka/web
         # the filter is to reroute the request from http://localhost:7777/eureka/web to http://localhost:8761
       - id: discovery-server
-        uri: http://localhost:8761
+        uri: https://${EUREKA_GATEWAY_URL:localhost}:8761
         predicates:
         - Path=/eureka/web
         filters:
@@ -63,7 +65,7 @@ spring:
 
         ## Discovery server static resources
       - id: discovery-server-static
-        uri: http://localhost:8761
+        uri: https://${EUREKA_GATEWAY_URL:localhost}:8761
         predicates:
         - Path=/eureka/**
 
@@ -72,18 +74,6 @@ spring:
         uri: lb://mesh-service
         predicates:
         - Path=/mesh/**
-
-        ## Product Service (Just to Test) (This is being loaded dynamically from mongodb)
-#      - id: product-service
-#        uri: lb://product-service
-#        predicates:
-#        - Path=/product/**
-
-#        ## Inventory Service (Just to Test) (This is being loaded dynamically from mongodb)
-#      - id: inventory-service
-#        uri: lb://inventory-service
-#        predicates:
-#        - Path=/inventory/**
 
 
 management:
@@ -95,7 +85,7 @@ management:
 eureka:
   client:
     service-url:
-      defaultZone: https://localhost:8761/eureka
+      defaultZone: https://${EUREKA_GATEWAY_URL:localhost}:8761/eureka
     enabled: true
     register-with-eureka: true
     fetch-registry: true
@@ -107,7 +97,7 @@ eureka:
     secure-port: ${server.port}
 
 server:
-  port: 7777
+  port: ${GATEWAY_API_PORT:7777}
   ssl:
     enabled: true
     key-store: ${GATEWAY_KEY_STORE}

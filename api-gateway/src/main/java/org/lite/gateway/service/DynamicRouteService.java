@@ -1,7 +1,8 @@
 package org.lite.gateway.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.stereotype.Service;
@@ -29,7 +30,7 @@ public class DynamicRouteService {
     private final RedisTemplate<String, String> redisTemplate;
     private final ChannelTopic routesTopic;
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void initialize() {
         // Load whitelisted paths from Redis
         Set<String> initialRoutes = redisTemplate.opsForSet().members("whitelistedPaths");

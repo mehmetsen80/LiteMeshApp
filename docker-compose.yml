@@ -1,24 +1,63 @@
 version: '3.8'
 
+networks:
+  lite-mesh-network:
+    driver: bridge
+
 services:
 
+  # Discovery Server (Eureka)
+  discovery-service:
+    build:
+      context: .
+      dockerfile: .kube/eureka/Dockerfile
+#    image: discovery-service:latest
+    container_name: discovery_container
+    environment:
+      EUREKA_KEY_STORE: eureka-keystore.jks
+      EUREKA_KEY_STORE_PASSWORD: 123456
+      EUREKA_GATEWAY_URL: discovery-service
+    ports:
+      - "8761:8761"
+#      - "443:443"
+#    healthcheck:
+#      test: [ "CMD-SHELL", "curl -f https://discovery-service:8761" ]
+#      interval: 10s
+#      timeout: 10s
+#      retries: 10
+    networks:
+      - lite-mesh-network
+
   # postgres
-  postgres:
-    image: postgres
+  postgres-service:
+    build:
+      context: .
+      dockerfile: ./.kube/postgres/Dockerfile
     container_name: postgres_db_container
+    command: postgres -c "max_connections=200"
     restart: always
     ports:
       - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./.kube/postgres/data/:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: keycloak
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
+    networks:
+      - lite-mesh-network
 
-  # postgress admin
-  pgadmin:
-    image: dpage/pgadmin4
+
+  # postgres admin
+  pgadmin-service:
+    build:
+      context: .
+      dockerfile: ./.kube/pgadmin/Dockerfile
     container_name: pgadmin4_container
     restart: always
     ports:
@@ -27,56 +66,137 @@ services:
       PGADMIN_DEFAULT_EMAIL: user-name@domain-name.com
       PGADMIN_DEFAULT_PASSWORD: strong-password
     volumes:
-      - pgadmin-data:/var/lib/pgadmin
+      - ./.kube/pgadmin/data/:/var/lib/pgadmin
+    networks:
+      - lite-mesh-network
 
   # keycloak
-  keycloak:
-    image: quay.io/keycloak/keycloak:latest
+  keycloak-service:
+    build:
+      context: .
+      dockerfile: ./.kube/keycloak/Dockerfile
     container_name: keycloak_container
     environment:
       KC_DB: postgres
-      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_URL: jdbc:postgresql://postgres-service:5432/keycloak
       KC_DB_USERNAME: keycloak
       KC_DB_PASSWORD: password
 
-      KC_HOSTNAME: localhost
+      KC_HTTP_ENABLED: true
+      KC_HTTP_PORT: 8080
+#      KC_HOSTNAME_ADMIN: http://localhost:8281
       KC_HOSTNAME_STRICT: false
-      KC_HOSTNAME_STRICT_HTTPS: false
 
       KC_LOG_LEVEL: info
       KC_METRICS_ENABLED: true
       KC_HEALTH_ENABLED: true
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
+
+      #used in api-gateway application.yml
+      KEYCLOAK_GATEWAY_URL: keycloak-service
+      KEYCLOAK_GATEWAY_PORT: 8080
     command: start-dev
     depends_on:
-      - postgres
+      postgres-service:
+        condition: service_healthy
+#    healthcheck:
+#      test: [ "CMD", "curl", "--head","fsS", "http://keycloak-service:8080/health/ready" ]
+#      interval: 5s
+#      timeout: 2s
+#      retries: 15
     ports:
-      - 8281:8080
+      - "8281:8080"
+    networks:
+      - lite-mesh-network
 
   # mongodb
-  mongodb:
+  mongodb-service:
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
     container_name: mongodb_container
-    image: mongo:latest
+#    healthcheck:
+#      test: echo 'db.runCommand({serverStatus:1}).ok' | mongosh admin -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --quiet | grep 1
+#      interval: 10s
+#      timeout: 10s
+#      retries: 3
+#      start_period: 20s
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_GATEWAY_URL: mongodb-service
     ports:
-      - 27017:27017
+      - "27017:27017"
     volumes:
-      - mongodb-data:/var/lib/mongo/data
+      - ./.kube/mongodb/data/:/data/db
+    networks:
+      - lite-mesh-network
 
   # redis
   redis-service:
+    build:
+      context: .
+      dockerfile: ./.kube/redis/Dockerfile
     container_name: redis_container
-    image: redis/redis-stack:latest
+    environment:
+      REDIS_GATEWAY_URL: redis-service
     ports:
       - "6379:6379"
     volumes:
-      - redis-data:/var/lib/redis/data
+      - ./.kube/redis/data/:/var/lib/redis/data
+      - ./.kube/redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+#    healthcheck:
+#      test: [ "CMD", "redis-cli", "--raw", "incr", "ping" ]
+    networks:
+      - lite-mesh-network
 
-volumes:
-  postgres_data:
-  pgadmin-data:
-  mongodb-data:
-  redis-data:
+##  # gateway
+#  api-gateway-service:
+##    build:
+##      context: .
+##      dockerfile: ./api-gateway/Dockerfile
+#    image: api-gateway:latest
+#    environment:
+#      GATEWAY_TRUST_STORE: gateway-truststore.jks
+#      GATEWAY_TRUST_STORE_PASSWORD: 123456
+#      GATEWAY_KEY_STORE: gateway-keystore.jks
+#      GATEWAY_KEY_STORE_PASSWORD: 123456
+#      GATEWAY_API_PORT: 0
+#    volumes:
+#      - ./api-gateway/keys:/app/keys
+#    ports:
+#      - "7777:7777"
+#      - "443:443"
+#    deploy:
+#      replicas: 1
+##    network_mode: host
+##    volumes:
+##      - /api-gateway/target/LiteGateway.jar:LiteGateway.jar
+##      - /api-gateway/keys/gateway-keystore.jks:gateway-keystore.jks
+##      - /api-gateway/keys/gateway-truststore.jks:gateway-truststore.jks
+#    networks:
+#      - lite-mesh-network
+##    extra_hosts:
+##      - "host.docker.internal:host-gateway"
+##    depends_on:
+##      discovery-service:
+##        condition: service_healthy
+##      mongodb-service:
+##        condition: service_healthy
+##      keycloak-service:
+##        condition: service_healthy
+##      redis-service:
+##        condition: service_healthy
+#
+#    depends_on:
+#      - discovery-service
+#      - mongodb-service
+#      - keycloak-service
+#      - redis-service
+
+#volumes:
+#  postgres_data:
+#  pgadmin-data:
+#  redis-data:
