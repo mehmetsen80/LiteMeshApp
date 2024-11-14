@@ -2,10 +2,15 @@ package org.lite.gateway.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.listener.CustomMessageListener;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.ReactiveRedisTemplate;
+import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
@@ -15,6 +20,24 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @Configuration
 @Slf4j
 public class RedisConfig {
+
+    @Value("${spring.redis.host}")
+    private String redisHost;
+
+    @Value("${spring.redis.port}")
+    private int redisPort;
+
+//    private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
+//
+//    @Autowired
+//    public RedisConfig(ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
+//        this.reactiveStringRedisTemplate = reactiveStringRedisTemplate;
+//    }
+
+    @Bean
+    public ReactiveStringRedisTemplate reactiveStringRedisTemplate(ReactiveRedisConnectionFactory connectionFactory) {
+        return new ReactiveStringRedisTemplate(connectionFactory);
+    }
 
     // Define the Redis Pub/Sub topic for route updates
     @Bean
@@ -42,11 +65,11 @@ public class RedisConfig {
         return adapter;
     }
 
+    // Configure Redis connection factory using injected host and port
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
-        log.info("redisConnectionFactory");
-        //LettuceConnectionFactory factory = new LettuceConnectionFactory("redis-service", 6379); // Replace with actual host and port
-        LettuceConnectionFactory factory = new LettuceConnectionFactory();
+        log.info("Connecting to Redis at {}:{}", redisHost, redisPort);
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(redisHost, redisPort);
         factory.afterPropertiesSet();
         return factory;
     }

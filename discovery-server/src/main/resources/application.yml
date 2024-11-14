@@ -24,7 +24,9 @@ server:
     enabled: true
     key-store: ${EUREKA_KEY_STORE}
     key-store-password: ${EUREKA_KEY_STORE_PASSWORD}
-    key-alias: eureka-app
+    key-alias: ${EUREKA_ALIAS_NAME:eureka-app}
     key-store-type: PKCS12
+    trust-store: ${EUREKA_TRUST_STORE}
+    trust-store-password: ${EUREKA_TRUST_STORE_PASSWORD}
 
 

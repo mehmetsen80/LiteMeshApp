@@ -48,6 +48,13 @@ spring:
         wiretap: true
       httpclient:
         wiretap: true
+#        http2: false  # Explicitly disable HTTP/2 on the gateway
+#        sslHandshakeTimeout: 30s  # Increase SSL handshake timeout if needed
+#      loadbalancer:
+#        use404: true
+#      forward-routing:
+#        enabled: false
+
       discovery:
         locator:
           enabled: true # Enables service discovery with Eureka
@@ -75,6 +82,13 @@ spring:
         predicates:
         - Path=/mesh/**
 
+#        ## Inventory Service (Just to Test) (This is being loaded dynamically from mongodb)
+#      - id: inventory-service
+#        uri: lb://inventory-service
+#        predicates:
+#        - Path=/inventory/**
+##        filters:
+##          - RewritePath=/inventory/(?<segment>.*), /${segment}
 
 management:
   endpoints:
@@ -90,7 +104,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
   instance:
-    hostname: localhost
+    hostname: ${EUREKA_INSTANCE_URL:localhost}
     instance-id: ${spring.application.name}:${instanceId:${random.value}}
     non-secure-port-enabled: false   # Disable non-secure HTTP port
     secure-port-enabled: true        # Enable secure HTTPS port
@@ -98,17 +112,21 @@ eureka:
 
 server:
   port: ${GATEWAY_API_PORT:7777}
+  http2:
+    enabled: true
+  use-forwarded-headers: true
   ssl:
     enabled: true
     key-store: ${GATEWAY_KEY_STORE}
     key-store-password: ${GATEWAY_KEY_STORE_PASSWORD}
-    key-alias: gateway-app
+    key-alias: ${GATEWAY_ALIAS_NAME:gateway-app}
     key-store-type: PKCS12
     trust-store: ${GATEWAY_TRUST_STORE}
     trust-store-password: ${GATEWAY_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
-
+    enabled-protocols: TLSv1.2,TLSv1.3
+    ciphers:ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256
 
 logging:
   file:
@@ -121,8 +139,11 @@ logging:
     org.springframework.security.oauth2.client: DEBUG
     org.springframework.cloud.gateway: DEBUG
     org.springframework.cloud.loadbalancer: TRACE
+    org.springframework.cloud.client.discovery: TRACE
+    org.springframework.cloud.netflix.eureka: DEBUG
     io.github.resilience4j.circuitbreaker: DEBUG
     io.github.resilience4j.circuitbreaker.internal: DEBUG
     org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
     org.springframework.cloud.gateway.filter.ratelimit: DEBUG
     org.springframework.data.redis: DEBUG
+    javax.net.ssl: DEBUG

@@ -2,38 +2,17 @@ version: '3.8'
 
 networks:
   lite-mesh-network:
-    driver: bridge
+    driver: overlay
+    name: lite-mesh-network  # Explicitly set the network name
 
 services:
-
-  # Discovery Server (Eureka)
-  discovery-service:
-    build:
-      context: .
-      dockerfile: .kube/eureka/Dockerfile
-#    image: discovery-service:latest
-    container_name: discovery_container
-    environment:
-      EUREKA_KEY_STORE: eureka-keystore.jks
-      EUREKA_KEY_STORE_PASSWORD: 123456
-      EUREKA_GATEWAY_URL: discovery-service
-    ports:
-      - "8761:8761"
-#      - "443:443"
-#    healthcheck:
-#      test: [ "CMD-SHELL", "curl -f https://discovery-service:8761" ]
-#      interval: 10s
-#      timeout: 10s
-#      retries: 10
-    networks:
-      - lite-mesh-network
 
   # postgres
   postgres-service:
     build:
       context: .
       dockerfile: ./.kube/postgres/Dockerfile
-    container_name: postgres_db_container
+#    container_name: postgres_db_container
     command: postgres -c "max_connections=200"
     restart: always
     ports:
@@ -58,7 +37,7 @@ services:
     build:
       context: .
       dockerfile: ./.kube/pgadmin/Dockerfile
-    container_name: pgadmin4_container
+#    container_name: pgadmin4_container
     restart: always
     ports:
       - "9090:80"
@@ -75,7 +54,7 @@ services:
     build:
       context: .
       dockerfile: ./.kube/keycloak/Dockerfile
-    container_name: keycloak_container
+#    container_name: keycloak_container
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres-service:5432/keycloak
@@ -93,18 +72,21 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
 
-      #used in api-gateway application.yml
-      KEYCLOAK_GATEWAY_URL: keycloak-service
-      KEYCLOAK_GATEWAY_PORT: 8080
-    command: start-dev
+    command:
+      - start-dev
+      - --import-realm
+      - --export-realm
+    volumes:
+      - .kube/keycloak/data/import:/opt/keycloak/data/import
+      - .kube/keycloak/data/export:/opt/keycloak/data/export
     depends_on:
       postgres-service:
         condition: service_healthy
-#    healthcheck:
-#      test: [ "CMD", "curl", "--head","fsS", "http://keycloak-service:8080/health/ready" ]
-#      interval: 5s
-#      timeout: 2s
-#      retries: 15
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000;echo -e 'GET /health/ready HTTP/1.1\r\nhost: http://localhost\r\nConnection: close\r\n\r\n' >&3;if [ $? -eq 0 ]; then echo 'Healthcheck Successful';exit 0;else echo 'Healthcheck Failed';exit 1;fi;"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     ports:
       - "8281:8080"
     networks:
@@ -115,7 +97,7 @@ services:
     build:
       context: .
       dockerfile: ./.kube/mongodb/Dockerfile
-    container_name: mongodb_container
+#    container_name: mongodb_container
 #    healthcheck:
 #      test: echo 'db.runCommand({serverStatus:1}).ok' | mongosh admin -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --quiet | grep 1
 #      interval: 10s
@@ -138,7 +120,7 @@ services:
     build:
       context: .
       dockerfile: ./.kube/redis/Dockerfile
-    container_name: redis_container
+#    container_name: redis_container
     environment:
       REDIS_GATEWAY_URL: redis-service
     ports:
@@ -152,51 +134,95 @@ services:
     networks:
       - lite-mesh-network
 
-##  # gateway
-#  api-gateway-service:
-##    build:
-##      context: .
-##      dockerfile: ./api-gateway/Dockerfile
-#    image: api-gateway:latest
+
+##### ENABLE THIS FOR DOCKERIZATION FOR ALL REMAINING SERVICES
+#  # Discovery Server (Eureka)
+#  discovery-service:
+#    build:
+#      context: .
+#      dockerfile: .kube/eureka/Dockerfile
+#    #    image: discovery-service:latest
+##    container_name: discovery_container
 #    environment:
-#      GATEWAY_TRUST_STORE: gateway-truststore.jks
-#      GATEWAY_TRUST_STORE_PASSWORD: 123456
-#      GATEWAY_KEY_STORE: gateway-keystore.jks
-#      GATEWAY_KEY_STORE_PASSWORD: 123456
-#      GATEWAY_API_PORT: 0
-#    volumes:
-#      - ./api-gateway/keys:/app/keys
+#      EUREKA_KEY_STORE: eureka-keystore.jks
+#      EUREKA_KEY_STORE_PASSWORD: 123456
+#      EUREKA_TRUST_STORE: eureka-truststore.jks
+#      EUREKA_TRUST_STORE_PASSWORD: 123456
+#      EUREKA_GATEWAY_URL: discovery-service
+#      EUREKA_ALIAS_NAME: eureka-app-container
 #    ports:
-#      - "7777:7777"
-#      - "443:443"
-#    deploy:
-#      replicas: 1
-##    network_mode: host
-##    volumes:
-##      - /api-gateway/target/LiteGateway.jar:LiteGateway.jar
-##      - /api-gateway/keys/gateway-keystore.jks:gateway-keystore.jks
-##      - /api-gateway/keys/gateway-truststore.jks:gateway-truststore.jks
+#      - "8761:8761"
+#    #      - "443:443"
+#    #    healthcheck:
+#    #      test: [ "CMD-SHELL", "curl -f https://discovery-service:8761" ]
+#    #      interval: 10s
+#    #      timeout: 10s
+#    #      retries: 10
+#    volumes:
+#      - ./discovery-server:/app/discovery-server
+#      - ./keys:/app/keys
 #    networks:
 #      - lite-mesh-network
-##    extra_hosts:
-##      - "host.docker.internal:host-gateway"
-##    depends_on:
-##      discovery-service:
-##        condition: service_healthy
-##      mongodb-service:
-##        condition: service_healthy
-##      keycloak-service:
-##        condition: service_healthy
-##      redis-service:
-##        condition: service_healthy
 #
+#
+#  # gateway
+#  api-gateway-service:
+#    build:
+#      context: .
+#      dockerfile: ./.kube/gateway/Dockerfile
+#    environment:
+#      GATEWAY_TRUST_STORE: /app/gateway-truststore.jks
+#      GATEWAY_TRUST_STORE_PASSWORD: 123456
+#      GATEWAY_KEY_STORE: /app/gateway-keystore.jks
+#      GATEWAY_KEY_STORE_PASSWORD: 123456
+#      GATEWAY_API_PORT: 7777
+#      GATEWAY_ALIAS_NAME: gateway-app-container
+#      REDIS_GATEWAY_URL: redis-service
+#      MONGO_GATEWAY_URL: mongodb-service
+#      KEYCLOAK_GATEWAY_URL: keycloak-service
+#      KEYCLOAK_GATEWAY_PORT: 8080
+#      EUREKA_GATEWAY_URL: discovery-service
+#      EUREKA_INSTANCE_URL: api-gateway-service
+#    volumes:
+#      - ./api-gateway:/app/api-gateway
+#      - ./keys:/app/keys
+#    ports:
+#      - "7777:7777"
+##    deploy:
+##      replicas: 3
+##      restart_policy:
+##        condition: on-failure
+#    networks:
+#      - lite-mesh-network
 #    depends_on:
 #      - discovery-service
 #      - mongodb-service
 #      - keycloak-service
 #      - redis-service
+#
+#
+#  # inventory
+#  inventory-service:
+#    build:
+#      context: .
+#      dockerfile: ./.kube/inventory/Dockerfile
+#    environment:
+#      CLIENT_TRUST_STORE: /app/client-truststore.jks
+#      CLIENT_TRUST_STORE_PASSWORD: 123456
+#      CLIENT_KEY_STORE: /app/client-keystore.jks
+#      CLIENT_KEY_STORE_PASSWORD: 123456
+#      CLIENT_ALIAS_NAME: inventory-service-container
+#      EUREKA_CLIENT_URL: discovery-service
+#      EUREKA_INSTANCE_URL: inventory-service
+#      KEYCLOAK_CLIENT_URL: keycloak-service
+#      KEYCLOAK_CLIENT_PORT: 8080
+##    deploy:
+##      replicas: 3
+#    networks:
+#      - lite-mesh-network
+#    volumes:
+#      - ./inventory-service:/app/inventory-service
+#      - ./keys:/app/keys
+#    depends_on:
+#      - api-gateway-service
 
-#volumes:
-#  postgres_data:
-#  pgadmin-data:
-#  redis-data:

@@ -33,11 +33,16 @@ public class BodyCaptureResponse extends  ServerHttpResponseDecorator {
         // Capture the body data into the bodyBuffer
         return super.writeWith(buffer.map(dataBuffer -> {
             // Convert the DataBuffer to a String and append to the body buffer
-            byte[] content = new byte[dataBuffer.readableByteCount()];
-            dataBuffer.read(content);
-            String bodyString = new String(content, StandardCharsets.UTF_8);
-            log.info("bodyString: {}", bodyString);
-            bodyBuffer.append(bodyString);  // Append to the StringBuilder
+            byte[] content = "".getBytes();
+            if (dataBuffer.readableByteCount() > 0) {
+                content = new byte[dataBuffer.readableByteCount()];
+                dataBuffer.read(content);
+                String bodyString = new String(content, StandardCharsets.UTF_8);
+                log.info("bodyString: {}", bodyString);
+                bodyBuffer.append(bodyString);  // Append to the StringBuilder
+            } else {
+                log.info("No readable data in dataBuffer");
+            }
             DataBufferUtils.release(dataBuffer);  // Release the buffer after reading
             return bufferFactory().wrap(content);  // Return a wrapped buffer for further processing
         }));

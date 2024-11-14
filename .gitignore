@@ -38,3 +38,4 @@ build/
 /.kube/postgres/data/**
 /.kube/pgadmin/data/**
 /.kube/redis/data/**
+/.kube/keycloak/data/**

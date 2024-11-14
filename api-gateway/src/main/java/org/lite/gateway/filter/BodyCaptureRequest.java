@@ -21,12 +21,15 @@ public class BodyCaptureRequest extends ServerHttpRequestDecorator {
         HttpHeaders headers = new HttpHeaders();
         headers.addAll(super.getHeaders());
 
+        log.info(super.getHeaders().toString());
+
         // Ensure that the Authorization header is copied
         if (super.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
             log.info("Inside BodyCaptureRequest");
             headers.set(HttpHeaders.AUTHORIZATION, super.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
         }
 
+        log.info("Headers set for internal forwarding in BodyCaptureRequest");
         return headers;
     }
 
