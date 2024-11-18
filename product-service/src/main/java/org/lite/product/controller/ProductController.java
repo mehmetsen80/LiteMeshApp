@@ -61,6 +61,7 @@ public class ProductController {
     // Method to call Inventory Service from Product Service
     @GetMapping("/callInventory")
     public ResponseEntity<GreetingResponse> callInventoryService(){
+        //log.info("gatewayBaseUrl: {}", gatewayBaseUrl);
         String url = gatewayBaseUrl + "/inventory/greet";  // Build the full URL dynamically as Inventory endpoint URL
         try {
             GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);

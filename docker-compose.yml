@@ -1,8 +1,9 @@
 version: '3.8'
 
 networks:
+  default:
   lite-mesh-network:
-    driver: overlay
+    driver: bridge
     name: lite-mesh-network  # Explicitly set the network name
 
 services:
@@ -12,7 +13,6 @@ services:
     build:
       context: .
       dockerfile: ./.kube/postgres/Dockerfile
-#    container_name: postgres_db_container
     command: postgres -c "max_connections=200"
     restart: always
     ports:
@@ -37,7 +37,6 @@ services:
     build:
       context: .
       dockerfile: ./.kube/pgadmin/Dockerfile
-#    container_name: pgadmin4_container
     restart: always
     ports:
       - "9090:80"
@@ -54,7 +53,6 @@ services:
     build:
       context: .
       dockerfile: ./.kube/keycloak/Dockerfile
-#    container_name: keycloak_container
     environment:
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://postgres-service:5432/keycloak
@@ -97,7 +95,6 @@ services:
     build:
       context: .
       dockerfile: ./.kube/mongodb/Dockerfile
-#    container_name: mongodb_container
 #    healthcheck:
 #      test: echo 'db.runCommand({serverStatus:1}).ok' | mongosh admin -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --quiet | grep 1
 #      interval: 10s
@@ -135,14 +132,14 @@ services:
       - lite-mesh-network
 
 
-##### ENABLE THIS FOR DOCKERIZATION FOR ALL REMAINING SERVICES
+#
+#  ##### ENABLE THIS FOR DOCKERIZATION FOR ALL REMAINING SERVICES
 #  # Discovery Server (Eureka)
 #  discovery-service:
 #    build:
 #      context: .
 #      dockerfile: .kube/eureka/Dockerfile
 #    #    image: discovery-service:latest
-##    container_name: discovery_container
 #    environment:
 #      EUREKA_KEY_STORE: eureka-keystore.jks
 #      EUREKA_KEY_STORE_PASSWORD: 123456
@@ -202,6 +199,7 @@ services:
 #
 #
 #  # inventory
+#  # enable deploy: replicas if needed
 #  inventory-service:
 #    build:
 #      context: .
@@ -216,12 +214,41 @@ services:
 #      EUREKA_INSTANCE_URL: inventory-service
 #      KEYCLOAK_CLIENT_URL: keycloak-service
 #      KEYCLOAK_CLIENT_PORT: 8080
+#      GATEWAY_SERVICE_URL: api-gateway-service
 ##    deploy:
 ##      replicas: 3
 #    networks:
 #      - lite-mesh-network
 #    volumes:
 #      - ./inventory-service:/app/inventory-service
+#      - ./keys:/app/keys
+#    depends_on:
+#      - api-gateway-service
+#
+#
+#  # product
+#  # enable deploy: replicas if needed
+#  product-service:
+#    build:
+#      context: .
+#      dockerfile: ./.kube/product/Dockerfile
+#    environment:
+#      CLIENT_TRUST_STORE: /app/client-truststore.jks
+#      CLIENT_TRUST_STORE_PASSWORD: 123456
+#      CLIENT_KEY_STORE: /app/client-keystore.jks
+#      CLIENT_KEY_STORE_PASSWORD: 123456
+#      CLIENT_ALIAS_NAME: product-service-container
+#      EUREKA_CLIENT_URL: discovery-service
+#      EUREKA_INSTANCE_URL: product-service
+#      KEYCLOAK_CLIENT_URL: keycloak-service
+#      KEYCLOAK_CLIENT_PORT: 8080
+#      GATEWAY_SERVICE_URL: api-gateway-service
+#    #    deploy:
+#    #      replicas: 3
+#    networks:
+#      - lite-mesh-network
+#    volumes:
+#      - ./product-service:/app/product-service
 #      - ./keys:/app/keys
 #    depends_on:
 #      - api-gateway-service

@@ -15,7 +15,7 @@ spring:
         registration:
           lite-mesh-gateway-client:
             client-id: lite-mesh-gateway-client
-            client-secret: isqNmjKiNlYpL1bNCY2Gs68k8Q3wj8wz
+            client-secret: SVwQlpupiIKUctK1Vh0yYwLxgkMZjjqY
             authorization-grant-type: client_credentials
             scope: gateway.read
             provider: keycloak  # identity-provider
@@ -29,7 +29,7 @@ spring:
         opaquetoken:
           introspection-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/token/introspect
           client-id: lite-mesh-gateway-client
-          client-secret: isqNmjKiNlYpL1bNCY2Gs68k8Q3wj8wz
+          client-secret: SVwQlpupiIKUctK1Vh0yYwLxgkMZjjqY
         jwt:
           issuer-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh
           jwk-set-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/certs
@@ -125,8 +125,8 @@ server:
     trust-store-password: ${GATEWAY_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
-    enabled-protocols: TLSv1.2,TLSv1.3
-    ciphers:ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256
+#    enabled-protocols: TLSv1.2,TLSv1.3
+#    ciphers:ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256
 
 logging:
   file:

@@ -2,14 +2,12 @@ package org.lite.gateway.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.listener.CustomMessageListener;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.listener.ChannelTopic;
@@ -26,13 +24,6 @@ public class RedisConfig {
 
     @Value("${spring.redis.port}")
     private int redisPort;
-
-//    private final ReactiveStringRedisTemplate reactiveStringRedisTemplate;
-//
-//    @Autowired
-//    public RedisConfig(ReactiveStringRedisTemplate reactiveStringRedisTemplate) {
-//        this.reactiveStringRedisTemplate = reactiveStringRedisTemplate;
-//    }
 
     @Bean
     public ReactiveStringRedisTemplate reactiveStringRedisTemplate(ReactiveRedisConnectionFactory connectionFactory) {

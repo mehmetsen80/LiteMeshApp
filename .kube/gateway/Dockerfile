@@ -40,8 +40,8 @@ ENV GATEWAY_TRUST_STORE_PASSWORD=123456
 # Import all certificates from gateway-truststore.jks into the default cacerts truststore
 RUN keytool -importkeystore -srckeystore /app/gateway-truststore.jks \
             -destkeystore "${JAVA_HOME}/lib/security/cacerts" \
-            -srcstorepass "$GATEWAY_TRUST_STORE_PASSWORD" \
-            -deststorepass "$GATEWAY_TRUST_STORE_PASSWORD" -noprompt -srcstoretype JKS -deststoretype JKS
+            -srcstorepass "${GATEWAY_TRUST_STORE_PASSWORD}" \
+            -deststorepass "${GATEWAY_TRUST_STORE_PASSWORD}" -noprompt -srcstoretype JKS -deststoretype JKS
 
 # Set other service-specific environment variables
 ENV REDIS_GATEWAY_URL=redis-service
@@ -52,16 +52,5 @@ ENV EUREKA_GATEWAY_URL=discovery-service
 
 # Expose the API gateway port
 EXPOSE 7777
-#EXPOSE 2222
 
-
-# Copy the wait script
-#COPY .kube/gateway/wait-for-keycloak.sh /app/wait-for-keycloak.sh
-#RUN chmod +x /app/wait-for-keycloak.sh
-
-# Run the API gateway application with SSL configuration
-#ENTRYPOINT ["/bin/sh", "-c", "/app/wait-for-keycloak.sh;", "java", "-Djavax.net.debug=all", "-Dhttps.protocols=TLSv1.2,TLSv1.3", "-Djavax.net.ssl.keyStore=${GATEWAY_KEY_STORE}", "-Djavax.net.ssl.keyStorePassword=${GATEWAY_KEY_STORE_PASSWORD}", "-Djavax.net.ssl.trustStore=${JAVA_HOME}/lib/security/cacerts", "-Djavax.net.ssl.trustStorePassword=${GATEWAY_TRUST_STORE_PASSWORD}", "-jar", "LiteGateway.jar"]
-
-# "-Dhttps.protocols=TLSv1.2,TLSv1.3",
-
-ENTRYPOINT ["java", "-Djavax.net.debug=all", "-Djavax.net.debug=ssl", "-Dhttps.protocols=TLSv1.2,TLSv1.3", "-Djavax.net.ssl.keyStore=$GATEWAY_KEY_STORE", "-Djavax.net.ssl.keyStorePassword=$GATEWAY_KEY_STORE_PASSWORD", "-Djavax.net.ssl.trustStore=${JAVA_HOME}/lib/security/cacerts", "-Djavax.net.ssl.trustStorePassword=$GATEWAY_TRUST_STORE_PASSWORD", "-jar", "LiteGateway.jar"]
+ENTRYPOINT ["java", "-Djavax.net.debug=all", "-Djavax.net.debug=ssl", "-Dhttps.protocols=TLSv1.2,TLSv1.3", "-Djavax.net.ssl.keyStore=${GATEWAY_KEY_STORE}", "-Djavax.net.ssl.keyStorePassword=${GATEWAY_KEY_STORE_PASSWORD}", "-Djavax.net.ssl.trustStore=${JAVA_HOME}/lib/security/cacerts", "-Djavax.net.ssl.trustStorePassword=${GATEWAY_TRUST_STORE_PASSWORD}", "-jar", "LiteGateway.jar"]

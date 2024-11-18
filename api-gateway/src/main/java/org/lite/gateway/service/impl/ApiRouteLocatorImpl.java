@@ -41,7 +41,6 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
                 "RedisRateLimiter", new RedisRateLimiterFilterService(applicationContext),
                 "TimeLimiter", new TimeLimiterFilterService(),
                 "Retry", new RetryFilterService()
-//                "AddRequestHeader", new ForwardingFilterService()
         );
     }
 

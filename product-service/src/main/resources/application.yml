@@ -5,23 +5,27 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8281/realms/LiteMesh
+          issuer-uri: http://${KEYCLOAK_CLIENT_URL:localhost}:${KEYCLOAK_CLIENT_PORT:8281}/realms/LiteMesh
 
 server:
   port: 0
+  http2:
+    enabled: true
   ssl:
     enabled: true
     key-store: ${CLIENT_KEY_STORE}
     key-store-password: ${CLIENT_KEY_STORE_PASSWORD}
-    key-alias: client-app
+    key-alias: ${CLIENT_ALIAS_NAME:client-app}
     key-store-type: PKCS12
     trust-store: ${CLIENT_TRUST_STORE}
     trust-store-password: ${CLIENT_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
+#    enabled-protocols: TLSv1.2,TLSv1.3
+#    ciphers:ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256
 
 gateway:
-  base-url: https://localhost:7777
+  base-url: https://${GATEWAY_SERVICE_URL:localhost}:7777
 
 logging:
   file:
@@ -35,16 +39,17 @@ logging:
     org.springframework.cloud.gateway: TRACE
     org.springframework.cloud.loadbalancer: TRACE
     org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
+    com.fasterxml.jackson: DEBUG
 
 eureka:
   client:
     service-url:
-      defaultZone: https://localhost:8761/eureka
+      defaultZone: https://${EUREKA_CLIENT_URL:localhost}:8761/eureka
     enabled: true
     register-with-eureka: true
     fetch-registry: true
   instance:
-    hostname: localhost
+    hostname: ${EUREKA_INSTANCE_URL:localhost}
     instance-id: ${spring.application.name}:${instanceId:${random.value}}
     non-secure-port-enabled: false   # Disable non-secure HTTP port
     secure-port-enabled: true        # Enable secure HTTPS port
