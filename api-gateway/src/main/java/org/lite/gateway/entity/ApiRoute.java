@@ -15,6 +15,7 @@ public class ApiRoute{
     String uri;
     String method;
     String path;
+    String scope;
     List<FilterConfig> filters;
 }
 

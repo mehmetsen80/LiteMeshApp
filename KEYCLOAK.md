@@ -50,6 +50,12 @@ Finally, add client scope "gateway.read" to the client "lite-mesh-gateway-client
 <a href="assets/keycloak/add_client_scope_to_the_client.png"> <img alt="Assign Scope Roles" src="assets/keycloak/add_client_scope_to_the_client.png"></a>
 </div>
 
+Make sure to add the frontend-url
+<div align="center">
+<a href="assets/keycloak/frontend-url.png"> <img alt="Update Frontend Url" src="assets/keycloak/frontend-url.png"></a>
+</div>
+
+## CLIENT SECRET
 Don't forget to copy-paste the Client Secret from Credentials to your Postman or Application
 <div align="center">
 <a href="assets/keycloak/client_secret.png"> <img alt="Assign Scope Roles" src="assets/keycloak/client_secret.png"></a>
@@ -61,6 +67,29 @@ Don't forget to update the client secret inside api-gateway application.yml file
 ```shell
 client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
 ```
+
+## ADDING CLIENT SCOPES
+Let's add inventory-service an product-service scopes
+
+### inventory-service.read
+<div align="center">
+<a href="assets/keycloak/inventory-service.read.png"> <img alt="Scope for inventory-service" src="assets/keycloak/inventory-service.read.png"></a>
+</div>
+
+### product-service.read
+<div align="center">
+<a href="assets/keycloak/product-service.read.png"> <img alt="Scope for product-service" src="assets/keycloak/product-service.read.png"></a>
+</div>
+
+You should see both of the scopes below; inventory-service an product-service
+<div align="center">
+<a href="assets/keycloak/client_scopes.png"> <img alt="Scope for inventory-service and product-service" src="assets/keycloak/client_scopes.png"></a>
+</div>
+
+Now assign them to the open-id lite-mesh-gateway-client client scopes
+<div align="center">
+<a href="assets/keycloak/add_to_client_scope.png"><img alt="Add to the client scopes" src="assets/keycloak/add_to_client_scope.png"> </a>
+</div>
 
 ## VALIDATE ACCESS TOKEN
 Let's generate the token in Postman (as we mentioned client secret varies in your own keycloak)
@@ -74,3 +103,6 @@ Let's generate the token in Postman (as we mentioned client secret varies in you
 <div align="center">
 <a href="assets/keycloak/access_token.png"> <img alt="Assign Scope Roles" src="assets/keycloak/access_token.png"></a>
 </div>
+
+
+

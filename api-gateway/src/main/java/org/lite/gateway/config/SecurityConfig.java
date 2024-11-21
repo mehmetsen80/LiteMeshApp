@@ -20,6 +20,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
+import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -28,6 +29,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -108,6 +111,7 @@ public class SecurityConfig {
     }
 
     // Bean to handle OAuth2 client credentials
+    // DO NOT DELETE THIS
     @Bean
     public ReactiveOAuth2AuthorizedClientManager authorizedClientManager(
             ReactiveClientRegistrationRepository clientRegistrationRepository,
@@ -127,13 +131,16 @@ public class SecurityConfig {
 //        OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest.withClientRegistrationId("lite-mesh-gateway-client")
 //                .principal("lite-mesh-gateway-client")  // Use a dummy principal for client_credentials
 //                .build();
-//
 //        authorizedClientManager.authorize(authorizeRequest)
 //                .flatMap(authorizedClient -> {
 //                    if (authorizedClient != null) {
 //                        OAuth2AccessToken accessToken = authorizedClient.getAccessToken();
 //                        if (accessToken != null) {
 //                            log.info("Access Token: {}", accessToken.getTokenValue());
+//                            // Log scopes (from token response)
+//                            String scopes = String.join(",", authorizedClient.getAccessToken().getScopes());
+//                            log.info("Granted Scopes: {}", scopes);
+//
 //                            return Mono.just(accessToken);
 //                        } else {
 //                            log.warn("Access token is null!");
@@ -150,14 +157,36 @@ public class SecurityConfig {
         return authorizedClientManager;
     }
 
+    private  String getScopeKey(String path) {
+        // Regular expression to capture the dynamic prefix (e.g., "/inventory/", "/product/")
+        Pattern pattern = Pattern.compile("^/(\\w+)/");
+        Matcher matcher = pattern.matcher(path);
+
+        if (matcher.find()) {
+            // Extract the prefix (e.g., "/inventory/")
+            String prefix = matcher.group(0); // Full match, e.g., "/inventory/"
+            return prefix + "**";
+        }
+
+        // If no matching prefix, return original path with "**"
+        return path + "**";
+    }
 
     private Mono<AuthorizationDecision> dynamicPathAuthorization(Mono<Authentication> authenticationMono, AuthorizationContext authorizationContext) {
         String path = authorizationContext.getExchange().getRequest().getPath().toString();
+        log.info("authorizationContext.getExchange().getRequest().getPath(): {}", path);
 
         //1st step
         // Use the path matcher from the DynamicRouteService to check if the path is whitelisted.
         // whitelisted means either hard coded or read from mongodb
         boolean isWhitelisted = dynamicRouteService.isPathWhitelisted(path);
+
+        String prefix = "/inventory/";
+        String scopeKey = "";
+        if (path.startsWith(prefix)) {
+            scopeKey = prefix + "**";
+        }
+        String scope = dynamicRouteService.getClientScope(getScopeKey(path));//i.e. inventory/** -> inventory-service.read
 
         //2nd step - check the realm access role
         //if whitelist passes, check for roles in the JWT token for secured paths
@@ -169,6 +198,28 @@ public class SecurityConfig {
                     .cast(JwtAuthenticationToken.class)
                     .map(JwtAuthenticationToken::getToken)  // Get the JWT token
                     .map(jwt -> {
+                        String scopes = jwt.getClaimAsString("scope");
+                        log.info("scopes: {}", scopes);
+                        boolean hasGatewayReadScope = scopes != null && scopes.contains("gateway.read");//does the gateway itself has this scope
+                        if (!hasGatewayReadScope) {
+                            log.warn("JWT is missing 'gateway.read' scope");
+                            return new AuthorizationDecision(false); // Deny if the hard-coded scope is missing
+                        }
+
+                        //i.e. inventory-service.read or product-service.read should be defined in the keycloak
+                        //we bypass the refresh and fallback end points
+                        if(!path.equals("/routes/refresh/routes") && !path.startsWith("/fallback/")){
+                            boolean hasClientReadScope = scope != null && scopes.contains(scope);//does the client itself has the scope
+                            if (!hasClientReadScope){
+                                if(scope == null) {
+                                    log.error("Client path {} is missing scope in mongodb and keycloak", path);
+                                } else {
+                                    log.error("Client path {} is missing scope {} in keycloak", path, scope);
+                                }
+                                return new AuthorizationDecision(false); // Deny if the client scope is missing
+                            }
+                        }
+
                         // Extract roles from JWT claims (adjust based on your Keycloak setup)
                         // Keycloak roles are often under 'realm_access' or 'resource_access'
                         // Extract Keycloak roles
