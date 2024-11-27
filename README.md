@@ -87,9 +87,11 @@ See below for the high level of LiteMesh architecture:
 # PREREQUISITES
 
 ## ENVIRONMENTAL VARIABLES
-SSL key file generation will be covered in a later section, but keys have already been provided for running the applications locally.
+Here is how we generated the self-signed SSL Keys to run locally: [SELF-SIGNED KEYS](SELFSIGNEDKEYS.md). You don't have to do anything else to run locally.
+However, please generate your own keys with a CA for your production environment.
 
-To set the necessary environment variables, open your profile configuration:
+
+To set the necessary environment variables, open your profile configuration: (MAC)
 ```shell
 nano ~/.zshrc
 ```
