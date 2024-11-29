@@ -280,6 +280,7 @@ So, let's first post the inventory-service and product-service document data to 
   "uri": "lb://inventory-service",
   "method": "",
   "path": "/inventory/**",
+  "maxCallsPerDay": 100000,
   "filters": [
     {
       "name": "RedisRateLimiter",
@@ -336,6 +337,7 @@ So, let's first post the inventory-service and product-service document data to 
   "uri": "lb://product-service",
   "method": "",
   "path": "/product/**",
+  "maxCallsPerDay": 100000,
   "filters": [
     {
       "name": "RedisRateLimiter",
