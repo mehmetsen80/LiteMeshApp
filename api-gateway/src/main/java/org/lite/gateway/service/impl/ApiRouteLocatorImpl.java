@@ -13,6 +13,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.*;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -30,6 +31,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     private final RouteLocatorBuilder routeLocatorBuilder;
     private final RouteService routeService;
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
+    private final RedisTemplate<String, String> redisTemplate;
 
     private ApplicationContext applicationContext;
     private Map<String, FilterService> filterServiceMap;
@@ -38,7 +40,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     public void init() {
         this.filterServiceMap = Map.of(
                 "CircuitBreaker", new CircuitBreakerFilterService(reactiveResilience4JCircuitBreakerFactory),
-                "RedisRateLimiter", new RedisRateLimiterFilterService(applicationContext),
+                "RedisRateLimiter", new RedisRateLimiterFilterService(applicationContext, redisTemplate),
                 "TimeLimiter", new TimeLimiterFilterService(),
                 "Retry", new RetryFilterService()
         );

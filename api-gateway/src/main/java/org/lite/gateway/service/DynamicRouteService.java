@@ -61,12 +61,6 @@ public class DynamicRouteService {
         }
     }
 
-
-    // Get current whitelist paths
-    public Set<String> getWhitelistedPaths() {
-        return whitelistedPaths;
-    }
-
     public String getClientScope(String path){
         return redisTemplate.opsForValue().get(path);
     }

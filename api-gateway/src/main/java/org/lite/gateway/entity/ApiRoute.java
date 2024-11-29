@@ -16,6 +16,7 @@ public class ApiRoute{
     String method;
     String path;
     String scope;
+    Integer maxCallsPerDay;
     List<FilterConfig> filters;
 }
 
