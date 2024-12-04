@@ -25,7 +25,6 @@ import java.util.Objects;
 @Slf4j
 public class RedisRateLimiterFilterService implements FilterService{
 
-    private static final String DAILY_CALLS_PREFIX = "dailyCalls:";
     private final ApplicationContext applicationContext;
     private final RedisTemplate<String, String> redisTemplate;
 

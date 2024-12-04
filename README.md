@@ -1,4 +1,4 @@
-![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.5-brightgreen)
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.6-brightgreen)
 
 
 # What is LiteMesh
@@ -385,7 +385,7 @@ So, let's first post the inventory-service and product-service document data to 
 
 Let's check the inserted inventory-service and product-service in the MongoDB Compass. (You can view through any MongoDB tool)
 <div align="center">
-<a href="assets/mongodb_compass.png"> <img alt="Check services" src="assets/mongodb_compass.png"></a>
+<a href="assets/mongodb/mongodb_compass.png"> <img alt="Check services" src="assets/mongodb/mongodb_compass.png"></a>
 </div>
 
 Let's refresh the routes again:
@@ -811,3 +811,92 @@ and timeouts. Here’s how it works:
 <div align="center">
 <a href="assets/Resiliency.jpg"> <img alt="LiteMesh Dynamic Routing" src="assets/Resiliency.jpg"></a>
 </div>
+
+
+## API METRICS
+We keep the Api Metrics in MongoDB for each call. The below json metric data is from MongoDB when we called the
+https://localhost:7777/inventory/greet
+
+```json
+{
+  "_id": {
+    "$oid": "67505a58deb84802e4f19314"
+  },
+  "fromService": "localhost",
+  "toService": "inventory-service",
+  "timestamp": {
+    "$date": "2024-12-04T13:34:16.391Z"
+  },
+  "duration": {
+    "$numberLong": "81"
+  },
+  "routeIdentifier": "inventory-service",
+  "interactionType": "USER_TO_APP",
+  "gatewayBaseUrl": "https://localhost:7777",
+  "pathEndPoint": "/inventory/greet",
+  "queryParameters": "",
+  "success": true,
+  "_class": "org.lite.gateway.entity.ApiMetric"
+}
+```
+
+It shows the source and destination services as well as other fields such as the duration, paths end points and path 
+parameters. 
+
+When I call the https://localhost:7777/inventory/callProduct then I expect 2 entries in MongoDB
+One is from the user to inventory-service, other is from inventory-service to product-service because we are calling
+product-service internally when the call hits the inventory-service. That means we also keep the metrics between app-to-app.
+
+localhost to inventory-service (USER_TO_APP)
+```json
+{
+  "_id": {
+    "$oid": "67505bb1deb84802e4f19316"
+  },
+  "fromService": "localhost",
+  "toService": "inventory-service",
+  "timestamp": {
+    "$date": "2024-12-04T13:40:01.829Z"
+  },
+  "duration": {
+    "$numberLong": "1501"
+  },
+  "routeIdentifier": "inventory-service",
+  "interactionType": "USER_TO_APP",
+  "gatewayBaseUrl": "https://localhost:7777",
+  "pathEndPoint": "/inventory/callProduct",
+  "queryParameters": "",
+  "success": true,
+  "_class": "org.lite.gateway.entity.ApiMetric"
+}
+```
+
+inventory-service to product-service (APP_TO_APP)
+```json
+{
+  "_id": {
+    "$oid": "67505bb1deb84802e4f19315"
+  },
+  "fromService": "inventory-service",
+  "toService": "product-service",
+  "timestamp": {
+    "$date": "2024-12-04T13:40:01.803Z"
+  },
+  "duration": {
+    "$numberLong": "767"
+  },
+  "routeIdentifier": "product-service",
+  "interactionType": "APP_TO_APP",
+  "gatewayBaseUrl": "https://localhost:7777",
+  "pathEndPoint": "/product/greet",
+  "queryParameters": "",
+  "success": true,
+  "_class": "org.lite.gateway.entity.ApiMetric"
+}
+```
+
+This is how it looks in MongoDB:
+<div align="center">
+<a href="assets/mongodb/apiMetrics.png"> <img alt="Check services" src="assets/mongodb/apiMetrics.png"></a>
+</div>
+

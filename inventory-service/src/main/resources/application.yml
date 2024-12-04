@@ -20,8 +20,6 @@ server:
     trust-store-password: ${CLIENT_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
-#    enabled-protocols: TLSv1.2,TLSv1.3
-#    ciphers:ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256
 
 
 gateway:

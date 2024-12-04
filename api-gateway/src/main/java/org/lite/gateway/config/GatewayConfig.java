@@ -1,6 +1,7 @@
 package org.lite.gateway.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.lite.gateway.service.MetricService;
 import org.lite.gateway.service.RouteService;
 import org.lite.gateway.service.impl.ApiRouteLocatorImpl;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
@@ -18,8 +19,9 @@ public class GatewayConfig {
     public RouteLocator routeLocator(RouteLocatorBuilder routeLocationBuilder,
                                      RouteService routeService,
                                      ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory,
-                                     RedisTemplate<String, String> redisTemplate) {
+                                     RedisTemplate<String, String> redisTemplate,
+                                     MetricService metricService) {
         return new ApiRouteLocatorImpl(routeLocationBuilder,
-                routeService, reactiveResilience4JCircuitBreakerFactory, redisTemplate);
+                routeService, reactiveResilience4JCircuitBreakerFactory, redisTemplate, metricService);
     }
 }

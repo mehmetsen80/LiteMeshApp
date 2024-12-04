@@ -8,7 +8,7 @@ spring:
     host: ${REDIS_GATEWAY_URL:localhost}
     port: 6379
   session:
-    store-type: none #
+    store-type: none
   security:
     oauth2:
       client:
@@ -48,12 +48,6 @@ spring:
         wiretap: true
       httpclient:
         wiretap: true
-#        http2: false  # Explicitly disable HTTP/2 on the gateway
-#        sslHandshakeTimeout: 30s  # Increase SSL handshake timeout if needed
-#      loadbalancer:
-#        use404: true
-#      forward-routing:
-#        enabled: false
 
       discovery:
         locator:
@@ -125,8 +119,6 @@ server:
     trust-store-password: ${GATEWAY_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
-#    enabled-protocols: TLSv1.2,TLSv1.3
-#    ciphers:ciphers: TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, TLS_AES_128_GCM_SHA256
 
 logging:
   file:

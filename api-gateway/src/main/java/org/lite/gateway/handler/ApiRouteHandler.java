@@ -53,7 +53,7 @@ public class ApiRouteHandler {
                         dynamicRouteService.addPath(apiRoute);
                         dynamicRouteService.addScope(apiRoute);
                         gatewayRoutesRefresher.refreshRoutes();
-                        log.info("Refreshed Path: " + apiRoute.getPath());
+                        log.info("Refreshed Path: {}", apiRoute.getPath());
 
                     });
         }).then(ServerResponse.ok().body(fromValue("Routes reloaded successfully")));

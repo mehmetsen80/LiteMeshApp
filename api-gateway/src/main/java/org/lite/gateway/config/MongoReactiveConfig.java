@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.config.AbstractReactiveMongoConfiguration;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
+import org.springframework.lang.NonNull;
 
 @Configuration
 @EnableReactiveMongoRepositories(basePackages = "org.lite.gateway.repository.**")
@@ -20,12 +21,12 @@ public class MongoReactiveConfig extends AbstractReactiveMongoConfiguration {
     private String databaseName = "LiteMesh";
 
     @Override
-    protected String getDatabaseName() {
+    protected @NonNull String getDatabaseName() {
         return databaseName;
     }
 
     @Bean
-    public MongoClient reactiveMongoClient() {
+    public @NonNull MongoClient reactiveMongoClient() {
         return MongoClients.create(mongoDatabaseUri);
     }
 
