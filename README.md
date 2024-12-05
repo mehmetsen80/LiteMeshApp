@@ -385,7 +385,7 @@ So, let's first post the inventory-service and product-service document data to 
 
 Let's check the inserted inventory-service and product-service in the MongoDB Compass. (You can view through any MongoDB tool)
 <div align="center">
-<a href="assets/mongodb/mongodb_compass.png"> <img alt="Check services" src="assets/mongodb/mongodb_compass.png"></a>
+<a href="assets/mongodb/apiRoutes.png"> <img alt="Check services" src="assets/mongodb/apiRoutes.png"></a>
 </div>
 
 Let's refresh the routes again:
