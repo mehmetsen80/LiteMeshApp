@@ -1,7 +1,13 @@
 ![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.6-brightgreen)
 
 
-# What is LiteMesh
+# What is LiteMesh?
+
+<div align="center">
+<a href="assets/litemesh_background.png"> <img alt="Check services" src="assets/litemesh_background.png"></a>
+</div>
+
+
 LiteMesh is a lightweight, highly adaptable API gateway built to streamline the complexities of dynamic routing, 
 security, and resilience, all with an emphasis on simplicity and speed. Designed for developers and Site Reliability 
 Engineers (SREs), LiteMesh is a tool that teams can download, build, and deploy quickly to support microservices or 
@@ -36,6 +42,11 @@ For full details, see the [LICENSE](./LICENSE) file.
 
 
 # HOW IT WORKS
+
+<div align="center">
+<a href="assets/litemesh_workflow.png"> <img alt="Check services" src="assets/litemesh_workflow.png"></a>
+</div>
+
 LiteMesh operates at the center of the API ecosystem, serving as the primary gateway for all microservices communication.
 Instead of allowing direct interactions between services, LiteMesh channels all requests through the gateway, creating
 a streamlined workflow that reduces potential conflicts and enhances security.
