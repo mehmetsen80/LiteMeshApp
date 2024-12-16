@@ -11,9 +11,7 @@ LiteMesh is a lightweight, highly adaptable API gateway built to streamline the 
 security, and resilience, all with an emphasis on simplicity and speed. Designed for developers and Site Reliability 
 Engineers (SREs), LiteMesh is a tool that teams can download, build, and deploy quickly to support microservices or 
 serverless architectures.
-
-<br/>
-
+<br/><br/>
 While many competing solutions are heavyweight and complex, LiteMesh focuses on a developer-friendly experience, 
 offering a lean framework that integrates seamlessly with existing workflows. By providing essential functionality 
 without the overhead, LiteMesh allows teams to efficiently manage traffic, enforce security protocols, and achieve 
@@ -25,8 +23,8 @@ environments.
 
 <br/>
 
-<div align="center">
-<a href="assets/LiteMesh_HighLevel.png"> <img alt="Check services" src="assets/LiteMesh_HighLevel.png"></a>
+<div align="center" style="width:100%;">
+<a href="assets/LiteMesh_HighLevel.png"> <img style="width:100%;" alt="Check services" src="assets/LiteMesh_HighLevel.png"></a>
 </div>
 <br/>
 
@@ -52,8 +50,8 @@ For full details, see the [LICENSE](./LICENSE) file.
 
 # HOW IT WORKS
 
-<div align="center">
-<a href="assets/litemesh_workflow.png"> <img alt="Check services" src="assets/litemesh_workflow.png"></a>
+<div align="center" style="width:100%;">
+<a href="assets/litemesh_workflow.png"> <img alt="Check services"  style="width:100%;" src="assets/litemesh_workflow.png"></a>
 </div>
 <br/>
 LiteMesh operates at the center of the API ecosystem, serving as the primary gateway for all microservices communication.
