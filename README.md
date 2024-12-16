@@ -24,7 +24,7 @@ environments.
 <br/><br/>
 
 <div align="center" style="width:100%;">
-<a href="assets/litemesh_highlevel.png"> <img style="width:100%;" alt="Check services" src="assets/litemesh_highlevel.png"></a>
+<a href="assets/litemesh_high_level.png"> <img style="width:100%;" alt="Check services" src="assets/litemesh_high_level.png"></a>
 </div>
 <br/>
 
