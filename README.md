@@ -98,7 +98,7 @@ LiteMesh to adapt in real-time and protect APIs from attacks, overload, and vuln
 See below for the high level of LiteMesh architecture:
 
 <div align="center" style="width:100%;">
-<a href="assets/litemesh_details.png"> <img style="width:100%;" alt="LiteMesh" src="assets/litemesh_details.png"></a>
+<a href="assets/litemesh_architecture.png"> <img style="width:100%;" alt="LiteMesh" src="assets/litemesh_architecture.png"></a>
 </div>
 
 
@@ -107,7 +107,6 @@ See below for the high level of LiteMesh architecture:
 ## ENVIRONMENTAL VARIABLES
 Here is how we generated the self-signed SSL Keys to run locally: [SELF-SIGNED KEYS](SELFSIGNEDKEYS.md). You don't have to do anything else to run locally.
 However, please generate your own keys with a CA for your production environment.
-
 
 To set the necessary environment variables, open your profile configuration: (MAC)
 ```shell
