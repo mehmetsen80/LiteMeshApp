@@ -16,15 +16,15 @@ While many competing solutions are heavyweight and complex, LiteMesh focuses on 
 offering a lean framework that integrates seamlessly with existing workflows. By providing essential functionality 
 without the overhead, LiteMesh allows teams to efficiently manage traffic, enforce security protocols, and achieve 
 robust service resilience.
-
+<br/><br/>
 Whether used as a standalone gateway or as part of a larger infrastructure, LiteMesh is positioned to grow alongside 
 evolving API ecosystems, making it a practical choice for both current needs and future demands in scalable microservice 
 environments.
 
-<br/>
+<br/><br/>
 
 <div align="center" style="width:100%;">
-<a href="assets/LiteMesh_HighLevel.png"> <img style="width:100%;" alt="Check services" src="assets/LiteMesh_HighLevel.png"></a>
+<a href="assets/litemesh_highlevel.png"> <img style="width:100%;" alt="Check services" src="assets/litemesh_highlevel.png"></a>
 </div>
 <br/>
 
@@ -51,7 +51,7 @@ For full details, see the [LICENSE](./LICENSE) file.
 # HOW IT WORKS
 
 <div align="center" style="width:100%;">
-<a href="assets/litemesh_workflow.png"> <img alt="Check services"  style="width:100%;" src="assets/litemesh_workflow.png"></a>
+<a href="assets/litemesh_workflow_dark.png"> <img alt="Check services"  style="width:100%;" src="assets/litemesh_workflow_dark.png"></a>
 </div>
 <br/>
 LiteMesh operates at the center of the API ecosystem, serving as the primary gateway for all microservices communication.
@@ -97,8 +97,8 @@ LiteMesh to adapt in real-time and protect APIs from attacks, overload, and vuln
 
 See below for the high level of LiteMesh architecture:
 
-<div align="center">
-<a href="assets/LiteMesh_Details.png"> <img class="w-100" alt="LiteMesh" src="assets/LiteMesh_Details.png"></a>
+<div align="center" style="width:100%;">
+<a href="assets/litemesh_details.png"> <img style="width:100%;" alt="LiteMesh" src="assets/litemesh_details.png"></a>
 </div>
 
 
@@ -721,8 +721,8 @@ Dynamic routing offers several benefits, especially in modern distributed system
    With static routing, you need to manually update configurations when services or endpoints change. Dynamic routing eliminates this overhead by automatically adjusting to service changes.
    ``
 
-<div align="center">
-<a href="assets/DynamicRouting.jpg"> <img alt="LiteMesh Dynamic Routing" src="assets/DynamicRouting.jpg"></a>
+<div align="center" style="width:100%;">
+<a href="assets/DynamicRouting.png"> <img style="width:100%;" alt="LiteMesh Dynamic Routing" src="assets/DynamicRouting.png"></a>
 </div>
 
 
@@ -760,8 +760,8 @@ This holistic approach creates a robust, secure API management platform, protect
 interactions across the microservices architecture.
 
 
-<div align="center">
-<a href="assets/Security.jpg"> <img alt="LiteMesh Security" src="assets/Security.jpg"></a>
+<div align="center" style="width:100%;">
+<a href="assets/litemesh_security.png"> <img style="width:100%;" alt="LiteMesh Security" src="assets/litemesh_security.png"></a>
 </div>
 
 
