@@ -12,6 +12,8 @@ security, and resilience, all with an emphasis on simplicity and speed. Designed
 Engineers (SREs), LiteMesh is a tool that teams can download, build, and deploy quickly to support microservices or 
 serverless architectures.
 
+<br/>
+
 While many competing solutions are heavyweight and complex, LiteMesh focuses on a developer-friendly experience, 
 offering a lean framework that integrates seamlessly with existing workflows. By providing essential functionality 
 without the overhead, LiteMesh allows teams to efficiently manage traffic, enforce security protocols, and achieve 
@@ -98,7 +100,7 @@ LiteMesh to adapt in real-time and protect APIs from attacks, overload, and vuln
 See below for the high level of LiteMesh architecture:
 
 <div align="center">
-<a href="assets/LiteMesh.jpg"> <img class="w-100" alt="LiteMesh" src="assets/LiteMesh.jpg"></a>
+<a href="assets/LiteMesh_Details.png"> <img class="w-100" alt="LiteMesh" src="assets/LiteMesh_Details.png"></a>
 </div>
 
 
