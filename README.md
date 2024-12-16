@@ -4,7 +4,7 @@
 # What is LiteMesh?
 
 <div align="center">
-<a href="assets/litemesh_background.png"> <img alt="Check services" src="assets/litemesh_background.png"></a>
+<a href="assets/litemesh_background.png"> <img alt="LiteMesh" src="assets/litemesh_background.png"></a>
 </div>
 <br/>
 LiteMesh is a lightweight, highly adaptable API gateway built to streamline the complexities of dynamic routing, 
@@ -20,6 +20,14 @@ robust service resilience.
 Whether used as a standalone gateway or as part of a larger infrastructure, LiteMesh is positioned to grow alongside 
 evolving API ecosystems, making it a practical choice for both current needs and future demands in scalable microservice 
 environments.
+
+<br/>
+
+<div align="center">
+<a href="assets/LiteMesh_HighLevel.png"> <img alt="Check services" src="assets/LiteMesh_HighLevel.png"></a>
+</div>
+<br/>
+
 
 # LICENSE
 
