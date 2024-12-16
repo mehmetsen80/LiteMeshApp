@@ -51,7 +51,7 @@ For full details, see the [LICENSE](./LICENSE) file.
 # HOW IT WORKS
 
 <div align="center" style="width:100%;">
-<a href="assets/litemesh_workflow_dark.png"> <img alt="Check services"  style="width:100%;" src="assets/litemesh_workflow_dark.png"></a>
+<a href="assets/litemesh_workflow.png"> <img alt="Check services"  style="width:100%;" src="assets/litemesh_workflow.png"></a>
 </div>
 <br/>
 LiteMesh operates at the center of the API ecosystem, serving as the primary gateway for all microservices communication.
@@ -721,7 +721,7 @@ Dynamic routing offers several benefits, especially in modern distributed system
    ``
 
 <div align="center" style="width:100%;">
-<a href="assets/DynamicRouting.png"> <img style="width:100%;" alt="LiteMesh Dynamic Routing" src="assets/DynamicRouting.png"></a>
+<a href="assets/dynamic_routing.png"> <img style="width:100%;" alt="LiteMesh Dynamic Routing" src="assets/dynamic_routing.png"></a>
 </div>
 
 
