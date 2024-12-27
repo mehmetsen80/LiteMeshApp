@@ -1,0 +1,80 @@
+.metrics-filter {
+    width: 100%;
+  }
+  
+  .metrics-filter form {
+    display: flex;
+    gap: 40px;  /* Increased gap between form elements */
+    flex-wrap: wrap;
+    align-items: flex-end;
+    width: 100%;
+  }
+  
+  .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  /* Service filter should be wider */
+  .filter-group:first-child {
+    flex: 2;
+    min-width: 300px;
+  }
+  
+  /* Date filters should be narrower */
+  .filter-group:nth-child(2),
+  .filter-group:nth-child(3) {
+    flex: 1;
+    min-width: 150px;
+  }
+  
+  .filter-group label {
+    color: #333;
+    font-weight: 500;
+  }
+  
+  .metrics-filter select,
+  .metrics-filter input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    color: #333;
+    width: 100%;
+    font-size: 14px;
+  }
+  
+  .filter-actions {
+    display: flex;
+    gap: 20px;  /* Increased gap between buttons */
+    align-items: flex-end;
+  }
+  
+  .metrics-filter button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  
+  .metrics-filter .apply-button {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .metrics-filter .apply-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .metrics-filter .clear-button {
+    background-color: #6c757d;
+    color: white;
+  }
+  
+  .metrics-filter .clear-button:hover {
+    background-color: #5a6268;
+  }
