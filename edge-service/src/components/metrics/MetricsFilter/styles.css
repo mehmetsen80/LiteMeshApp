@@ -4,7 +4,7 @@
   
   .metrics-filter form {
     display: flex;
-    gap: 40px;  /* Increased gap between form elements */
+    gap: 40px;
     flex-wrap: wrap;
     align-items: flex-end;
     width: 100%;
@@ -38,7 +38,7 @@
   .metrics-filter input {
     padding: 8px 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 8px;  /* Changed to 8px */
     background-color: white;
     color: #333;
     width: 100%;
@@ -47,27 +47,29 @@
   
   .filter-actions {
     display: flex;
-    gap: 20px;  /* Increased gap between buttons */
+    gap: 20px;
     align-items: flex-end;
   }
   
   .metrics-filter button {
-    padding: 8px 16px;
+    padding: 8px 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: 8px;  /* Changed to 8px */
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.2s ease;
     font-weight: 500;
     white-space: nowrap;
   }
   
   .metrics-filter .apply-button {
-    background-color: #007bff;
+    background-color: #0c056d;  /* Changed to new color */
     color: white;
   }
   
   .metrics-filter .apply-button:hover {
-    background-color: #0056b3;
+    background-color: #0a0459;  /* Slightly darker shade for hover */
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
   .metrics-filter .clear-button {
@@ -77,4 +79,6 @@
   
   .metrics-filter .clear-button:hover {
     background-color: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }

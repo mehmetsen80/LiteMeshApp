@@ -5,6 +5,7 @@ import apiMetricsRoutes from './api/apiMetrics.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import authRoutes from './api/authRoutes.js';
 
 // Get the directory path of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -73,6 +74,7 @@ mongoose.connection.on('disconnected', () => {
 });
 
 // Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/metrics', apiMetricsRoutes);
 
 // Global error handler

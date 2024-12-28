@@ -1,0 +1,11 @@
+.metrics-page {
+    padding: 2rem;
+    max-width: 2000px;
+    margin: 0 auto;
+  }
+  
+  @media (max-width: 768px) {
+    .metrics-page {
+      padding: 1rem;
+    }
+  }

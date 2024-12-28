@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getApiMetrics, getMetricsByService, getMetricsByTimeRange } from '../../services/apiMetricService';
+import { getApiMetrics, getMetricsByService, getMetricsByTimeRange } from  '../../../services/apiMetricService';
 import MetricsChart from '../MetricsChart';
 import MetricsTable from '../MetricsTable';
 import MetricsFilter from '../MetricsFilter';

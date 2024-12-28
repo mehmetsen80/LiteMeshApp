@@ -1,0 +1,94 @@
+.auth-container {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  background-image: url('/images/brand_guidelines.jpg');
+  background-size: 100% auto;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f5f5f5;
+}
+
+.auth-form-section {
+  width: 100%;
+  max-width: 500px;
+  padding: 2rem;
+  margin-left: calc(100% / 3);
+  margin-right: 2rem;
+}
+
+.auth-card {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(8px);
+  width: 100%;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.auth-header h2 {
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.form-label {
+  text-align: left;
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus {
+  border-color: #4a90e2;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  background-color: #4a90e2;
+  border: none;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: #357abd;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 1rem;
+  }
+  
+  .auth-form-section {
+    margin-left: 0;
+    margin-right: 0;
+    padding: 1rem;
+  }
+
+  .auth-card {
+    background: rgba(255, 255, 255, 0.98);
+  }
+}

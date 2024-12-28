@@ -1,0 +1,19 @@
+.admin-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-content {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+}
+
+/* If you have a header component, ensure it has no margin */
+.admin-header {
+  margin: 0;
+  padding: 0;
+} 
