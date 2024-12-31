@@ -18,16 +18,22 @@
   
   /* Service filter should be wider */
   .filter-group:first-child {
-    flex: 2;
-    min-width: 300px;
+    flex: 1;
+    min-width: 200px;
     text-align: left;
   }
   
   /* Date filters should be narrower */
-  .filter-group:nth-child(2),
-  .filter-group:nth-child(3) {
+  .filter-group:nth-child(2) {
     flex: 1;
-    min-width: 150px;
+    min-width: 200px;
+    text-align: left;
+  }
+  
+  .filter-group:nth-child(3),
+  .filter-group:nth-child(4) {
+    flex: 2;
+    min-width: 250px;
     text-align: left;
   }
   
@@ -53,6 +59,9 @@
     display: flex;
     gap: 20px;
     align-items: flex-end;
+    flex-wrap: wrap;
+    width: 100%;
+    margin-top: 1rem;
   }
   
   .metrics-filter button {
@@ -85,4 +94,92 @@
     background-color: #5a6268;
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .date-time-group {
+    flex: 2;
+  }
+  
+  .date-time-inputs {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .date-time-inputs input[type="date"] {
+    flex: 2;
+  }
+  
+  .date-time-inputs input[type="time"] {
+    flex: 1;
+  }
+  
+  .filter-error {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+  
+  .quick-filters {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    flex: 1;
+  }
+  
+  .quick-filters button {
+    padding: 6px 12px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .quick-filters button:hover {
+    background-color: #e9ecef;
+    border-color: #ccc;
+  }
+  
+  .export-button {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .export-button:hover {
+    background-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  [title] {
+    cursor: help;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .metrics-filter form {
+      gap: 20px;
+    }
+
+    .filter-actions {
+      flex-direction: column;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .quick-filters {
+      width: 100%;
+    }
+
+    .quick-filters button,
+    .apply-button,
+    .clear-button {
+      width: 100%;
+    }
   }

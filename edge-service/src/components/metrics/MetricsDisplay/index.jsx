@@ -41,28 +41,27 @@ function MetricsDisplay() {
 
   const applyFilters = (metrics, filters) => {
     return metrics.filter(metric => {
-      const metricDate = new Date(metric.timestamp).getTime();
-      
-      // Service filter
-      if (filters.service && 
-         (metric.fromService !== filters.service && metric.toService !== filters.service)) {
+      // Service filters
+      if (filters.fromService && metric.fromService !== filters.fromService) {
+        return false;
+      }
+      if (filters.toService && metric.toService !== filters.toService) {
         return false;
       }
 
       // Date filters
-      if (filters.startDate && !filters.endDate) {
-        // Only start date is set
-        return metricDate >= filters.startDate;
-      }
-      
-      if (!filters.startDate && filters.endDate) {
-        // Only end date is set
-        return metricDate <= filters.endDate;
-      }
+      const metricTime = new Date(metric.timestamp).getTime();
       
       if (filters.startDate && filters.endDate) {
-        // Both dates are set
-        return metricDate >= filters.startDate && metricDate <= filters.endDate;
+        return metricTime >= filters.startDate && metricTime <= filters.endDate;
+      }
+      
+      if (filters.startDate) {
+        return metricTime >= filters.startDate;
+      }
+      
+      if (filters.endDate) {
+        return metricTime <= filters.endDate;
       }
 
       return true;
@@ -79,6 +78,38 @@ function MetricsDisplay() {
     // Sort filtered data by timestamp
     filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
     setFilteredMetrics(filtered);
+  };
+
+  const exportToCSV = () => {
+    const headers = ['From Service', 'To Service', 'Duration', 'Timestamp', 'Success'];
+    
+    const formatDate = (date) => {
+      const d = new Date(date);
+      return `${d.toLocaleDateString().replace(/,/g, '')} ${d.toLocaleTimeString()}`;
+    };
+
+    const csvData = filteredMetrics.map(metric => [
+      metric.fromService,
+      metric.toService,
+      metric.duration,
+      formatDate(metric.timestamp),  // Format date without commas
+      metric.success ? 'Yes' : 'No'
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...csvData.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `metrics_export_${new Date().toISOString()}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (loading) return (
@@ -111,7 +142,16 @@ function MetricsDisplay() {
           />
         </div>
         <div className="section table-section">
-          <h2 className="section-title">Detailed Metrics</h2>
+          <div className="table-header">
+            <h2 className="section-title">Detailed Metrics</h2>
+            <button 
+              className="export-button"
+              onClick={exportToCSV}
+              title="Export filtered data to CSV"
+            >
+              Export to CSV
+            </button>
+          </div>
           <MetricsTable 
             data={filteredMetrics}
             selectedService={selectedService}

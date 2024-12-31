@@ -5,9 +5,14 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser).user : null;
+    const savedAuth = localStorage.getItem('user');
+    if (savedAuth) {
+      const parsedAuth = JSON.parse(savedAuth);
+      return parsedAuth;
+    }
+    return null;
   });
+  
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,7 +24,7 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = (userData) => {
-    setUser(userData.user);
+    setUser(userData);
     localStorage.setItem('user', JSON.stringify(userData));
     navigate('/');
   };
@@ -31,7 +36,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ 
+      user: user?.user,
+      login, 
+      logout, 
+      isAuthenticated: !!user 
+    }}>
       {children}
     </AuthContext.Provider>
   );

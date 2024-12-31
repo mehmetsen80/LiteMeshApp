@@ -1,7 +1,6 @@
 import './App.css'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import ProtectedRoute from './components/ProtectedRoute';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AdminLayout from './layouts/AdminLayout';
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -9,62 +8,64 @@ import Register from './pages/Register';
 import Metrics from './pages/Metrics';
 import './assets/styles/global.css';
 
+// Public Route Component (accessible only when not logged in)
+const PublicRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (user) return <Navigate to="/" replace />;
+  return children;
+};
+
+// Protected Route Component
+const ProtectedRoute = ({ children }) => {
+  const { user } = useAuth();
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+};
+
 function App() {
-    // // const [metrics, setMetrics] = useState([]);
-
-    // // useEffect(() => {
-    // //     fetch(`${import.meta.env.VITE_BACKEND_URL}/api/metrics`, {mode: 'cors'})
-    // //         .then(response => response.json())
-    // //         .then(data => setMetrics(data))
-    // //         .catch(err => console.error('Error fetching metrics:', err));
-    // // }, []);
-
-    // return (
-    //     // <div>
-    //     //     <h1>API Metrics</h1>
-    //     //     <ul>
-    //     //         {metrics.map(metric => (
-    //     //             <li key={metric._id}>
-    //     //                 {metric.fromService} → {metric.toService} | Duration: {metric.duration} ms
-    //     //             </li>
-    //     //         ))}
-    //     //     </ul>
-         
-    //     // </div>
-    //     <div>
-    //       <MetricsDisplay />
-    //     </div>
-        
-    // );
-
-    return (
-      <Router>
-        <AuthProvider>
-          <AdminLayout>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route 
-                path="/" 
-                element={
-                  <ProtectedRoute>
-                    <Home />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route 
-                path="/metrics" 
-                element={
-                  <ProtectedRoute>
-                    <Metrics />
-                  </ProtectedRoute>
-                } 
-              />
-            </Routes>
-          </AdminLayout>
-        </AuthProvider>
-      </Router>
-    );
+  return (
+    <Router>
+      <AuthProvider>
+        <AdminLayout>
+          <Routes>
+            <Route 
+              path="/login" 
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/register" 
+              element={
+                <PublicRoute>
+                  <Register />
+                </PublicRoute>
+              } 
+            />
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <Home />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/metrics" 
+              element={
+                <ProtectedRoute>
+                  <Metrics />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </AdminLayout>
+      </AuthProvider>
+    </Router>
+  );
 }
 
 export default App;
