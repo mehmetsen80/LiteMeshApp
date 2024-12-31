@@ -68,3 +68,15 @@
     color: #dc3545;
     font-size: 0.9rem;
   }
+  
+  .metrics-table table th {
+    text-align: left !important;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .metrics-table table td {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+  }

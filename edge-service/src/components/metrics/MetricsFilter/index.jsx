@@ -19,7 +19,19 @@ function MetricsFilter({ onFilterChange, services }) {
 
   const handleApplyFilters = (e) => {
     e.preventDefault();
-    onFilterChange(filters);
+    
+    // Convert dates to the end of day for endDate and start of day for startDate
+    const processedFilters = {
+      ...filters,
+      startDate: filters.startDate 
+        ? new Date(filters.startDate).setHours(0, 0, 0, 0) 
+        : '',
+      endDate: filters.endDate 
+        ? new Date(filters.endDate).setHours(23, 59, 59, 999) 
+        : ''
+    };
+    
+    onFilterChange(processedFilters);
   };
 
   const clearFilters = () => {

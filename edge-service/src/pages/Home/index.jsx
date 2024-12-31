@@ -14,9 +14,11 @@ function Home() {
 
       <div className="dashboard-grid">
         <div className="dashboard-card">
-          <div className="card-icon">
-            <i className="fas fa-chart-line"></i>
-          </div>
+          <Link to="/metrics" className="card-icon-link">
+            <div className="card-icon">
+              <i className="fas fa-chart-line"></i>
+            </div>
+          </Link>
           <h3>Metrics Overview</h3>
           <p>View detailed performance metrics and analytics</p>
           <Link to="/metrics" className="card-link">
@@ -25,9 +27,11 @@ function Home() {
         </div>
 
         <div className="dashboard-card disabled">
-          <div className="card-icon">
-            <i className="fas fa-server"></i>
-          </div>
+          <Link to="/services" className="card-icon-link">
+            <div className="card-icon">
+              <i className="fas fa-server"></i>
+            </div>
+          </Link>
           <h3>Services Status</h3>
           <p>Monitor health and performance of your microservices</p>
           <span className="coming-soon-badge">Coming Soon</span>
@@ -37,9 +41,11 @@ function Home() {
         </div>
 
         <div className="dashboard-card disabled">
-          <div className="card-icon">
-            <i className="fas fa-bell"></i>
-          </div>
+          <Link to="/alerts" className="card-icon-link">
+            <div className="card-icon">
+              <i className="fas fa-bell"></i>
+            </div>
+          </Link>
           <h3>Alerts</h3>
           <p>View and manage system alerts and notifications</p>
           <span className="coming-soon-badge">Coming Soon</span>
@@ -49,9 +55,11 @@ function Home() {
         </div>
 
         <div className="dashboard-card disabled">
-          <div className="card-icon">
-            <i className="fas fa-cog"></i>
-          </div>
+          <Link to="/settings" className="card-icon-link">
+            <div className="card-icon">
+              <i className="fas fa-cog"></i>
+            </div>
+          </Link>
           <h3>Settings</h3>
           <p>Configure dashboard and monitoring preferences</p>
           <span className="coming-soon-badge">Coming Soon</span>

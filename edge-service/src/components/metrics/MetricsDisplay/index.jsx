@@ -39,33 +39,42 @@ function MetricsDisplay() {
     }
   };
 
+  const applyFilters = (metrics, filters) => {
+    return metrics.filter(metric => {
+      const metricDate = new Date(metric.timestamp).getTime();
+      
+      // Service filter
+      if (filters.service && 
+         (metric.fromService !== filters.service && metric.toService !== filters.service)) {
+        return false;
+      }
+
+      // Date filters
+      if (filters.startDate && !filters.endDate) {
+        // Only start date is set
+        return metricDate >= filters.startDate;
+      }
+      
+      if (!filters.startDate && filters.endDate) {
+        // Only end date is set
+        return metricDate <= filters.endDate;
+      }
+      
+      if (filters.startDate && filters.endDate) {
+        // Both dates are set
+        return metricDate >= filters.startDate && metricDate <= filters.endDate;
+      }
+
+      return true;
+    });
+  };
+
   const handleFilterChange = (filters) => {
-    let filtered = [...metrics];
+    // Set selected service for the chart
+    setSelectedService(filters.service || '');
 
-    // Apply service filter
-    if (filters.service) {
-      filtered = filtered.filter(metric => 
-        metric.fromService === filters.service || 
-        metric.toService === filters.service
-      );
-      setSelectedService(filters.service);
-    } else {
-      setSelectedService('');
-    }
-
-    // Apply date filters
-    if (filters.startDate && filters.endDate) {
-      const startDate = new Date(filters.startDate);
-      const endDate = new Date(filters.endDate);
-      // Set time to start and end of day
-      startDate.setHours(0, 0, 0, 0);
-      endDate.setHours(23, 59, 59, 999);
-
-      filtered = filtered.filter(metric => {
-        const metricDate = new Date(metric.timestamp);
-        return metricDate >= startDate && metricDate <= endDate;
-      });
-    }
+    // Use the applyFilters function to filter metrics
+    const filtered = applyFilters(metrics, filters);
 
     // Sort filtered data by timestamp
     filtered.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
