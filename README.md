@@ -144,13 +144,13 @@ export CLIENT_TRUST_STORE="$KEY_BASE_DIR/client-truststore.jks"
 export CLIENT_TRUST_STORE_PASSWORD="123456"
 
 # Slack settings
-SLACK_ENABLED=false;
-SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX;
+export SLACK_ENABLED=false
+export SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
 
 # Smtp Settings
-SMTP_ENABLED=false;
-SMTP_PASSWORD=;
-SMTP_USERNAME=;
+export SMTP_ENABLED=false
+export SMTP_PASSWORD=123456
+export SMTP_USERNAME=abcdef
 ```
 
 Run the source file
