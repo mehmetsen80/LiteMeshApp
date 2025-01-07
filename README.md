@@ -296,7 +296,7 @@ See below the Login and Register pages. If it's the first time you are running, 
 - Login
 - GET: http://localhost:3000/login
 <div align="center">
-<a href="assets/edge/litemesh_login.png"> <img alt="Refresh Routes" src="assets/edge/litemesh_Login.png"></a>
+<a href="assets/edge/litemesh_login.png"> <img alt="Login" src="assets/edge/litemesh_login.png"></a>
 </div>
 
 - Register
