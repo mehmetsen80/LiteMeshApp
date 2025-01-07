@@ -16,7 +16,18 @@ public class MetricService {
     }
 
     public Mono<Void> saveMetric(ApiMetric metric) {
+        // Skip saving if it's a health check request
+        if (isHealthCheckRequest(metric)) {
+            return Mono.empty();
+        }
         return apiMetricRepository.save(metric).then();
+    }
+
+    private boolean isHealthCheckRequest(ApiMetric metric) {
+        // Check if the pathEndpoint contains health endpoint
+        return metric.getPathEndPoint() != null && 
+               (metric.getPathEndPoint().endsWith("/health") || 
+                metric.getPathEndPoint().endsWith("/health/"));
     }
 }
 

@@ -87,6 +87,13 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
 
 
     private void captureMetricsForExchange(ApiRoute apiRoute, ServerWebExchange exchange, long duration, boolean success) {
+        String pathEndpoint = exchange.getRequest().getURI().getPath();
+        
+        // Check for health endpoint BEFORE any processing
+        if (pathEndpoint.endsWith("/health") || pathEndpoint.endsWith("/health/")) {
+            return;
+        }
+
         ApiMetric metric = new ApiMetric();
         metric.setRouteIdentifier(apiRoute.getRouteIdentifier());
         metric.setTimestamp(LocalDateTime.now());
@@ -109,7 +116,6 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
         metric.setGatewayBaseUrl(gatewayBaseUrl);
 
         // Set pathEndpoint (the path part of the URL)
-        String pathEndpoint = exchange.getRequest().getURI().getPath();
         metric.setPathEndPoint(pathEndpoint);
 
         // Set queryParameters
@@ -119,8 +125,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
             metric.setQueryParameters(queryParameters != null ? queryParameters : "");
         }
 
-        // Set requestPayload
-        // Extract requestPayload for POST requests
+        // Save metrics
         if ("POST".equalsIgnoreCase(exchange.getRequest().getMethod().name())) {
             exchange.getRequest().getBody().collectList().flatMap(dataBuffers -> {
                 StringBuilder bodyBuilder = new StringBuilder();
@@ -132,7 +137,8 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
             metricService.saveMetric(metric).subscribe();
         }
 
-        log.info("Captured Metrics - InteractionType: {}, From: {}, To: {}, Base URL: {}, Path: {}, Duration: {}ms, Success: {}",
+        // Log metrics
+        log.debug("Captured Metrics - InteractionType: {}, From: {}, To: {}, Base URL: {}, Path: {}, Duration: {}ms, Success: {}",
                 metric.getInteractionType(), metric.getFromService(), metric.getToService(),
                 metric.getGatewayBaseUrl(), metric.getPathEndPoint(), metric.getDuration(), metric.isSuccess());
     }

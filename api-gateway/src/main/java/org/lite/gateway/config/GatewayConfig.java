@@ -10,18 +10,30 @@ import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.codec.ServerCodecConfigurer;
+import org.springframework.web.reactive.config.WebFluxConfigurer;
 
 @Configuration
 @Slf4j
-public class GatewayConfig {
-
+public class GatewayConfig implements WebFluxConfigurer {
+    
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder routeLocationBuilder,
-                                     RouteService routeService,
-                                     ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory,
-                                     RedisTemplate<String, String> redisTemplate,
-                                     MetricService metricService) {
+                                    RouteService routeService,
+                                    ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory,
+                                    RedisTemplate<String, String> redisTemplate,
+                                    MetricService metricService) {
         return new ApiRouteLocatorImpl(routeLocationBuilder,
                 routeService, reactiveResilience4JCircuitBreakerFactory, redisTemplate, metricService);
+    }
+
+    @Bean
+    public ServerCodecConfigurer serverCodecConfigurer() {
+        return ServerCodecConfigurer.create();
+    }
+
+    @Override
+    public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
+        configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024); // 16MB
     }
 }

@@ -1,11 +1,8 @@
-.metrics-page {
-    padding: 2rem;
-    max-width: 2000px;
-    margin: 0 auto;
-  }
-  
-  @media (max-width: 768px) {
-    .metrics-page {
-      padding: 1rem;
-    }
-  }
+.metrics-page  {
+    padding: 20px;
+}
+
+.metrics-page  h1 {
+    margin-bottom: 24px;
+    color: #333;
+} 

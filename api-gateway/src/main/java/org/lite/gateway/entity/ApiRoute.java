@@ -18,6 +18,8 @@ public class ApiRoute{
     String scope;
     Integer maxCallsPerDay;
     List<FilterConfig> filters;
+    HealthCheckConfig healthCheck;
 }
+
 
 

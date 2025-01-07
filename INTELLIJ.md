@@ -23,10 +23,10 @@ VM Options:
 
 Environmental Variables (EV):
 ```shell 
-GATEWAY_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks;GATEWAY_KEY_STORE_PASSWORD=123456;GATEWAY_TRUST_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks;GATEWAY_TRUST_STORE_PASSWORD=123456
+GATEWAY_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-keystore.jks;GATEWAY_KEY_STORE_PASSWORD=123456;GATEWAY_TRUST_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/gateway-truststore.jks;GATEWAY_TRUST_STORE_PASSWORD=123456;KEYCLOAK_GATEWAY_PORT=8281;KEYCLOAK_GATEWAY_URL=localhost;SLACK_ENABLED=false;SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX;SMTP_ENABLED=false;SMTP_PASSWORD=;SMTP_USERNAME=
 ```
 
-#### Inventory, Product and Mesh Service:
+#### Inventory and Product:
 VM Options:
 ```shell 
 -Djavax.net.ssl.trustStore=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks -Djavax.net.ssl.trustStorePassword=123456

@@ -1,11 +1,12 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import apiMetricsRoutes from './api/apiMetrics.js';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import apiMetricsRoutes from './api/apiMetrics.js';
 import authRoutes from './api/authRoutes.js';
+import serviceRoutes from './routes/serviceRoutes.js';
 
 // Get the directory path of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -13,7 +14,6 @@ const __dirname = dirname(__filename);
 
 // Load .env from root directory
 dotenv.config({ path: join(__dirname, '../.env') });
-
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 5000;
@@ -26,7 +26,6 @@ console.log('VITE_MONGODB_URI:', process.env.VITE_MONGODB_URI);
 console.log('VITE_MONGODB_DB_NAME:', process.env.VITE_MONGODB_DB_NAME);
 console.log('BACKEND_PORT:', process.env.BACKEND_PORT);
 console.log('FRONTEND_URL:', FRONTEND_URL);
-
 
 // CORS configuration
 const corsOptions = {
@@ -76,6 +75,7 @@ mongoose.connection.on('disconnected', () => {
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/metrics', apiMetricsRoutes);
+app.use('/api/services', serviceRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {
@@ -100,7 +100,12 @@ async function gracefulShutdown() {
     try {
         await mongoose.connection.close();
         console.log('MongoDB connection closed');
-        process.exit(0);
+        
+        // Close WebSocket server
+        wss.close(() => {
+            console.log('WebSocket server closed');
+            process.exit(0);
+        });
     } catch (err) {
         console.error('Error during shutdown:', err);
         process.exit(1);

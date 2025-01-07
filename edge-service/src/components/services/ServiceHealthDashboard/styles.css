@@ -1,0 +1,64 @@
+.service-health-dashboard {
+    padding: 20px;
+    max-width: 1800px;
+    margin: 0 auto;
+    margin-top: 0;
+}
+
+.service-health-dashboard h1 {
+    color: #fff;
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    width: 100%;
+    justify-content: space-between;
+}
+
+/* Add max-width to cards to ensure consistent sizing */
+.services-grid > * {
+    max-width: 100%;
+    min-width: 0;  /* Prevents grid items from overflowing */
+}
+
+/* Ensure consistent spacing at different breakpoints */
+@media (max-width: 1200px) {
+    .services-grid {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .services-grid {
+        grid-template-columns: 1fr;
+        padding: 10px;
+    }
+}
+
+.dashboard-error {
+    text-align: center;
+    padding: 40px;
+    background: rgba(255, 0, 0, 0.1);
+    border-radius: 8px;
+    margin: 20px;
+}
+
+.dashboard-error h2 {
+    color: #ff4444;
+    margin-bottom: 10px;
+}
+
+.dashboard-error p {
+    color: #fff;
+}
+
+/* Add styles for Alert components */
+.service-health-dashboard .MuiAlert-root {
+    margin: 0px 20px 0 20px;
+} 

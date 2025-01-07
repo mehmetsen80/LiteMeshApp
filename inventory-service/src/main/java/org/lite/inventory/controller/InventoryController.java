@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,7 +16,6 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
-@RequestMapping("/inventory")
 @Slf4j
 public class InventoryController {
 
@@ -45,21 +43,33 @@ public class InventoryController {
     @GetMapping("/greet")
     public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request) {
         log.info("Greetings from Inventory Service!");
-        InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
-        GreetingResponse response = new GreetingResponse();
-        response.setIndex(requestCount.getAndIncrement());
-        response.setGreeting("Hello from Inventory service !!");
-        response.setInstanceId(instanceId);
-        response.setPort(service.getPort());
-        response.setUrl(request.getRequestURL().toString());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        
+        try {
+            com.netflix.discovery.shared.Application application = eurekaClient.getApplication(appName);
+            if (application == null || application.getInstances().isEmpty()) {
+                log.error("No instances found for application: {}", appName);
+                return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+            }
+
+            InstanceInfo service = application.getInstances().getFirst();
+            GreetingResponse response = new GreetingResponse();
+            response.setIndex(requestCount.getAndIncrement());
+            response.setGreeting("Hello from Inventory service !!");
+            response.setInstanceId(instanceId);
+            response.setPort(service.getPort());
+            response.setUrl(request.getRequestURL().toString());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+        } catch (Exception e) {
+            log.error("Error getting service information: {}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    // Method to call Inventory Service from Product Service
+    // Method to call Product Service from Inventory Service
     @GetMapping("/callProduct")
-    public ResponseEntity<GreetingResponse> callInventoryService(){
-        //log.info("gatewayBaseUrl: {}", gatewayBaseUrl);
-        String url = gatewayBaseUrl + "/product/greet";  // Build the full URL dynamically as Inventory endpoint URL
+    public ResponseEntity<GreetingResponse> callProductService(){
+        String url = gatewayBaseUrl + "/product/greet";
         try {
             GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
             log.info("Response from Product Service: {}", response);

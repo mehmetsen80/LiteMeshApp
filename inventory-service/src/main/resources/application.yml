@@ -20,6 +20,8 @@ server:
     trust-store-password: ${CLIENT_TRUST_STORE_PASSWORD}
     trust-store-type: JKS
     client-auth: want
+  servlet:
+    context-path: /inventory
 
 
 gateway:

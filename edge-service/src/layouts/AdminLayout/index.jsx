@@ -1,28 +1,26 @@
-import { Navigate, useLocation } from 'react-router-dom';
+import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Navigate, Outlet } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import './styles.css';
 
-function AdminLayout({ children }) {
-  const { user } = useAuth();
-  const location = useLocation();
+const AdminLayout = ({ children }) => {
+    const { user } = useAuth();
 
-  // List of public routes that don't require authentication
-  const publicRoutes = ['/login', '/register'];
+    // If no user, redirect to login
+    if (!user) {
+        return <Navigate to="/login" replace />;
+    }
 
-  if (!user && !publicRoutes.includes(location.pathname)) {
-    // Redirect to login if user is not authenticated and trying to access protected route
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return (
-    <div className="admin-layout">
-      <Header />
-      <main className="main-content">
-        {children}
-      </main>
-    </div>
-  );
-}
+    // If authenticated, show header and content
+    return (
+        <div className="admin-layout">
+            <Header />
+            <main className="main-content">
+                <Outlet />
+            </main>
+        </div>
+    );
+};
 
 export default AdminLayout; 

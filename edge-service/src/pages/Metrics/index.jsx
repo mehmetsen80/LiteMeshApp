@@ -1,12 +1,14 @@
-import MetricsDisplay from '../../components/metrics/MetricsDisplay';
+import React from 'react';
 import './styles.css';
 
-function Metrics() {
+import MetricsDisplay from '../../components/metrics/MetricsDisplay';
+
+const Metrics = () => {
   return (
     <div className="metrics-page">
       <MetricsDisplay />
     </div>
   );
-}
+};
 
 export default Metrics;

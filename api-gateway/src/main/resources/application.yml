@@ -4,6 +4,7 @@ spring:
   main:
     allow-bean-definition-overriding: true
     allow-circular-references: true
+    web-application-type: reactive
   redis:
     host: ${REDIS_GATEWAY_URL:localhost}
     port: 6379
@@ -70,12 +71,6 @@ spring:
         predicates:
         - Path=/eureka/**
 
-        ## Mesh Service (Main Web User Interface)
-      - id: mesh-service
-        uri: lb://mesh-service
-        predicates:
-        - Path=/mesh/**
-
 #        ## Inventory Service (Just to Test) (This is being loaded dynamically from mongodb)
 #      - id: inventory-service
 #        uri: lb://inventory-service
@@ -139,3 +134,17 @@ logging:
     org.springframework.cloud.gateway.filter.ratelimit: DEBUG
     org.springframework.data.redis: DEBUG
     javax.net.ssl: DEBUG
+    org.springframework.web.socket: DEBUG
+    org.springframework.messaging: DEBUG
+
+notifications:
+  email:
+    host: in-v3.mailjet.com
+    port: 587
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    to: msen@dipme.com
+    enabled: ${SMTP_ENABLED:false}
+  slack:
+    webhook-url: ${SLACK_WEBHOOK_URL}
+    enabled: ${SLACK_ENABLED:false}

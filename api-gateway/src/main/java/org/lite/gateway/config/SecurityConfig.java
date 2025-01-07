@@ -26,6 +26,9 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
 import org.springframework.web.server.WebFilter;
 import reactor.core.publisher.Mono;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +42,18 @@ import java.util.regex.Pattern;
 @Slf4j
 public class SecurityConfig {
 
+    @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
+    private String jwkSetUri;
+
     private final DynamicRouteService dynamicRouteService;
+    private final ReactiveClientRegistrationRepository customClientRegistrationRepository;
+    private final ReactiveOAuth2AuthorizedClientService customAuthorizedClientService;
+
+    //DO NOT DELETE THIS, IT'S BEING USED
+    @Bean
+    public ReactiveJwtDecoder jwtDecoder() {
+        return NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build();
+    }
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity, AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
@@ -113,9 +127,8 @@ public class SecurityConfig {
     // Bean to handle OAuth2 client credentials
     // DO NOT DELETE THIS
     @Bean
-    public ReactiveOAuth2AuthorizedClientManager authorizedClientManager(
-            ReactiveClientRegistrationRepository clientRegistrationRepository,
-            ReactiveOAuth2AuthorizedClientService authorizedClientService) {
+    public AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager(
+            ) {
 
         ReactiveOAuth2AuthorizedClientProvider authorizedClientProvider = ReactiveOAuth2AuthorizedClientProviderBuilder.builder()
                 .authorizationCode()
@@ -124,7 +137,7 @@ public class SecurityConfig {
                 .build();
 
         AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager =
-                new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(clientRegistrationRepository, authorizedClientService);
+                new AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager(customClientRegistrationRepository, customAuthorizedClientService);
         authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
 
 //        //This is just to test if we get the token or not, enable this to test
@@ -174,18 +187,20 @@ public class SecurityConfig {
 
     private Mono<AuthorizationDecision> dynamicPathAuthorization(Mono<Authentication> authenticationMono, AuthorizationContext authorizationContext) {
         String path = authorizationContext.getExchange().getRequest().getPath().toString();
-        log.info("authorizationContext.getExchange().getRequest().getPath(): {}", path);
+        log.info("Checking authorization for path: {} with method: {}", path, 
+            authorizationContext.getExchange().getRequest().getMethod());
 
         //1st step
         // Use the path matcher from the DynamicRouteService to check if the path is whitelisted.
         // whitelisted means either hard coded or read from mongodb
         boolean isWhitelisted = dynamicRouteService.isPathWhitelisted(path);
+        log.info("Is path {} whitelisted? {}", path, isWhitelisted);
 
-        String prefix = "/inventory/";
-        String scopeKey = "";
-        if (path.startsWith(prefix)) {
-            scopeKey = prefix + "**";
-        }
+//        String prefix = "/inventory/";
+//        String scopeKey = "";
+//        if (path.startsWith(prefix)) {
+//            scopeKey = prefix + "**";
+//        }
         String scope = dynamicRouteService.getClientScope(getScopeKey(path));//i.e. inventory/** -> inventory-service.read
 
         //2nd step - check the realm access role
@@ -208,7 +223,12 @@ public class SecurityConfig {
 
                         //i.e. inventory-service.read or product-service.read should be defined in the keycloak
                         //we bypass the refresh and fallback end points
-                        if(!path.equals("/routes/refresh/routes") && !path.startsWith("/fallback/")){
+                        if(!path.startsWith("/ws-lite-mesh")
+                                && !path.startsWith("/metrics/")
+                                && !path.startsWith("/analysis/")
+                                && !path.startsWith("/routes/")
+                                && !path.startsWith("/health/")
+                                && !path.startsWith("/fallback/")){
                             boolean hasClientReadScope = scope != null && scopes.contains(scope);//does the client itself has the scope
                             if (!hasClientReadScope){
                                 if(scope == null) {

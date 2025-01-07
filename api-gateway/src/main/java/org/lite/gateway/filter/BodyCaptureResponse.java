@@ -7,6 +7,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 
@@ -54,9 +55,13 @@ public class BodyCaptureResponse extends  ServerHttpResponseDecorator {
         HttpHeaders headers = new HttpHeaders();
         headers.addAll(super.getHeaders());
 
-        // Ensure that the Authorization header is copied
+        // Preserve the original content type if it exists
+        if (!headers.containsKey(HttpHeaders.CONTENT_TYPE)) {
+            headers.set(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+        }
+        
+        // Copy Authorization header if it exists
         if (super.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-            headers.set(HttpHeaders.CONTENT_TYPE, "application/json");
             headers.set(HttpHeaders.AUTHORIZATION, super.getHeaders().getFirst(HttpHeaders.AUTHORIZATION));
         }
 

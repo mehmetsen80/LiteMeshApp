@@ -1,4 +1,4 @@
-![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.6-brightgreen)
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.7-brightgreen)
 
 
 # What is LiteMesh?
@@ -39,13 +39,13 @@ For full details, see the [LICENSE](./LICENSE) file.
 
 # SERVICES
 
-| Service               | Description                                                                                                      |
-|-----------------------|------------------------------------------------------------------------------------------------------------------|
-| **discovery-server**  | A Eureka server responsible for service discovery, enabling routing by dynamically resolving service addresses.  |
-| **api-gateway**       | The central hub of the API ecosystem, managing all request flows with dynamic routing and built-in resilience.   |
-| **inventory-service** | A sample microservice that demonstrates API integration within the ecosystem.                                    |
-| **product-service**   | Another sample microservice with API integration, showcasing service communication.                              |
-| **mesh-service**      | A user interface that will display metrics and statistics in detail (currently under development).               |
+| Service               | Description                                                                                                     |
+|-----------------------|-----------------------------------------------------------------------------------------------------------------|
+| **discovery-server**  | A Eureka server responsible for service discovery, enabling routing by dynamically resolving service addresses. |
+| **api-gateway**       | The central hub of the API ecosystem, managing all request flows with dynamic routing and built-in resilience.  |
+| **inventory-service** | A sample microservice that demonstrates API integration within the ecosystem.                                   |
+| **product-service**   | Another sample microservice with API integration, showcasing service communication.                             |
+| **edge-service**      | A web user interface that displays metrics and statistics in detail.                                            |
 
 
 # HOW IT WORKS
@@ -142,6 +142,15 @@ export CLIENT_KEY_STORE="$KEY_BASE_DIR/client-keystore.jks"
 export CLIENT_KEY_STORE_PASSWORD="123456"
 export CLIENT_TRUST_STORE="$KEY_BASE_DIR/client-truststore.jks"
 export CLIENT_TRUST_STORE_PASSWORD="123456"
+
+# Slack settings
+SLACK_ENABLED=false;
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX;
+
+# Smtp Settings
+SMTP_ENABLED=false;
+SMTP_PASSWORD=;
+SMTP_USERNAME=;
 ```
 
 Run the source file
@@ -195,14 +204,12 @@ This will create the following jar files
 | api-gateway       |   LiteGateway.jar    |   Gateway    |    Yes    |
 | discovery-server  | DiscoveryService.jar |  Discovery   |    Yes    |
 | inventory-service | InventoryService.jar | Microservice | Optional  |
-| mesh-service      |   MeshService.jar    |    Web UI    | Optional  |
 | product-service   |  ProductService.jar  | Microservice | Optional  |
 
 
 The api-gateway acts as the entry point for handling requests from the inventory-service and product-service. These services are simple microservices designed to demonstrate the gateway’s connectivity and functionality.
 
-The mesh-service serves as the user interface, but it's optional to run—whether you include it or not is up to you.
-
+We will run the edge-service web user interface later as it is a react web application.
 
 ## RUN THE JAR FILES FROM TERMINAL
 
@@ -267,6 +274,57 @@ Check Eureka again, you should see 3 registered services; api-gateway, inventory
 <a href="assets/eureka_server_all.png"> <img alt="Eureka Server All Services" src="assets/eureka_server_all.png"></a>
 </div>
 
+## RUN WEB USER INTERFACE
+Assuming you are at the project root folder
+```shell
+cd edge-service
+```
+Start nodejs backend
+```shell
+node backend/server.js
+```
+Install npm plugins
+```shell
+npm install
+```
+Start the frontend
+```shell
+npm run dev
+```
+
+See below the Login and Register pages. If it's the first time you are running, then please register
+- Login
+- GET: http://localhost:3000/login
+<div align="center">
+<a href="assets/edge/litemesh_login.png"> <img alt="Refresh Routes" src="assets/edge/litemesh_Login.png"></a>
+</div>
+
+- Register
+- GET: http://localhost:3000/register
+<div align="center">
+<a href="assets/edge/litemesh_register.png"> <img alt="Register" src="assets/edge/litemesh_register.png"></a>
+</div>
+
+After you authenticate, this is the home page
+- Home Page
+- GET: http://localhost:3000
+<div align="center">
+<a href="assets/edge/litemesh_home.png"> <img alt="Home Page" src="assets/edge/litemesh_home.png"></a>
+</div>
+
+
+- API Metrics Page
+- GET: http://localhost:3000/metrics
+<div align="center">
+<a href="assets/edge/litemesh_api_metrics.png"> <img alt="API Metrics Page" src="assets/edge/litemesh_api_metrics.png"></a>
+</div>
+
+
+- Service Health Status Page
+- GET: http://localhost:3000/service-status
+<div align="center">
+<a href="assets/edge/litemesh_service_status.png"> <img alt="Service Health Status Page" src="assets/edge/litemesh_service_status.png"></a>
+</div>
 
 ## INTELLIJ SETTINGS
 For detailed Keycloak setup instructions, see the [IntelliJ Settings](INTELLIJ.md).
@@ -296,8 +354,37 @@ So, let's first post the inventory-service and product-service document data to 
   "routeIdentifier": "inventory-service",
   "uri": "lb://inventory-service",
   "method": "",
+  "scope": "inventory-service.read",
   "path": "/inventory/**",
   "maxCallsPerDay": 100000,
+  "healthCheck": {
+    "enabled": true,
+    "endpoint": "/health",
+    "requiredMetrics": [
+      "cpu",
+      "memory"
+    ],
+    "thresholds": {
+      "cpuThreshold": 80,
+      "memoryThreshold": 85
+    },
+    "alertRules": [
+      {
+        "metric": "cpu",
+        "condition": ">",
+        "threshold": 80,
+        "description": "High CPU usage alert",
+        "severity": "WARNING"
+      },
+      {
+        "metric": "memory",
+        "condition": ">",
+        "threshold": 85,
+        "description": "High memory usage alert",
+        "severity": "CRITICAL"
+      }
+    ]
+  },
   "filters": [
     {
       "name": "RedisRateLimiter",
@@ -320,9 +407,9 @@ So, let's first post the inventory-service and product-service document data to 
         "name": "inventoryCircuitBreaker",
         "fallbackUri": "/fallback/inventory",
         "slidingWindowSize": "2",
-        "failureRateThreshold": "10",
+        "failureRateThreshold": "80",
         "waitDurationInOpenState": "PT10S",
-        "permittedNumberOfCallsInHalfOpenState": "1",
+        "permittedNumberOfCallsInHalfOpenState": "3",
         "recordFailurePredicate": "HttpResponsePredicate",
         "automaticTransitionFromOpenToHalfOpenEnabled": "true"
       }
@@ -353,8 +440,37 @@ So, let's first post the inventory-service and product-service document data to 
   "routeIdentifier": "product-service",
   "uri": "lb://product-service",
   "method": "",
+  "scope": "product-service.read",
   "path": "/product/**",
   "maxCallsPerDay": 100000,
+  "healthCheck": {
+    "enabled": true,
+    "endpoint": "/health",
+    "requiredMetrics": [
+      "cpu",
+      "memory"
+    ],
+    "thresholds": {
+      "cpuThreshold": 80,
+      "memoryThreshold": 85
+    },
+    "alertRules": [
+      {
+        "metric": "cpu",
+        "condition": ">",
+        "threshold": 80,
+        "description": "High CPU usage alert",
+        "severity": "WARNING"
+      },
+      {
+        "metric": "memory",
+        "condition": ">",
+        "threshold": 85,
+        "description": "High memory usage alert",
+        "severity": "CRITICAL"
+      }
+    ]
+  },
   "filters": [
     {
       "name": "RedisRateLimiter",
@@ -377,7 +493,7 @@ So, let's first post the inventory-service and product-service document data to 
         "name": "productCircuitBreaker",
         "fallbackUri": "/fallback/product",
         "slidingWindowSize": "2",
-        "failureRateThreshold": "10",
+        "failureRateThreshold": "80",
         "waitDurationInOpenState": "PT210S",
         "permittedNumberOfCallsInHalfOpenState": "3",
         "recordFailurePredicate": "HttpResponsePredicate",
@@ -416,8 +532,24 @@ It's expected that once inventory-service is called, it should run through the g
 
 InventoryController.java
 ```java
+package org.lite.inventory.controller;
+
+import com.netflix.appinfo.InstanceInfo;
+import com.netflix.discovery.EurekaClient;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.lite.inventory.model.GreetingResponse;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
+
 @RestController
-@RequestMapping("/inventory")
 @Slf4j
 public class InventoryController {
 
@@ -427,33 +559,51 @@ public class InventoryController {
     @Value("${spring.application.name}")
     private String appName;
 
+    @Value("${gateway.base-url}")
+    private String gatewayBaseUrl; // Inject gateway base URL
+
     // Only work if the discovery client is Eureka
     private final EurekaClient eurekaClient;
+    private final RestTemplate restTemplate;
 
     AtomicInteger requestCount = new AtomicInteger(1);
 
     // Wiring the Eureka Client
-    public InventoryController(EurekaClient eurekaClient) {
+    public InventoryController(EurekaClient eurekaClient, RestTemplate restTemplate) {
         this.eurekaClient = eurekaClient;
+        this.restTemplate = restTemplate;
     }
 
     @GetMapping("/greet")
     public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request) {
         log.info("Greetings from Inventory Service!");
-        InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
-        GreetingResponse response = new GreetingResponse();
-        response.setIndex(requestCount.getAndIncrement());
-        response.setGreeting("Hello from Inventory service !!");
-        response.setInstanceId(instanceId);
-        response.setPort(service.getPort());
-        response.setUrl(request.getRequestURL().toString());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+
+        try {
+            com.netflix.discovery.shared.Application application = eurekaClient.getApplication(appName);
+            if (application == null || application.getInstances().isEmpty()) {
+                log.error("No instances found for application: {}", appName);
+                return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+            }
+
+            InstanceInfo service = application.getInstances().getFirst();
+            GreetingResponse response = new GreetingResponse();
+            response.setIndex(requestCount.getAndIncrement());
+            response.setGreeting("Hello from Inventory service !!");
+            response.setInstanceId(instanceId);
+            response.setPort(service.getPort());
+            response.setUrl(request.getRequestURL().toString());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            log.error("Error getting service information: {}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
-    // Method to call Inventory Service from Product Service
+    // Method to call Product Service from Inventory Service
     @GetMapping("/callProduct")
-    public ResponseEntity<GreetingResponse> callInventoryService(){
-        String url = gatewayBaseUrl + "/product/greet";  // Build the full URL dynamically as Inventory endpoint URL
+    public ResponseEntity<GreetingResponse> callProductService(){
+        String url = gatewayBaseUrl + "/product/greet";
         try {
             GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
             log.info("Response from Product Service: {}", response);
@@ -463,8 +613,8 @@ public class InventoryController {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
 }
+
 ```
 
 Remember port 7777 is the gateway, so as you see the inventory is called through the gateway
@@ -498,14 +648,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
-@RequestMapping("/product")
 public class ProductController {
 
     private static final Logger log = LoggerFactory.getLogger(ProductController.class);
@@ -535,20 +683,33 @@ public class ProductController {
     @GetMapping("/greet")
     public ResponseEntity<GreetingResponse> getProduct(HttpServletRequest request) {
         log.info("Greetings from Product Service!");
-        InstanceInfo service = eurekaClient.getApplication(appName).getInstances().get(0);
-        GreetingResponse response = new GreetingResponse();
-        response.setIndex(requestCount.getAndIncrement());
-        response.setGreeting("Hello from Product service !!");
-        response.setInstanceId(instanceId);
-        response.setPort(service.getPort());
-        response.setUrl(request.getRequestURL().toString());
-        return new ResponseEntity<>(response, HttpStatus.OK);
+
+        try {
+            com.netflix.discovery.shared.Application application = eurekaClient.getApplication(appName);
+            if (application == null || application.getInstances().isEmpty()) {
+                log.error("No instances found for application: {}", appName);
+                return new ResponseEntity<>(HttpStatus.SERVICE_UNAVAILABLE);
+            }
+
+            InstanceInfo service = application.getInstances().getFirst();
+            GreetingResponse response = new GreetingResponse();
+            response.setIndex(requestCount.getAndIncrement());
+            response.setGreeting("Hello from Product service !!");
+            response.setInstanceId(instanceId);
+            response.setPort(service.getPort());
+            response.setUrl(request.getRequestURL().toString());
+            return new ResponseEntity<>(response, HttpStatus.OK);
+
+        } catch (Exception e) {
+            log.error("Error getting service information: {}", e.getMessage());
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     // Method to call Inventory Service from Product Service
     @GetMapping("/callInventory")
     public ResponseEntity<GreetingResponse> callInventoryService(){
-        String url = gatewayBaseUrl + "/inventory/greet";  // Build the full URL dynamically as Inventory endpoint URL
+        String url = gatewayBaseUrl + "/inventory/greet";
         try {
             GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
             log.info("Response from Inventory Service: {}", response);
@@ -559,7 +720,6 @@ public class ProductController {
         }
     }
 }
-
 ```
 
 <div align="center">
@@ -584,13 +744,44 @@ As previously mentioned, the configuration is stored in MongoDB, allowing LiteMe
 Below is an example snippet for the inventory-service and product-service microservices, demonstrating how routing 
 and resilience configurations are stored and can be updated dynamically.
 
+### inventory-service data in MongoDB:
 ```json
 {
   "_id": "1",
   "routeIdentifier": "inventory-service",
   "uri": "lb://inventory-service",
   "method": "",
+  "scope": "inventory-service.read",
   "path": "/inventory/**",
+  "maxCallsPerDay": 100000,
+  "healthCheck": {
+    "enabled": true,
+    "endpoint": "/health",
+    "requiredMetrics": [
+      "cpu",
+      "memory"
+    ],
+    "thresholds": {
+      "cpuThreshold": 80,
+      "memoryThreshold": 85
+    },
+    "alertRules": [
+      {
+        "metric": "cpu",
+        "condition": ">",
+        "threshold": 80,
+        "description": "High CPU usage alert",
+        "severity": "WARNING"
+      },
+      {
+        "metric": "memory",
+        "condition": ">",
+        "threshold": 85,
+        "description": "High memory usage alert",
+        "severity": "CRITICAL"
+      }
+    ]
+  },
   "filters": [
     {
       "name": "RedisRateLimiter",
@@ -613,9 +804,9 @@ and resilience configurations are stored and can be updated dynamically.
         "name": "inventoryCircuitBreaker",
         "fallbackUri": "/fallback/inventory",
         "slidingWindowSize": "2",
-        "failureRateThreshold": "10",
+        "failureRateThreshold": "80",
         "waitDurationInOpenState": "PT10S",
-        "permittedNumberOfCallsInHalfOpenState": "1",
+        "permittedNumberOfCallsInHalfOpenState": "3",
         "recordFailurePredicate": "HttpResponsePredicate",
         "automaticTransitionFromOpenToHalfOpenEnabled": "true"
       }
@@ -631,12 +822,46 @@ and resilience configurations are stored and can be updated dynamically.
   ],
   "_class": "org.lite.gateway.entity.ApiRoute"
 }
+```
+
+### product-service data in MongoDB
+```json
 {
   "_id": "2",
   "routeIdentifier": "product-service",
   "uri": "lb://product-service",
   "method": "",
+  "scope": "product-service.read",
   "path": "/product/**",
+  "maxCallsPerDay": 100000,
+  "healthCheck": {
+    "enabled": true,
+    "endpoint": "/health",
+    "requiredMetrics": [
+      "cpu",
+      "memory"
+    ],
+    "thresholds": {
+      "cpuThreshold": 80,
+      "memoryThreshold": 85
+    },
+    "alertRules": [
+      {
+        "metric": "cpu",
+        "condition": ">",
+        "threshold": 80,
+        "description": "High CPU usage alert",
+        "severity": "WARNING"
+      },
+      {
+        "metric": "memory",
+        "condition": ">",
+        "threshold": 85,
+        "description": "High memory usage alert",
+        "severity": "CRITICAL"
+      }
+    ]
+  },
   "filters": [
     {
       "name": "RedisRateLimiter",
@@ -659,7 +884,7 @@ and resilience configurations are stored and can be updated dynamically.
         "name": "productCircuitBreaker",
         "fallbackUri": "/fallback/product",
         "slidingWindowSize": "2",
-        "failureRateThreshold": "10",
+        "failureRateThreshold": "80",
         "waitDurationInOpenState": "PT210S",
         "permittedNumberOfCallsInHalfOpenState": "3",
         "recordFailurePredicate": "HttpResponsePredicate",
@@ -678,7 +903,6 @@ and resilience configurations are stored and can be updated dynamically.
   "_class": "org.lite.gateway.entity.ApiRoute"
 }
 ```
-
 
 ## DYNAMIC ROUTING
 We chose dynamic routing because of its ability to handle the challenges of modern API management systems, especially 

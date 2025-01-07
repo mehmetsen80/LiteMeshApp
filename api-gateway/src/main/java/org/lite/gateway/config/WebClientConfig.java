@@ -2,22 +2,36 @@ package org.lite.gateway.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.oauth2.client.ReactiveOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.MediaType;
+import org.springframework.http.codec.json.Jackson2JsonDecoder;
+import org.springframework.http.codec.json.Jackson2JsonEncoder;
+import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-//WebClient is not being used right now, keep this for future
 @Configuration
 public class WebClientConfig {
 
     @Bean
-    public WebClient webClient(ReactiveOAuth2AuthorizedClientManager authorizedClientServiceReactiveOAuth2AuthorizedClientManager) {
-        ServerOAuth2AuthorizedClientExchangeFilterFunction oauth2FilterFunction =
-                new ServerOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientServiceReactiveOAuth2AuthorizedClientManager);
-        oauth2FilterFunction.setDefaultClientRegistrationId("lite-mesh-gateway-client");
+    public WebClient.Builder webClientBuilder() {
+        ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
+
+        ExchangeStrategies strategies = ExchangeStrategies
+            .builder()
+            .codecs(clientCodecConfigurer -> {
+                clientCodecConfigurer.defaultCodecs().jackson2JsonDecoder(
+                    new Jackson2JsonDecoder(mapper, MediaType.APPLICATION_JSON)
+                );
+                clientCodecConfigurer.defaultCodecs().jackson2JsonEncoder(
+                    new Jackson2JsonEncoder(mapper, MediaType.APPLICATION_JSON)
+                );
+            })
+            .build();
 
         return WebClient.builder()
-                .filter(oauth2FilterFunction)
-                .build();
+            .exchangeStrategies(strategies);
     }
 }

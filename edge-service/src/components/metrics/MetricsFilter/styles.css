@@ -1,185 +1,172 @@
 .metrics-filter {
-    width: 100%;
-  }
-  
-  .metrics-filter form {
-    display: flex;
-    gap: 40px;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    width: 100%;
-  }
-  
-  .filter-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-  
-  /* Service filter should be wider */
-  .filter-group:first-child {
-    flex: 1;
-    min-width: 200px;
-    text-align: left;
-  }
-  
-  /* Date filters should be narrower */
-  .filter-group:nth-child(2) {
-    flex: 1;
-    min-width: 200px;
-    text-align: left;
-  }
-  
-  .filter-group:nth-child(3),
-  .filter-group:nth-child(4) {
-    flex: 2;
-    min-width: 250px;
-    text-align: left;
-  }
-  
-  .filter-group label {
-    color: #333;
-    font-weight: 500;
-    text-align: left;
-    margin-left: 2px;
-  }
-  
-  .metrics-filter select,
-  .metrics-filter input {
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 8px;  /* Changed to 8px */
-    background-color: white;
-    color: #333;
-    width: 100%;
-    font-size: 14px;
-  }
-  
+  background: #fff;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.filter-content {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.filters-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  overflow-x: auto;
+  width: 100%;
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  flex: 1;
+  min-width: 300px;
+}
+
+.date-time-group {
+  flex-direction: row;
+  align-items: center;
+  flex: 2;
+  min-width: 400px;
+}
+
+.date-time-inputs {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+  position: relative;
+}
+
+.date-time-inputs input[type="date"] {
+  flex: 3;
+  min-width: 140px;
+}
+
+.date-time-inputs input[type="time"] {
+  flex: 2;
+  min-width: 100px;
+  padding-right: 30px;
+}
+
+.date-time-inputs input[type="time"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 8px;
+  padding: 0;
+  margin: 0;
+}
+
+.filter-group label {
+  font-weight: 500;
+  color: #333;
+  white-space: nowrap;
+}
+
+.filter-group select,
+.filter-group input {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  width: 100%;
+}
+
+.filter-group select {
+  flex: 1;
+  min-width: 180px;
+}
+
+.filter-group select:focus,
+.filter-group input:focus {
+  outline: none;
+  border-color: #0c056d;
+  box-shadow: 0 0 0 2px rgba(12, 5, 109, 0.1);
+}
+
+.filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
+  margin-top: 5px;
+  gap: 15px;
+}
+
+.quick-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.quick-filters button {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.quick-filters button:hover {
+  background-color: #e9e9e9;
+}
+
+.apply-button {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: #0c056d;
+  color: white;
+  cursor: pointer;
+}
+
+.clear-button {
+  padding: 6px 12px;
+  border: 1px solid #dc3545;
+  border-radius: 4px;
+  background-color: white;
+  color: #dc3545;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
   .filter-actions {
-    display: flex;
-    gap: 20px;
-    align-items: flex-end;
-    flex-wrap: wrap;
-    width: 100%;
-    margin-top: 1rem;
-  }
-  
-  .metrics-filter button {
-    padding: 8px 20px;
-    border: none;
-    border-radius: 8px;  /* Changed to 8px */
-    cursor: pointer;
-    transition: all 0.2s ease;
-    font-weight: 500;
-    white-space: nowrap;
-  }
-  
-  .metrics-filter .apply-button {
-    background-color: #0c056d;  /* Changed to new color */
-    color: white;
-  }
-  
-  .metrics-filter .apply-button:hover {
-    background-color: #0a0459;  /* Slightly darker shade for hover */
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .metrics-filter .clear-button {
-    background-color: #6c757d;
-    color: white;
-  }
-  
-  .metrics-filter .clear-button:hover {
-    background-color: #5a6268;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .date-time-group {
-    flex: 2;
-  }
-  
-  .date-time-inputs {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .date-time-inputs input[type="date"] {
-    flex: 2;
-  }
-  
-  .date-time-inputs input[type="time"] {
-    flex: 1;
-  }
-  
-  .filter-error {
-    color: #dc3545;
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
+    flex-direction: column;
+    align-items: stretch;
   }
   
   .quick-filters {
-    display: flex;
+    justify-content: center;
+  }
+  
+  .action-buttons {
+    justify-content: center;
+  }
+  
+  .date-time-inputs {
+    flex-direction: column;
     gap: 10px;
-    flex-wrap: wrap;
-    flex: 1;
   }
   
-  .quick-filters button {
-    padding: 6px 12px;
-    background-color: #f8f9fa;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    color: #333;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  .date-time-inputs input[type="date"],
+  .date-time-inputs input[type="time"] {
+    width: 100%;
+    min-width: 100%;
   }
   
-  .quick-filters button:hover {
-    background-color: #e9ecef;
-    border-color: #ccc;
+  .date-time-group {
+    min-width: 300px;
   }
-  
-  .export-button {
-    background-color: #28a745;
-    color: white;
-    padding: 8px 20px;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  
-  .export-button:hover {
-    background-color: #218838;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  [title] {
-    cursor: help;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .metrics-filter form {
-      gap: 20px;
-    }
-
-    .filter-actions {
-      flex-direction: column;
-      gap: 10px;
-      align-items: stretch;
-    }
-
-    .quick-filters {
-      width: 100%;
-    }
-
-    .quick-filters button,
-    .apply-button,
-    .clear-button {
-      width: 100%;
-    }
-  }
+} 

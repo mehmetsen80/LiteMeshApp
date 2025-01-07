@@ -1,0 +1,131 @@
+.service-card {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-2px);
+}
+
+.service-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.service-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.status-badge.green {
+  background-color: #4caf50;
+  color: white;
+}
+
+.status-badge.red {
+  background-color: #f44336;
+  color: white;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.metric-label {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.metric-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.metric-trend {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.service-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #666;
+  border-top: 1px solid #eee;
+  padding-top: 15px;
+}
+
+.service-card.error {
+    border-color: #ff4444;
+    background-color: #fff5f5;
+    opacity: 0.9;
+}
+
+.service-card.critical {
+    animation: pulse 2s infinite;
+    border-color: #ff4444;
+}
+
+.service-card.high-latency {
+    border-color: #ffbb33;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+.error-message {
+    color: #ff4444;
+    text-align: center;
+    padding: 1rem;
+}
+
+.metric-item.critical .metric-value {
+    color: #ff4444;
+}
+
+.metric-item.warning .metric-value {
+    color: #ffbb33;
+}
+
+/* Add a visual indicator for offline services */
+.service-card.error .status-badge.red {
+    animation: pulse 2s infinite;
+}
+
+/* Ensure offline services don't look too faded */
+.service-card.error .metric-value {
+    color: #666;
+}
+
+.service-card.error .metric-trend {
+    color: #ff4444;
+} 

@@ -11,7 +11,7 @@ const apiMetricSchema = new mongoose.Schema({
     pathEndPoint: { type: String, required: true },
     queryParameters: { type: String, default: '' },
     success: { type: Boolean, required: true },
-    _class: { type: String, required: true },
+    _class: { type: String, required: true }
 }, { collection: 'apiMetrics' });
 
 export default mongoose.model('ApiMetric', apiMetricSchema);

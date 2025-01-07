@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -21,16 +22,41 @@ ChartJS.register(
   Legend
 );
 
-function MetricsChart({ data }) {
-  // Generate random color
-  const getRandomColor = () => {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-  };
+// Create a color generator function
+const generateColors = (index, totalServices) => {
+  // Base color (your primary color #0c056d)
+  const baseHue = 240; // Hue value for #0c056d
+  const baseSaturation = 90;
+  const baseLightness = 22;
+
+  // Calculate evenly distributed hues
+  const hueStep = 360 / totalServices;
+  const hue = (baseHue + (index * hueStep)) % 360;
+
+  // Alternate saturation and lightness for better distinction
+  const saturation = baseSaturation + (index % 2) * 5;
+  const lightness = baseLightness + (index % 3) * 10;
+
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
+function MetricsChart({ data, selectedService }) {
+  // Create a persistent color map for services
+  const serviceColors = useMemo(() => {
+    const colors = {};
+    
+    // Get unique service pairs
+    const uniqueServices = [...new Set(data.map(metric => 
+      `${metric.fromService} → ${metric.toService}`
+    ))];
+
+    // Assign generated colors to services
+    uniqueServices.forEach((service, index) => {
+      colors[service] = generateColors(index, uniqueServices.length);
+    });
+
+    return colors;
+  }, []); // Empty dependency array means this only runs once
 
   // Format date and time
   const formatDateTime = (timestamp) => {
@@ -63,56 +89,109 @@ function MetricsChart({ data }) {
 
   const chartData = {
     labels: timestamps.map(formatDateTime),
-    datasets: Object.entries(serviceData).map(([serviceName, metrics]) => {
-      const color = getRandomColor();
-      return {
-        label: serviceName,
-        data: timestamps.map(timestamp => {
-          const point = metrics.find(m => m.timestamp === timestamp);
-          return point ? point.duration : null;
-        }),
-        fill: false,
-        borderColor: color,
-        backgroundColor: color,
-        tension: 0.1,
-        spanGaps: true
-      };
-    })
+    datasets: Object.entries(serviceData).map(([serviceName, metrics]) => ({
+      label: serviceName,
+      data: timestamps.map(timestamp => {
+        const point = metrics.find(m => m.timestamp === timestamp);
+        return point ? point.duration : null;
+      }),
+      fill: false,
+      borderColor: serviceColors[serviceName],
+      backgroundColor: serviceColors[serviceName],
+      tension: 0.1,
+      spanGaps: true,
+      animation: {
+        duration: 100
+      }
+    }))
   };
 
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+        duration: 100
+    },
+    animations: {
+        colors: false
+    },
     plugins: {
-      legend: {
-        position: 'top',
-        labels: {
-          padding: 20,
-          usePointStyle: true,
-          font: {
-            size: 12
-          }
+        legend: {
+            position: 'top',
+            labels: {
+                color: '#333',
+                font: {
+                    size: 12
+                }
+            }
+        },
+        title: {
+            display: true,
+            text: 'API Response Times by Service',
+            font: {
+                size: 16,
+                weight: 'bold'
+            }
+        },
+        tooltip: {
+            enabled: true,
+            mode: 'nearest',
+            intersect: false,
+            backgroundColor: '#000000',
+            titleColor: '#ffffff',
+            bodyColor: '#ffffff',
+            borderColor: '#333',
+            borderWidth: 1,
+            padding: 10,
+            bodySpacing: 4,
+            bodyFont: {
+                size: 12
+            },
+            titleFont: {
+                size: 13,
+                weight: 'bold'
+            },
+            boxPadding: 6,
+            boxWidth: 6,
+            usePointStyle: true,
+            animation: false,
+            transitions: false,
+            animationDuration: 0,
+            callbacks: {
+                label: (context) => {
+                    // Find the corresponding metric using timestamp and service name
+                    const timestamp = timestamps[context.dataIndex];
+                    const serviceName = context.dataset.label;
+                    const metric = data.find(m => 
+                        m.timestamp === timestamp && 
+                        `${m.fromService} → ${m.toService}` === serviceName
+                    );
+
+                    if (!metric) return null;
+
+                    return [
+                        `Duration: ${metric.duration}ms`,
+                        `From: ${metric.fromService}`,
+                        `To: ${metric.toService}`,
+                        `Gateway URL: ${metric.gatewayBaseUrl}`,
+                        `Query Params: ${metric.queryParameters || 'none'}`,
+                        `Path: ${metric.pathEndPoint}`,
+                        `Route ID: ${metric.routeIdentifier}`,
+                        `Type: ${metric.interactionType}`,
+                        `Status: ${metric.success ? '✅ SUCCESS' : '❌ FAILED'}`
+                    ];
+                },
+                title: (context) => {
+                    const timestamp = timestamps[context[0].dataIndex];
+                    return formatDateTime(timestamp);
+                }
+            }
         }
-      },
-      title: {
-        display: true,
-        text: 'API Response Times by Service',
-        font: {
-          size: 16,
-          weight: 'bold'
-        }
-      },
-      tooltip: {
-        callbacks: {
-          label: (context) => {
-            return `${context.dataset.label}: ${context.parsed.y} ms`;
-          },
-          title: (tooltipItems) => {
-            const timestamp = timestamps[tooltipItems[0].dataIndex];
-            return new Date(timestamp).toLocaleString();
-          }
-        }
-      }
+    },
+    interaction: {
+        mode: 'nearest',
+        intersect: false,
+        axis: 'x'
     },
     scales: {
       y: {
@@ -136,9 +215,9 @@ function MetricsChart({ data }) {
   };
 
   return (
-    <div className="metrics-chart">
-      <Line 
-        data={chartData} 
+    <div className="metrics-chart" style={{ position: 'relative', zIndex: 0 }}>
+      <Line
+        data={chartData}
         options={options}
         height={300}
       />

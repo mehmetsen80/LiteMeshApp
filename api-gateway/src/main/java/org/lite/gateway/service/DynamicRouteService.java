@@ -1,6 +1,7 @@
 package org.lite.gateway.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.entity.ApiRoute;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -17,6 +18,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DynamicRouteService {
 
     // set Initial internal whitelist paths
@@ -24,6 +26,10 @@ public class DynamicRouteService {
         add("/eureka/**");
         add("/mesh/**");
         add("/routes/**");
+        add("/health/**");
+        add("/analysis/**");
+        add("/ws-lite-mesh/**");
+        add("/metrics/**");
         add("/favicon.ico");
         add("/fallback/**");
         add("/actuator/**");
@@ -96,8 +102,24 @@ public class DynamicRouteService {
     }
 
     // Check if a path matches any whitelisted pattern
-    public boolean isPathWhitelisted(String requestPath) {
+    public boolean isPathWhitelisted(String path) {
+        log.debug("Checking if path is whitelisted: {}", path);
+        log.debug("Current whitelisted paths: {}", whitelistedPaths);
+        
+        // First, check if the exact path is in the whitelist
+        if (whitelistedPaths.contains(path)) {
+            log.debug("Exact path match found for: {}", path);
+            return true;
+        }
+        
         return whitelistedPaths.stream()
-                .anyMatch(whitelistedPath -> pathMatcher.match(whitelistedPath, requestPath));
+                .anyMatch(pattern -> {
+                    AntPathMatcher matcher = new AntPathMatcher();
+                    boolean matches = matcher.match(pattern, path);
+                    if (matches) {
+                        log.debug("Path {} matched pattern {}", path, pattern);
+                    }
+                    return matches;
+                });
     }
 }

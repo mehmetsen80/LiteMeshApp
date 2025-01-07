@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import './styles.css';
 
@@ -26,18 +26,17 @@ function Home() {
           </Link>
         </div>
 
-        <div className="dashboard-card disabled">
-          <Link to="/services" className="card-icon-link">
+        <div className="dashboard-card">
+          <Link to="/service-status" className="card-icon-link">
             <div className="card-icon">
               <i className="fas fa-server"></i>
             </div>
           </Link>
           <h3>Services Status</h3>
           <p>Monitor health and performance of your microservices</p>
-          <span className="coming-soon-badge">Coming Soon</span>
-          <button className="card-link" disabled>
+          <Link to="/service-status" className="card-link">
             Check Status <i className="fas fa-arrow-right"></i>
-          </button>
+          </Link>
         </div>
 
         <div className="dashboard-card disabled">
@@ -49,9 +48,9 @@ function Home() {
           <h3>Alerts</h3>
           <p>View and manage system alerts and notifications</p>
           <span className="coming-soon-badge">Coming Soon</span>
-          <button className="card-link" disabled>
+          <Link to="/alerts" className="card-link disabled" >
             View Alerts <i className="fas fa-arrow-right"></i>
-          </button>
+          </Link>
         </div>
 
         <div className="dashboard-card disabled">

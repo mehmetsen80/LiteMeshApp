@@ -5,14 +5,24 @@ const router = express.Router();
 
 // GET all metrics
 router.get('/', async (req, res) => {
-    console.log('Received GET /api/metrics request');
     try {
-        const metrics = await ApiMetric.find();
-        console.log('Metrics retrieved:', metrics);
+        const metrics = await ApiMetric.find({})
+            .select({
+                routeIdentifier: 1,
+                fromService: 1,
+                toService: 1,
+                interactionType: 1,
+                gatewayBaseUrl: 1,
+                pathEndPoint: 1,
+                queryParameters: 1,
+                timestamp: 1,
+                duration: 1,
+                success: 1
+            })
+            .sort({ timestamp: -1 });
         res.json(metrics);
-    } catch (err) {
-        console.error('Error retrieving metrics:', err);
-        res.status(500).json({ error: 'Failed to retrieve metrics' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 

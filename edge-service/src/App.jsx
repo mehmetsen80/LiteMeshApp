@@ -6,7 +6,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Metrics from './pages/Metrics';
+import ServiceStatus from './pages/ServiceStatus';
 import './assets/styles/global.css';
+import Alerts from './pages/Alerts';
 
 // Public Route Component (accessible only when not logged in)
 const PublicRoute = ({ children }) => {
@@ -15,54 +17,35 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
-};
-
 function App() {
   return (
     <Router>
       <AuthProvider>
-        <AdminLayout>
-          <Routes>
-            <Route 
-              path="/login" 
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/register" 
-              element={
-                <PublicRoute>
-                  <Register />
-                </PublicRoute>
-              } 
-            />
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <Home />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/metrics" 
-              element={
-                <ProtectedRoute>
-                  <Metrics />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </AdminLayout>
+        <Routes>
+          <Route 
+            path="/login" 
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <PublicRoute>
+                <Register />
+              </PublicRoute>
+            } 
+          />
+          <Route element={<AdminLayout />}>
+            <Route path="/" element={<Home />} key="home" />
+            <Route path="/metrics" element={<Metrics />} key="metrics" />
+            <Route path="/service-status" element={<ServiceStatus />} key="service-status" />
+            <Route path="/alerts" element={<Alerts />} key="alerts" />
+          </Route>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </AuthProvider>
     </Router>
   );
