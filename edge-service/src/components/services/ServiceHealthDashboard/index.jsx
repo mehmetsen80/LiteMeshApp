@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { serviceHealthWebSocket } from '../../../services/serviceHealthService';
 import { apiGatewayService } from '../../../services/apiGatewayService';
 import ServiceStatusCard from '../ServiceStatusCard';
-import { Alert } from '@mui/material';
+import { Alert, Box, Grid } from '@mui/material';
+import AnalysisSummaryDialog from '../AnalysisSummaryDialog';
 import './styles.css';
 
 const ServiceHealthDashboard = () => {
@@ -11,6 +12,12 @@ const ServiceHealthDashboard = () => {
     const [loading, setLoading] = useState(true);
     const [connectionStatus, setConnectionStatus] = useState('connecting');
     const [error, setError] = useState(null);
+    const [metrics, setMetrics] = useState({});
+    const [selectedService, setSelectedService] = useState(null);
+    const [analysisData, setAnalysisData] = useState(null);
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [analysisLoading, setAnalysisLoading] = useState(false);
+    const [analysisError, setAnalysisError] = useState(null);
 
     // Fetch expected services from API Gateway
     useEffect(() => {
@@ -109,6 +116,35 @@ const ServiceHealthDashboard = () => {
         };
     }, [expectedServices]);
 
+    const handleAnalysisClick = async (serviceId) => {
+        setAnalysisLoading(true);
+        setAnalysisError(null);
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_API_GATEWAY_URL}/metrics/analysis/${serviceId}/summary`
+            );
+            if (!response.ok) {
+                throw new Error('Failed to fetch analysis data');
+            }
+            const data = await response.json();
+            setAnalysisData(data);
+            setSelectedService(serviceId);
+            setDialogOpen(true);
+        } catch (error) {
+            console.error('Error fetching analysis data:', error);
+            setAnalysisError(error.message);
+            setDialogOpen(true);
+        } finally {
+            setAnalysisLoading(false);
+        }
+    };
+
+    const handleDialogClose = () => {
+        setDialogOpen(false);
+        setAnalysisData(null);
+        setSelectedService(null);
+    };
+
     return (
         <div className="service-health-dashboard">
             <h1>Service Health Dashboard</h1>
@@ -128,10 +164,22 @@ const ServiceHealthDashboard = () => {
                 <Alert severity="error">{error}</Alert>
             )}
             <div className="services-grid">
-                {services.map(service => (
-                    <ServiceStatusCard key={service.serviceId} serviceHealth={service} />
+                {services.map((service) => (
+                    <ServiceStatusCard
+                        key={service.serviceId}
+                        service={service}
+                        onAnalysisClick={handleAnalysisClick}
+                    />
                 ))}
             </div>
+            <AnalysisSummaryDialog
+                open={dialogOpen}
+                onClose={handleDialogClose}
+                data={analysisData}
+                serviceId={selectedService}
+                loading={analysisLoading}
+                error={analysisError}
+            />
             {loading && connectionStatus === 'connecting' && (
                     <Alert severity="info">Services loading...</Alert>
                 )}
