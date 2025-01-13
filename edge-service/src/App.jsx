@@ -9,6 +9,7 @@ import Metrics from './pages/Metrics';
 import ServiceStatus from './pages/ServiceStatus';
 import './assets/styles/global.css';
 import Alerts from './pages/Alerts';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 // Public Route Component (accessible only when not logged in)
 const PublicRoute = ({ children }) => {
@@ -38,7 +39,11 @@ function App() {
               </PublicRoute>
             } 
           />
-          <Route element={<AdminLayout />}>
+          <Route element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }>
             <Route path="/" element={<Home />} key="home" />
             <Route path="/metrics" element={<Metrics />} key="metrics" />
             <Route path="/service-status" element={<ServiceStatus />} key="service-status" />

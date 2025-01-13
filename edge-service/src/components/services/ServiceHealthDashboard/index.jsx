@@ -1,17 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { serviceHealthWebSocket } from '../../../services/serviceHealthService';
+import { apiGatewayService } from '../../../services/apiGatewayService';
 import ServiceStatusCard from '../ServiceStatusCard';
 import { Alert } from '@mui/material';
 import './styles.css';
 
 const ServiceHealthDashboard = () => {
     const [services, setServices] = useState([]);
+    const [expectedServices, setExpectedServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [connectionStatus, setConnectionStatus] = useState('connecting');
     const [error, setError] = useState(null);
 
-    // List of all expected services
-    const expectedServices = ['product-service', 'inventory-service'];
+    // Fetch expected services from API Gateway
+    useEffect(() => {
+        const fetchServices = async () => {
+            try {
+                const services = await apiGatewayService.getAllServices();
+                const serviceIds = services.map(service => service.serviceId);
+                setExpectedServices(serviceIds);
+            } catch (err) {
+                console.error('Error fetching services:', err);
+                setError('Failed to fetch services from API Gateway');
+            }
+        };
+        
+        fetchServices();
+    }, []);
 
     // Function to ensure all expected services are shown
     const getAllServices = (activeServices) => {
@@ -68,7 +83,7 @@ const ServiceHealthDashboard = () => {
         };
 
         // Subscribe to WebSocket updates
-        const unsubscribe = serviceHealthWebSocket.subscribe(data => {
+        const unsubscribeFromHealthUpdates = serviceHealthWebSocket.subscribe(data => {
             try {
                 if (!Array.isArray(data)) {
                     throw new Error('Invalid data format received');
@@ -88,11 +103,11 @@ const ServiceHealthDashboard = () => {
 
         // Cleanup subscription on unmount
         return () => {
-            unsubscribe();
+            unsubscribeFromHealthUpdates();
             serviceHealthWebSocket.offConnectionChange(handleConnectionChange);
             serviceHealthWebSocket.disconnect();
         };
-    }, []);
+    }, [expectedServices]);
 
     return (
         <div className="service-health-dashboard">

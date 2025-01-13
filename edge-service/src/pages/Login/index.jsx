@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import authService from '../../services/authService';
 import './styles.css';
 
 function Login() {
@@ -28,14 +27,13 @@ function Login() {
     setIsLoading(true);
     
     try {
-      const response = await authService.login(formData.email, formData.password);
-      login({
-        user: response.user,
-        token: response.token
-      });
-      navigate('/');
-    } catch (err) {
-      setError(err.message || 'Invalid email or password');
+      console.log('Submitting login form...');
+      await login(formData.email, formData.password);
+      console.log('Login successful, navigating...');
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error.message || 'Failed to login');
     } finally {
       setIsLoading(false);
     }

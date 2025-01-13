@@ -6,7 +6,7 @@ class ServiceHealthWebSocket {
         this.connectionSubscribers = new Set();
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
-        this.wsUrl = 'wss://localhost:7777/ws-lite-mesh';
+        this.wsUrl = import.meta.env.VITE_WS_URL || 'wss://localhost:7777/ws-lite-mesh';
         this.ws = null;
         this.connected = false;
         this.connectionStatus = 'disconnected';

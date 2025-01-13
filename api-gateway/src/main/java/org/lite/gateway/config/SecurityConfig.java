@@ -29,11 +29,16 @@ import reactor.core.publisher.Mono;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -45,9 +50,26 @@ public class SecurityConfig {
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
 
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
+
+    @Value("${cors.allowed-methods}")
+    private String allowedMethods;
+
+    @Value("${cors.allowed-headers}")
+    private String allowedHeaders;
+
+    @Value("${cors.max-age}")
+    private long maxAge;
+
     private final DynamicRouteService dynamicRouteService;
     private final ReactiveClientRegistrationRepository customClientRegistrationRepository;
     private final ReactiveOAuth2AuthorizedClientService customAuthorizedClientService;
+
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 
     //DO NOT DELETE THIS, IT'S BEING USED
     @Bean
@@ -58,6 +80,7 @@ public class SecurityConfig {
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity, AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
         serverHttpSecurity
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .x509(x509 -> x509
                         .principalExtractor(principal -> {
@@ -227,6 +250,7 @@ public class SecurityConfig {
                                 && !path.startsWith("/metrics/")
                                 && !path.startsWith("/analysis/")
                                 && !path.startsWith("/routes/")
+                                && !path.startsWith("/api/")
                                 && !path.startsWith("/health/")
                                 && !path.startsWith("/fallback/")){
                             boolean hasClientReadScope = scope != null && scopes.contains(scope);//does the client itself has the scope
@@ -274,6 +298,20 @@ public class SecurityConfig {
         }
 
         return Mono.just(new AuthorizationDecision(false));
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of(allowedOrigins.split(",")));
+        configuration.setAllowedMethods(List.of(allowedMethods.split(",")));
+        configuration.setAllowedHeaders(List.of(allowedHeaders.split(",")));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(maxAge);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
     }
 }
 

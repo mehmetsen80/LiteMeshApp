@@ -7,6 +7,6 @@ import java.util.Map;
 // Helper class to represent each filter and its arguments
 @Data
 public class FilterConfig {
-    String name;                // Filter name, e.g., "CircuitBreaker"
-    Map<String, String> args;
+    private String name;                // Filter name, e.g., "CircuitBreaker"
+    private Map<String, String> args;
 }

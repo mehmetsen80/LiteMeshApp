@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: dev  # or 'prod' for production
   application:
     name: api-gateway
   main:
@@ -49,7 +51,6 @@ spring:
         wiretap: true
       httpclient:
         wiretap: true
-
       discovery:
         locator:
           enabled: true # Enables service discovery with Eureka
@@ -148,3 +149,13 @@ notifications:
   slack:
     webhook-url: ${SLACK_WEBHOOK_URL}
     enabled: ${SLACK_ENABLED:false}
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:8080,https://your-prod-domain.com
+  allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD
+  allowed-headers: Origin,Content-Type,Accept,Authorization,X-Requested-With
+  max-age: 3600
+
+jwt:
+  secret: 3a98d4c7b6e5f2a1d8c9b4a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1
+  expiration: 86400000 # 24 hours in milliseconds

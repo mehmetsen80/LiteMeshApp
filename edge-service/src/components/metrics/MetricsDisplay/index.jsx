@@ -5,6 +5,7 @@ import MetricsTable from '../MetricsTable';
 import MetricsChart from '../MetricsChart';
 import MetricsFilter from '../MetricsFilter';
 import './styles.css';
+import { getDefaultDateRange, formatDateForApi } from '../../../utils/dateUtils';
 
 function MetricsDisplay() {
   const [metrics, setMetrics] = useState([]);
@@ -19,7 +20,14 @@ function MetricsDisplay() {
 
     const fetchMetrics = async () => {
       try {
-        const data = await getApiMetrics();
+        const { startDate, endDate } = getDefaultDateRange();
+        
+        const params = {
+          startDate: formatDateForApi(startDate),
+          endDate: formatDateForApi(endDate)
+        };
+
+        const data = await getApiMetrics(params);
         if (mounted) {
           data.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
           setMetrics(data);
@@ -34,7 +42,8 @@ function MetricsDisplay() {
         }
       } catch (err) {
         if (mounted) {
-          setError('Failed to fetch metrics');
+          setError('Failed to fetch metrics: ' + err.message);
+          console.error('Error fetching metrics:', err);
         }
       } finally {
         if (mounted) {
@@ -52,20 +61,31 @@ function MetricsDisplay() {
 
   const handleFilterChange = (filters) => {
     setSelectedService(filters.service || '');
-    const filtered = metrics.filter(metric => {
-      if (filters.fromService && metric.fromService !== filters.fromService) return false;
-      if (filters.toService && metric.toService !== filters.toService) return false;
-      
-      // Date range filtering
-      if (filters.startDate || filters.endDate) {
-        const metricTime = new Date(metric.timestamp).getTime();
-        if (filters.startDate && metricTime < filters.startDate) return false;
-        if (filters.endDate && metricTime > filters.endDate) return false;
-      }
-      
-      return true;
-    });
-    setFilteredMetrics(filtered);
+    
+    // Create params for API call
+    const params = {};
+    if (filters.startDate) {
+      params.startDate = new Date(filters.startDate).toISOString();
+    }
+    if (filters.endDate) {
+      params.endDate = new Date(filters.endDate).toISOString();
+    }
+    if (filters.fromService) {
+      params.fromService = filters.fromService;
+    }
+    if (filters.toService) {
+      params.toService = filters.toService;
+    }
+
+    // Fetch filtered data from API
+    getApiMetrics(params)
+      .then(data => {
+        setFilteredMetrics(data);
+      })
+      .catch(err => {
+        setError('Failed to fetch filtered metrics: ' + err.message);
+        console.error('Error fetching filtered metrics:', err);
+      });
   };
 
   if (loading) {

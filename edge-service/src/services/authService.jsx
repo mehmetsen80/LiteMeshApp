@@ -1,70 +1,75 @@
-const API_URL = import.meta.env.VITE_BACKEND_URL;
+import { fetchWithConfig } from '../utils/api';
 
-class AuthService {
-  async login(email, password) {
-    const response = await fetch(`${API_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+const authService = {
+  register: async (username, email, password) => {
+    try {
+      console.log('Attempting registration:', { username, email });
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username,
+          email,
+          password 
+        }),
+      });
+      console.log('Register response status:', response.status);
 
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Login failed');
+      if (!response.ok) {
+        const error = await response.json();
+        console.log('Register error response:', error);
+        if (error.message.includes('Username already exists')) {
+          throw new Error('This username is already taken. Please choose another one.');
+        }
+        if (error.message.includes('Email already exists')) {
+          throw new Error('An account with this email already exists. Please use another email or login.');
+        }
+        throw new Error(error.message || 'Registration failed. Please try again.');
+      }
+
+      const data = await response.json();
+      console.log('Registration success data:', data);
+      return data;
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
     }
+  },
+  login: async (email, password) => {
+    try {
+      console.log('Attempting login with:', { email });
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          username: email,
+          password 
+        }),
+      });
+      console.log('Login response status:', response.status);
 
-    // Store user data and token in localStorage
-    if (data.token) {
-      localStorage.setItem('user', JSON.stringify({
-        user: data.user,
-        token: data.token
-      }));
+      if (!response.ok) {
+        const error = await response.json();
+        console.log('Login error response:', error);
+        throw new Error(error.message || 'Login failed');
+      }
+
+      const data = await response.json();
+      console.log('Login success data:', data);
+      return data;
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error.message.includes('JSON')) {
+        console.error('Response was not valid JSON. Raw response:', await response.text());
+      }
+      throw error;
     }
+  },
+  // ... rest of the service
+};
 
-    return data;
-  }
-
-  async register({ username, email, password }) {
-    const response = await fetch(`${API_URL}/api/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, email, password }),
-    });
-
-    const data = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.message || 'Registration failed');
-    }
-
-    // Store user data and token in localStorage
-    if (data.token) {
-      localStorage.setItem('user', JSON.stringify({
-        user: data.user,
-        token: data.token
-      }));
-    }
-
-    return data;
-  }
-
-  getToken() {
-    const user = JSON.parse(localStorage.getItem('user'));
-    return user?.token;
-  }
-
-  isAuthenticated() {
-    return !!this.getToken();
-  }
-
-  logout() {
-    localStorage.removeItem('user');
-  }
-}
-
-export default new AuthService();
+export default authService;

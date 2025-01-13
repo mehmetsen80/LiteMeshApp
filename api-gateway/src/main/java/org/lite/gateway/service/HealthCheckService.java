@@ -8,6 +8,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.beans.factory.annotation.Value;
 import org.lite.gateway.model.ServiceHealthStatus;
 import org.lite.gateway.model.TrendAnalysis;
+import org.lite.gateway.dto.ServiceDTO;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +21,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.HttpHeaders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.discovery.EurekaClient;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.Optional;
 
 @Service
 @Validated
@@ -38,6 +41,7 @@ public class HealthCheckService {
     private final MetricsAggregator metricsAggregator;
     private final AlertService alertService;
     private final EurekaClient eurekaClient;
+    private final Map<String, ServiceDTO> serviceHealthCache = new ConcurrentHashMap<>();
 
     public HealthCheckService(
             ApiRouteRepository apiRouteRepository, 
@@ -265,5 +269,9 @@ public class HealthCheckService {
             log.debug("Error checking service registration: {}", e.getMessage());
             return false;
         }
+    }
+
+    public Optional<ServiceDTO> getServiceHealth(String serviceId) {
+        return Optional.ofNullable(serviceHealthCache.get(serviceId));
     }
 } 

@@ -1,63 +1,213 @@
 package org.lite.gateway.exception;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.support.WebExchangeBindException;
+import reactor.core.publisher.Mono;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import io.jsonwebtoken.JwtException;
+import java.net.ConnectException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import org.lite.gateway.dto.ErrorResponse;
+import org.lite.gateway.dto.DetailedErrorResponse;
+import org.lite.gateway.dto.ValidationErrorResponse;
 
-@ControllerAdvice
+@RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
-        // Log the exception for debugging purposes
-        String message = ex.getMessage() != null ? ex.getMessage() : "";
-        log.error("Handling RuntimeException: {}", message);
-
-        // Return 500 Internal Server Error with a custom message
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                //.header(HttpHeaders.CONTENT_TYPE, MediaType.ALL_VALUE)
-                .body(message);
+    // Error categories for better client handling
+    public enum ErrorCategory {
+        AUTHENTICATION,    // Auth related errors
+        VALIDATION,        // Input validation errors
+        BUSINESS_LOGIC,    // Business rule violations
+        INFRASTRUCTURE,    // System/infrastructure issues
+        EXTERNAL_SERVICE,  // External service errors
+        UNKNOWN           // Unexpected errors
     }
 
-    private final ObjectMapper objectMapper = new ObjectMapper(); // Jackson object mapper to convert objects to JSON
+    @ExceptionHandler(DuplicateUserException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleDuplicateUser(DuplicateUserException ex) {
+        String trackingId = generateTrackingId();
+        log.error("DuplicateUser error [{}]: {}", trackingId, ex.getMessage());
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.CONFLICT)
+            .body(new ErrorResponse(
+                "DUPLICATE_USER",
+                ex.getMessage(),
+                HttpStatus.CONFLICT.value()
+            )));
+    }
 
-//    @ExceptionHandler(RuntimeException.class)
-//    public ResponseEntity<String> handleRuntimeException(RuntimeException ex) {
-//        // Log the exception for debugging purposes
-//        log.error("Handling RuntimeException: {}", ex.getMessage());
-//
-//        // Build a custom JSON error response
-//        Map<String, Object> errorResponse = new HashMap<>();
-//        errorResponse.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
-//        errorResponse.put("error", "Internal Server Error");
-//        errorResponse.put("message", ex.getMessage());
-//
-//        try {
-//            // Convert the error response to JSON
-//            String jsonResponse = objectMapper.writeValueAsString(errorResponse);
-//
-//            // Return 500 Internal Server Error with a JSON response
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
-//                    .body(jsonResponse);
-//
-//        } catch (Exception e) {
-//            // In case of any JSON conversion error, log it and return a fallback message
-//            log.error("Error serializing error response to JSON", e);
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-//                    .header(HttpHeaders.CONTENT_TYPE, "application/json")
-//                    .body("{\"error\": \"Failed to process error response\"}");
-//        }
-//    }
+    @ExceptionHandler(DataAccessException.class)
+    public Mono<ResponseEntity<DetailedErrorResponse>> handleDataAccess(DataAccessException ex) {
+        String trackingId = generateTrackingId();
+        log.error("Database error [{}]: {}", trackingId, ex.getMessage(), ex);
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("operation", ex.getClass().getSimpleName());
+        
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(new DetailedErrorResponse(
+                "DATABASE_ERROR",
+                "Database operation failed",
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                trackingId,
+                ex.getClass().getSimpleName(),
+                ErrorCategory.INFRASTRUCTURE,
+                details
+            )));
+    }
 
-    // You can add more specific handlers for different exceptions
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(new ErrorResponse(
+                "INVALID_CREDENTIALS",
+                ex.getMessage(),
+                HttpStatus.UNAUTHORIZED.value()
+            )));
+    }
+
+    @ExceptionHandler(ValidationException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleValidation(ValidationException ex) {
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(
+                "VALIDATION_ERROR",
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST.value()
+            )));
+    }
+
+    @ExceptionHandler(WebExchangeBindException.class)
+    public Mono<ResponseEntity<ValidationErrorResponse>> handleValidationErrors(WebExchangeBindException ex) {
+        Map<String, String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach(error -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ValidationErrorResponse(
+                "VALIDATION_ERROR",
+                "Validation failed",
+                HttpStatus.BAD_REQUEST.value(),
+                errors
+            )));
+    }
+
+    @ExceptionHandler(AuthException.class)
+    public Mono<ResponseEntity<ErrorResponse>> handleAuthException(AuthException ex) {
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(
+                "AUTH_ERROR",
+                ex.getMessage(),
+                HttpStatus.BAD_REQUEST.value()
+            )));
+    }
+
+    @ExceptionHandler(JwtException.class)
+    public Mono<ResponseEntity<DetailedErrorResponse>> handleJwt(JwtException ex) {
+        String trackingId = generateTrackingId();
+        log.error("JWT error [{}]: {}", trackingId, ex.getMessage());
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("errorType", ex.getClass().getSimpleName());
+        
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.UNAUTHORIZED)
+            .body(new DetailedErrorResponse(
+                "JWT_ERROR",
+                "Invalid or expired token",
+                HttpStatus.UNAUTHORIZED.value(),
+                trackingId,
+                ex.getClass().getSimpleName(),
+                ErrorCategory.AUTHENTICATION,
+                details
+            )));
+    }
+
+    @ExceptionHandler(WebClientResponseException.class)
+    public Mono<ResponseEntity<DetailedErrorResponse>> handleWebClient(WebClientResponseException ex) {
+        String trackingId = generateTrackingId();
+        log.error("External service error [{}]: {} - {}", trackingId, ex.getStatusCode(), ex.getMessage());
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("statusCode", ex.getStatusCode().value());
+        details.put("response", ex.getResponseBodyAsString());
+        
+        return Mono.just(ResponseEntity
+            .status(ex.getStatusCode())
+            .body(new DetailedErrorResponse(
+                "EXTERNAL_SERVICE_ERROR",
+                "External service request failed",
+                ex.getStatusCode().value(),
+                trackingId,
+                ex.getClass().getSimpleName(),
+                ErrorCategory.EXTERNAL_SERVICE,
+                details
+            )));
+    }
+
+    @ExceptionHandler(ConnectException.class)
+    public Mono<ResponseEntity<DetailedErrorResponse>> handleConnect(ConnectException ex) {
+        String trackingId = generateTrackingId();
+        log.error("Connection error [{}]: {}", trackingId, ex.getMessage());
+        
+        Map<String, Object> details = new HashMap<>();
+        details.put("host", ex.getMessage().replaceAll(".*: ", ""));
+        
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(new DetailedErrorResponse(
+                "CONNECTION_ERROR",
+                "Failed to connect to service",
+                HttpStatus.SERVICE_UNAVAILABLE.value(),
+                trackingId,
+                ex.getClass().getSimpleName(),
+                ErrorCategory.INFRASTRUCTURE,
+                details
+            )));
+    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public Mono<ResponseEntity<DetailedErrorResponse>> handleRuntime(RuntimeException ex) {
+        String trackingId = generateTrackingId();
+        log.error("Unexpected error [{}]. Type: {}, Message: {}",
+            trackingId, ex.getClass().getSimpleName(), ex.getMessage(), ex);
+
+        Map<String, Object> details = new HashMap<>();
+        details.put("errorType", ex.getClass().getSimpleName());
+        details.put("timestamp", System.currentTimeMillis());
+
+        return Mono.just(ResponseEntity
+            .status(HttpStatus.INTERNAL_SERVER_ERROR)
+            .body(new DetailedErrorResponse(
+                "INTERNAL_ERROR",
+                ex.getMessage(),
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                trackingId,
+                ex.getClass().getSimpleName(),
+                ErrorCategory.UNKNOWN,
+                details
+            )));
+    }
+
+    private String generateTrackingId() {
+        return UUID.randomUUID().toString().substring(0, 8);
+    }
 }

@@ -1,4 +1,4 @@
-![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.7-brightgreen)
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.8-brightgreen)
 
 
 # What is LiteMesh?
@@ -279,9 +279,8 @@ Assuming you are at the project root folder
 ```shell
 cd edge-service
 ```
-Start nodejs backend
-```shell
-node backend/server.js
+
+We will only run front end, first install the npm
 ```
 Install npm plugins
 ```shell

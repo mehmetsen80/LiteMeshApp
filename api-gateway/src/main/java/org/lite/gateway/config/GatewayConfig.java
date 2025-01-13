@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.codec.ServerCodecConfigurer;
+import org.springframework.lang.NonNull;
 import org.springframework.web.reactive.config.WebFluxConfigurer;
 
 @Configuration
@@ -33,7 +34,7 @@ public class GatewayConfig implements WebFluxConfigurer {
     }
 
     @Override
-    public void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
+    public void configureHttpMessageCodecs(@NonNull ServerCodecConfigurer configurer) {
         configurer.defaultCodecs().maxInMemorySize(16 * 1024 * 1024); // 16MB
     }
 }

@@ -30,6 +30,7 @@ public class DynamicRouteService {
         add("/analysis/**");
         add("/ws-lite-mesh/**");
         add("/metrics/**");
+        add("/api/**");
         add("/favicon.ico");
         add("/fallback/**");
         add("/actuator/**");

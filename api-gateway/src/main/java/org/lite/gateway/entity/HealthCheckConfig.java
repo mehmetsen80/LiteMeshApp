@@ -1,9 +1,9 @@
 package org.lite.gateway.entity;
 
 import lombok.Data;
-import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import jakarta.validation.constraints.NotNull;
 
 @Data
 public class HealthCheckConfig {

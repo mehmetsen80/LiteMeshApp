@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import authService from '../../services/authService';
 import './styles.css';
 
 function Register() {
@@ -11,9 +10,15 @@ function Register() {
     password: '',
     confirmPassword: ''
   });
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState({
+    general: '',
+    username: '',
+    email: '',
+    password: ''
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const navigate = useNavigate();
+  const { register } = useAuth();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -25,28 +30,46 @@ function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    
+    setErrors({
+      general: '',
+      username: '',
+      email: '',
+      password: ''
+    });
+    setIsLoading(true);
+
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setErrors(prev => ({
+        ...prev,
+        password: 'Passwords do not match'
+      }));
+      setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
-    
     try {
-      const response = await authService.register({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
-      });
-
-      login({
-        user: response.user,
-        token: response.token
-      });
-    } catch (err) {
-      setError(err.message || 'Registration failed');
+      console.log('Submitting registration form...');
+      await register(formData.username, formData.email, formData.password);
+      console.log('Registration successful, navigating...');
+      navigate('/', { replace: true });
+    } catch (error) {
+      console.error('Registration error:', error);
+      if (error.message.includes('username')) {
+        setErrors(prev => ({
+          ...prev,
+          username: error.message
+        }));
+      } else if (error.message.includes('email')) {
+        setErrors(prev => ({
+          ...prev,
+          email: error.message
+        }));
+      } else {
+        setErrors(prev => ({
+          ...prev,
+          general: error.message || 'Failed to register'
+        }));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -61,9 +84,9 @@ function Register() {
             <p className="text-muted">Join us to monitor your microservices</p>
           </div>
           
-          {error && (
+          {errors.general && (
             <div className="alert alert-danger" role="alert">
-              {error}
+              {errors.general}
             </div>
           )}
 
@@ -72,7 +95,7 @@ function Register() {
               <label htmlFor="username" className="form-label">Username</label>
               <input
                 type="text"
-                className="form-control"
+                className={`form-control ${errors.username ? 'is-invalid' : ''}`}
                 id="username"
                 name="username"
                 value={formData.username}
@@ -82,13 +105,18 @@ function Register() {
                 placeholder="Choose a username"
                 disabled={isLoading}
               />
+              {errors.username && (
+                <div className="invalid-feedback">
+                  {errors.username}
+                </div>
+              )}
             </div>
 
             <div className="mb-3">
               <label htmlFor="email" className="form-label">Email</label>
               <input
                 type="email"
-                className="form-control"
+                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
                 id="email"
                 name="email"
                 value={formData.email}
@@ -98,6 +126,11 @@ function Register() {
                 placeholder="Enter your email"
                 disabled={isLoading}
               />
+              {errors.email && (
+                <div className="invalid-feedback">
+                  {errors.email}
+                </div>
+              )}
             </div>
 
             <div className="mb-3">

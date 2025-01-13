@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.lite</groupId>
         <artifactId>lite-mesh</artifactId>
-        <version>0.7</version>
+        <version>0.8</version>
     </parent>
 
     <artifactId>api-gateway</artifactId>
@@ -139,6 +139,22 @@
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
         </dependency>
 
     </dependencies>

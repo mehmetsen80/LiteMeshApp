@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getDefaultDateRange } from '../../../utils/dateUtils';
+import { getDefaultDateRange, formatDateForApi } from '../../../utils/dateUtils';
 import './styles.css';
 
 function MetricsFilter({ onFilterChange, services }) {
@@ -16,9 +16,8 @@ function MetricsFilter({ onFilterChange, services }) {
     const end = new Date();
     const start = new Date();
     
-    // Set end to start of next day (00:00)
-    end.setDate(end.getDate() + 1);
-    end.setHours(0, 0, 0, 0);
+    // Set end to end of current day (23:59:59.999)
+    end.setHours(23, 59, 59, 999);
 
     switch (period) {
       case 'today':
@@ -39,31 +38,32 @@ function MetricsFilter({ onFilterChange, services }) {
     const newFilters = {
       ...filters,
       startDate: start.toISOString().split('T')[0],
-      endDate: end.toISOString().split('T')[0]
+      startTime: '00:00',
+      endDate: end.toISOString().split('T')[0],
+      endTime: '23:59'
     };
     setFilters(newFilters);
     const processedFilters = {
       ...newFilters,
-      startDate: start.getTime(),
-      endDate: end.getTime()
+      startDate: formatDateForApi(start),
+      endDate: formatDateForApi(end)
     };
     onFilterChange(processedFilters);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const startDateTime = new Date(`${filters.startDate}T${filters.startTime}`).getTime();
-    const endDateTime = new Date(`${filters.endDate}T${filters.endTime}`).getTime();
+    const startDateTime = new Date(`${filters.startDate}T${filters.startTime}`);
+    const endDateTime = new Date(`${filters.endDate}T${filters.endTime}`);
 
     if (startDateTime > endDateTime) {
-      // Could add error handling here if needed
       return;
     }
 
     const processedFilters = {
       ...filters,
-      startDate: startDateTime,
-      endDate: endDateTime
+      startDate: formatDateForApi(startDateTime),
+      endDate: formatDateForApi(endDateTime)
     };
     onFilterChange(processedFilters);
   };
@@ -82,10 +82,16 @@ function MetricsFilter({ onFilterChange, services }) {
       fromService: '',
       toService: '',
       startDate: defaultDates.startDate.toISOString().split('T')[0],
-      endDate: defaultDates.endDate.toISOString().split('T')[0]
+      startTime: '00:00',
+      endDate: defaultDates.endDate.toISOString().split('T')[0],
+      endTime: '23:59'
     };
     setFilters(clearedFilters);
-    onFilterChange(clearedFilters);
+    onFilterChange({
+      ...clearedFilters,
+      startDate: defaultDates.startDate.getTime(),
+      endDate: defaultDates.endDate.getTime()
+    });
   };
 
   return (

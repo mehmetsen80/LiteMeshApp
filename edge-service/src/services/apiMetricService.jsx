@@ -1,39 +1,51 @@
 import axios from 'axios';
 
-const API_BASE_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
+const API_GATEWAY_URL = import.meta.env.VITE_API_GATEWAY_URL;
 
-axios.defaults.withCredentials = true;
+export const getApiMetrics = async (params = {}) => {
+    try {
+        // Ensure dates are in ISO format
+        if (params.startDate) {
+            params.startDate = new Date(params.startDate).toISOString();
+        }
+        if (params.endDate) {
+            params.endDate = new Date(params.endDate).toISOString();
+        }
 
-export const getApiMetrics = async () => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/metrics`);
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching API metrics:', error);
-    throw error;
-  }
+        const response = await axios.get(`${API_GATEWAY_URL}/api/metrics`, { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching API metrics:', error);
+        throw error;
+    }
 };
 
-export const getMetricsByService = async (serviceName) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/metrics`, {
-      params: { service: serviceName }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching metrics by service:', error);
-    throw error;
-  }
+export const getMetricsSummary = async (params = {}) => {
+    try {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/metrics/summary`, { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching metrics summary:', error);
+        throw error;
+    }
 };
 
-export const getMetricsByTimeRange = async (startDate, endDate) => {
-  try {
-    const response = await axios.get(`${API_BASE_URL}/metrics/timerange`, {
-      params: { startDate, endDate }
-    });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching metrics by time range:', error);
-    throw error;
-  }
+export const getServiceInteractions = async (params = {}) => {
+    try {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/metrics/service-interactions`, { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching service interactions:', error);
+        throw error;
+    }
+};
+
+export const getTopEndpoints = async (params = {}) => {
+    try {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/metrics/top-endpoints`, { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching top endpoints:', error);
+        throw error;
+    }
 };
