@@ -49,27 +49,21 @@ function Register() {
 
     try {
       console.log('Submitting registration form...');
-      await register(formData.username, formData.email, formData.password);
+      const result = await register(formData.username, formData.email, formData.password);
+      if (result.error) {
+        setErrors(prev => ({
+          ...prev,
+          general: result.error
+        }));
+        return;
+      }
       console.log('Registration successful, navigating...');
       navigate('/', { replace: true });
-    } catch (error) {
-      console.error('Registration error:', error);
-      if (error.message.includes('username')) {
-        setErrors(prev => ({
-          ...prev,
-          username: error.message
-        }));
-      } else if (error.message.includes('email')) {
-        setErrors(prev => ({
-          ...prev,
-          email: error.message
-        }));
-      } else {
-        setErrors(prev => ({
-          ...prev,
-          general: error.message || 'Failed to register'
-        }));
-      }
+    } catch (err) {
+      setErrors(prev => ({
+        ...prev,
+        general: err.message || 'Registration failed'
+      }));
     } finally {
       setIsLoading(false);
     }

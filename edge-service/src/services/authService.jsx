@@ -1,72 +1,56 @@
-import { fetchWithConfig } from '../utils/api';
+const API_BASE_URL = import.meta.env.VITE_API_GATEWAY_URL || 'https://localhost:7777';
 
 const authService = {
   register: async (username, email, password) => {
     try {
-      console.log('Attempting registration:', { username, email });
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          username,
-          email,
-          password 
-        }),
-      });
-      console.log('Register response status:', response.status);
-
-      if (!response.ok) {
-        const error = await response.json();
-        console.log('Register error response:', error);
-        if (error.message.includes('Username already exists')) {
-          throw new Error('This username is already taken. Please choose another one.');
-        }
-        if (error.message.includes('Email already exists')) {
-          throw new Error('An account with this email already exists. Please use another email or login.');
-        }
-        throw new Error(error.message || 'Registration failed. Please try again.');
-      }
-
-      const data = await response.json();
-      console.log('Registration success data:', data);
-      return data;
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
-    }
-  },
-  login: async (email, password) => {
-    try {
-      console.log('Attempting login with:', { email });
-      const response = await fetch('/api/auth/login', {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
           username: email,
+          email,
           password 
         }),
       });
-      console.log('Login response status:', response.status);
 
       if (!response.ok) {
         const error = await response.json();
-        console.log('Login error response:', error);
-        throw new Error(error.message || 'Login failed');
+        return { error: error.message || 'Registration failed. Please try again.' };
       }
 
       const data = await response.json();
-      console.log('Login success data:', data);
-      return data;
+      return { data };
     } catch (error) {
-      console.error('Login error:', error);
-      if (error.message.includes('JSON')) {
-        console.error('Response was not valid JSON. Raw response:', await response.text());
+      if (!navigator.onLine || error instanceof TypeError && error.message === 'Failed to fetch') {
+        return { error: 'Unable to connect to the server. Please check your connection.' };
       }
-      throw error;
+      return { error: error.message };
+    }
+  },
+  login: async (email, password) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username: email, password }),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        return { error: responseData.error || responseData.message || 'Login failed' };
+      }
+
+      return { data: responseData };
+    } catch (error) {
+      if (!navigator.onLine || error instanceof TypeError && error.message === 'Failed to fetch') {
+        return { error: 'Unable to connect to the server. Please check your connection.' };
+      }
+      return { error: error.message };
     }
   },
   // ... rest of the service

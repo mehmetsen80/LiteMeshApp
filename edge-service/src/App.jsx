@@ -9,7 +9,7 @@ import Metrics from './pages/Metrics';
 import ServiceStatus from './pages/ServiceStatus';
 import './assets/styles/global.css';
 import Alerts from './pages/Alerts';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Public Route Component (accessible only when not logged in)
 const PublicRoute = ({ children }) => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles.css';
 import {
     Dialog,
@@ -11,12 +11,14 @@ import {
     useTheme,
     useMediaQuery,
 } from '@mui/material';
-import { Slide } from '@mui/material';
+import Slide from '@mui/material/Slide';
 import CloseIcon from '@mui/icons-material/Close';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
 import TrendChart from './TrendChart';
+import ErrorBoundary from '../../common/ErrorBoundary';
+import PropTypes from 'prop-types';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
     const theme = useTheme();
@@ -159,10 +161,11 @@ const AnalysisSummaryDialog = ({
     // Wait for data before showing dialog content
     const [showContent, setShowContent] = React.useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (data && !loading) {
             setShowContent(true);
         }
+        return () => setShowContent(false);  // Cleanup on unmount
     }, [data, loading]);
 
     return (
@@ -245,36 +248,51 @@ const AnalysisSummaryDialog = ({
                 </Box>
             </DialogTitle>
             <DialogContent sx={{ mt: 2 }}>
-                {loading && (
-                    <Box display="flex" justifyContent="center" p={3}>
-                        <CircularProgress />
-                    </Box>
-                )}
-                {error && (
-                    <Alert severity="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Alert>
-                )}
-                {showContent && !error && data && (
-                    <Box sx={{ 
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(2, 1fr)',
-                        gap: 2,
-                        mt: 2
-                    }}>
-                        <Box>
-                            <MetricSummary title="CPU Usage" data={data.cpu} />
-                            <MetricSummary title="Memory Usage" data={data.memory} />
+                <ErrorBoundary>
+                    {loading && (
+                        <Box display="flex" justifyContent="center" p={3}>
+                            <CircularProgress />
                         </Box>
-                        <Box>
-                            <MetricSummary title="Response Time" data={data.responseTime} />
-                            <MetricSummary title="Error Rate" data={data.error} />
+                    )}
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+                    {showContent && !error && data && (
+                        <Box sx={{ 
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(2, 1fr)',
+                            gap: 2,
+                            mt: 2
+                        }}>
+                            <ErrorBoundary>
+                                <Box>
+                                    <MetricSummary title="CPU Usage" data={data.cpu} />
+                                    <MetricSummary title="Memory Usage" data={data.memory} />
+                                </Box>
+                            </ErrorBoundary>
+                            <ErrorBoundary>
+                                <Box>
+                                    <MetricSummary title="Response Time" data={data.responseTime} />
+                                    <MetricSummary title="Error Rate" data={data.error} />
+                                </Box>
+                            </ErrorBoundary>
                         </Box>
-                    </Box>
-                )}
+                    )}
+                </ErrorBoundary>
             </DialogContent>
         </Dialog>
     );
+};
+
+AnalysisSummaryDialog.propTypes = {
+    open: PropTypes.bool.isRequired,
+    onClose: PropTypes.func.isRequired,
+    data: PropTypes.object,
+    serviceId: PropTypes.string.isRequired,
+    loading: PropTypes.bool,
+    error: PropTypes.string
 };
 
 export default AnalysisSummaryDialog; 

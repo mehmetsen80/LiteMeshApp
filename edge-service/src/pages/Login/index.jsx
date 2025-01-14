@@ -28,12 +28,15 @@ function Login() {
     
     try {
       console.log('Submitting login form...');
-      await login(formData.email, formData.password);
+      const result = await login(formData.email, formData.password);
+      if (result.error) {
+        setError(result.error);
+        return;
+      }
       console.log('Login successful, navigating...');
       navigate('/', { replace: true });
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error.message || 'Failed to login');
+    } catch (err) {
+      setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }
