@@ -1,17 +1,18 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Form, Button, Alert } from 'react-bootstrap';
+import { HiLockClosed } from 'react-icons/hi';
 import { useAuth } from '../../contexts/AuthContext';
 import './styles.css';
 
 function Login() {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -19,38 +20,51 @@ function Login() {
       ...prev,
       [name]: value
     }));
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setIsLoading(true);
-    
+    setLoading(true);
+
     try {
-      console.log('Submitting login form...');
-      const result = await login(formData.email, formData.password);
-      if (result.error) {
-        setError(result.error);
+      const { error } = await login(formData.email, formData.password);
+      
+      if (error) {
+        setError(error);
         return;
       }
-      console.log('Login successful, navigating...');
-      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || 'Login failed');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  const handleSSOLogin = () => {
+    const state = Math.random().toString(36).substring(7);
+    const stateData = {
+      value: state,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('oauth_state', JSON.stringify(stateData));
+    
+    const params = new URLSearchParams({
+      client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID,
+      redirect_uri: `${window.location.origin}/callback`,
+      response_type: 'code',
+      state: state,
+      scope: 'openid'
+    });
+    
+    const authUrl = `${process.env.REACT_APP_KEYCLOAK_URL}/realms/${process.env.REACT_APP_KEYCLOAK_REALM}/protocol/openid-connect/auth`;
+    console.log('Redirecting to:', authUrl, 'with params:', params.toString());
+    window.location.href = `${authUrl}?${params}`;
+  };
+
   return (
-    <div className="auth-container">
-      <div className="auth-image-section">
-        <div className="auth-image-overlay">
-          {/* <h1>Welcome to LiteMesh</h1>
-          <p>Monitor and analyze your microservices with ease</p> */}
-        </div>
-      </div>
-      
+    <div className="auth-container">      
       <div className="auth-form-section">
         <div className="auth-card">
           <div className="auth-header">
@@ -58,51 +72,58 @@ function Login() {
             <p className="text-muted">Please sign in to continue</p>
           </div>
           
+          <Button 
+            variant="outline-primary" 
+            className="w-100 mb-3"
+            onClick={handleSSOLogin}
+          >
+            <HiLockClosed className="me-2" />
+            Sign in with SSO
+          </Button>
+          
+          <div className="separator my-3">
+            <span className="separator-text">OR</span>
+          </div>
+
           {error && (
-            <div className="alert alert-danger" role="alert">
-              {error}
-            </div>
+            <Alert variant="danger">{error}</Alert>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label">Email</label>
-              <input
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
                 type="email"
-                className="form-control"
-                id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
                 autoComplete="email"
                 placeholder="Enter your email"
-                disabled={isLoading}
+                disabled={loading}
               />
-            </div>
+            </Form.Group>
 
-            <div className="mb-4">
-              <label htmlFor="password" className="form-label">Password</label>
-              <input
+            <Form.Group className="mb-4">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
                 type="password"
-                className="form-control"
-                id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
                 autoComplete="current-password"
                 placeholder="Enter your password"
-                disabled={isLoading}
+                disabled={loading}
               />
-            </div>
+            </Form.Group>
 
-            <button 
+            <Button 
               type="submit" 
-              className="btn btn-primary w-100"
-              disabled={isLoading}
+              className="w-100"
+              disabled={loading}
             >
-              {isLoading ? (
+              {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   Signing in...
@@ -110,8 +131,8 @@ function Login() {
               ) : (
                 'Sign In'
               )}
-            </button>
-          </form>
+            </Button>
+          </Form>
 
           <div className="mt-4 text-center">
             <p className="mb-0">

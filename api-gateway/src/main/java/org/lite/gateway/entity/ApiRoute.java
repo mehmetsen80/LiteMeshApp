@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.Valid;
 
 import java.util.List;
+import java.util.Set;
 
 
 @Document("apiRoutes")
@@ -38,6 +39,7 @@ public class ApiRoute{
     @Valid
     @NotNull(message = "Health check configuration is required")
     HealthCheckConfig healthCheck;
+    private Set<RoutePermission> permissions;
 }
 
 

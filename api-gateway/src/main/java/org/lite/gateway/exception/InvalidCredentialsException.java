@@ -1,7 +1,20 @@
 package org.lite.gateway.exception;
 
-public class InvalidCredentialsException extends AuthException {
+import org.lite.gateway.dto.ErrorCode;
+
+public class InvalidCredentialsException extends RuntimeException {
+    private final ErrorCode errorCode;
+
     public InvalidCredentialsException() {
-        super("Invalid credentials");
+        this(ErrorCode.USER_INVALID_CREDENTIALS);
+    }
+
+    public InvalidCredentialsException(ErrorCode errorCode) {
+        super(errorCode.getDefaultMessage());
+        this.errorCode = errorCode;
+    }
+
+    public ErrorCode getErrorCode() {
+        return errorCode;
     }
 } 

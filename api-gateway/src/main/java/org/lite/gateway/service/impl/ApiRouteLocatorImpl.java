@@ -33,7 +33,7 @@ import java.util.Objects;
 @Slf4j
 public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAware {
     private final RouteLocatorBuilder routeLocatorBuilder;
-    private final RouteService routeService;
+    private final ApiRouteService apiRouteService;
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
     private final RedisTemplate<String, String> redisTemplate;
     private final MetricService metricService;
@@ -54,7 +54,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     @Override
     public Flux<Route> getRoutes() {
         RouteLocatorBuilder.Builder routesBuilder = routeLocatorBuilder.routes();
-        return routeService.getAll()
+        return apiRouteService.getAllRoutes()
                 .map(apiRoute -> routesBuilder.route(String.valueOf(apiRoute.getRouteIdentifier()),
                         predicateSpec -> setPredicateSpec(apiRoute, predicateSpec)))
                 .collectList()

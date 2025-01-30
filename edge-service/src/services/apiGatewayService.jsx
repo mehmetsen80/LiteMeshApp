@@ -1,47 +1,21 @@
-import axios from 'axios';
-
-// Create axios instance with default config
-const apiClient = axios.create({
-    baseURL: '/api',
-    withCredentials: true,
-    headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-    }
-});
-
-// Add response interceptor for error handling
-apiClient.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        console.error('API Error:', error.response?.data || error.message);
-        return Promise.reject(error);
-    }
-);
-
-// Service endpoints
-const endpoints = {
-    services: '/services',
-    teams: '/teams',
-    health: '/health'
-};
+import axiosInstance from './axiosInstance';
 
 // API Service object
 export const apiGatewayService = {
     // Services
     getAllServices: async () => {
         try {
-            const response = await apiClient.get(endpoints.services);
+            const response = await axiosInstance.get('/api/services');
             return response.data;
         } catch (error) {
-            console.error('Failed to fetch services:', error);
+            console.error('Error fetching services:', error);
             throw error;
         }
     },
 
     getServiceById: async (serviceId) => {
         try {
-            const response = await apiClient.get(`${endpoints.services}/${serviceId}`);
+            const response = await axiosInstance.get(`/api/services/${serviceId}`);
             return response.data;
         } catch (error) {
             console.error(`Failed to fetch service ${serviceId}:`, error);
@@ -52,7 +26,7 @@ export const apiGatewayService = {
     // Teams
     getTeamServices: async (teamId) => {
         try {
-            const response = await apiClient.get(`${endpoints.teams}/${teamId}/services`);
+            const response = await axiosInstance.get(`/api/teams/${teamId}/services`);
             return response.data;
         } catch (error) {
             console.error(`Failed to fetch team ${teamId} services:`, error);
@@ -63,7 +37,7 @@ export const apiGatewayService = {
     // Health checks
     getServiceHealth: async (serviceId) => {
         try {
-            const response = await apiClient.get(`${endpoints.services}/${serviceId}/health`);
+            const response = await axiosInstance.get(`/api/services/${serviceId}/health`);
             return response.data;
         } catch (error) {
             console.error(`Failed to fetch health for service ${serviceId}:`, error);
@@ -74,7 +48,7 @@ export const apiGatewayService = {
     // Teams management
     createTeam: async (teamData) => {
         try {
-            const response = await apiClient.post(endpoints.teams, teamData);
+            const response = await axiosInstance.post('/api/teams', teamData);
             return response.data;
         } catch (error) {
             console.error('Failed to create team:', error);
@@ -84,7 +58,7 @@ export const apiGatewayService = {
 
     updateTeam: async (teamId, teamData) => {
         try {
-            const response = await apiClient.put(`${endpoints.teams}/${teamId}`, teamData);
+            const response = await axiosInstance.put(`/api/teams/${teamId}`, teamData);
             return response.data;
         } catch (error) {
             console.error(`Failed to update team ${teamId}:`, error);
@@ -94,7 +68,7 @@ export const apiGatewayService = {
 
     deleteTeam: async (teamId) => {
         try {
-            await apiClient.delete(`${endpoints.teams}/${teamId}`);
+            await axiosInstance.delete(`/api/teams/${teamId}`);
         } catch (error) {
             console.error(`Failed to delete team ${teamId}:`, error);
             throw error;

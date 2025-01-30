@@ -10,6 +10,15 @@ spring:
   redis:
     host: ${REDIS_GATEWAY_URL:localhost}
     port: 6379
+    database: 0
+    timeout: 60000
+    connect-timeout: 60000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+        max-wait: -1ms
   session:
     store-type: none
   security:
@@ -19,7 +28,7 @@ spring:
           lite-mesh-gateway-client:
             client-id: lite-mesh-gateway-client
             client-secret: SVwQlpupiIKUctK1Vh0yYwLxgkMZjjqY
-            authorization-grant-type: client_credentials
+            authorization-grant-type: authorization_code
             scope: gateway.read
             provider: keycloak  # identity-provider
         provider:
@@ -153,9 +162,9 @@ notifications:
 cors:
   allowed-origins: http://localhost:3000,http://localhost:8080,https://your-prod-domain.com
   allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS,HEAD
-  allowed-headers: Origin,Content-Type,Accept,Authorization,X-Requested-With
+  allowed-headers: Origin,Content-Type,Accept,Authorization,X-Requested-With,X-User-Token
   max-age: 3600
 
 jwt:
-  secret: 3a98d4c7b6e5f2a1d8c9b4a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1
+  secret: 3a98d4c7b6e5f2a1d8c9b4a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1b8a7e6f3d2c1
   expiration: 86400000 # 24 hours in milliseconds

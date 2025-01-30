@@ -1,0 +1,63 @@
+/* Modal header styling */
+.modal-header {
+  border-bottom: 1px solid #dee2e6;
+  background-color: var(--primary-color);
+  color: white;
+  border-radius: 6px 6px 0 0;
+}
+
+.modal-header .btn-close {
+  color: white;
+  filter: brightness(0) invert(1);
+}
+
+/* Modal body styling */
+.modal-body {
+  padding: 1.5rem;
+}
+
+/* Form controls */
+.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 89, 0.25);
+}
+
+/* Button styling */
+.modal-footer .btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  min-width: 140px;
+}
+
+.modal-footer .btn-primary:hover:not(:disabled) {
+  background-color: #0a0459;
+  border-color: #0a0459;
+}
+
+.modal-footer .btn-outline-secondary {
+  color: #6c757d;
+  border-color: #6c757d;
+  min-width: 100px;
+}
+
+.modal-footer .btn-outline-secondary:hover:not(:disabled) {
+  color: #fff;
+  background-color: #6c757d;
+  border-color: #6c757d;
+}
+
+/* Error alert styling */
+.alert {
+  margin-bottom: 1rem;
+}
+
+/* Character counter */
+.text-muted {
+  font-size: 0.875rem;
+}
+
+/* Modal footer */
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem;
+} 

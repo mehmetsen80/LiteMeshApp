@@ -5,7 +5,9 @@ class ServiceHealthWebSocket {
         this.subscribers = new Set();
         this.connectionSubscribers = new Set();
         this.reconnectAttempts = 0;
-        this.maxReconnectAttempts = 5;
+        this.maxReconnectAttempts = 10;
+        this.reconnectDelay = 2000; // Start with 2 seconds
+        this.maxReconnectDelay = 30000; // Max 30 seconds
         this.wsUrl = import.meta.env.VITE_WS_URL || 'wss://localhost:7777/ws-lite-mesh';
         this.ws = null;
         this.connected = false;
@@ -27,79 +29,82 @@ class ServiceHealthWebSocket {
     }
 
     connect() {
+        if (this.connected) return;
+
         try {
             console.log(`Attempting to connect to ${this.wsUrl}`);
             this.setConnectionStatus('connecting');
             
             this.ws = new WebSocket(this.wsUrl);
-
-            this.ws.onopen = () => {
-                console.log('WebSocket Connected');
-                this.reconnectAttempts = 0;
-                
-                // Send STOMP CONNECT frame
-                setTimeout(() => {
-                    if (this.ws.readyState === WebSocket.OPEN) {
-                        const connectFrame = 'CONNECT\n' +
-                            'accept-version:1.1,1.0\n' +
-                            'heart-beat:4000,4000\n' +
-                            '\n\0';
-                        this.ws.send(connectFrame);
-                    }
-                }, 100);
-            };
-
-            this.ws.onmessage = (event) => {
-                //console.log('Received raw message:', event.data);
-                const frame = this.parseStompFrame(event.data);
-                //console.log('Parsed frame:', frame);
-                
-                if (frame.command === 'CONNECTED') {
-                    console.log('STOMP Connected');
-                    this.connected = true;
-                    this.setConnectionStatus('connected');
-                    // Subscribe to health updates
-                    const subscribeFrame = 'SUBSCRIBE\n' +
-                        'id:sub-0\n' +
-                        'destination:/topic/health\n' +
-                        '\n\0';
-                    //console.log('Sending subscribe frame:', subscribeFrame);
-                    this.ws.send(subscribeFrame);
-                }
-                else if (frame.command === 'MESSAGE') {
-                    try {
-                        // Parse JSON directly
-                        const payload = JSON.parse(frame.body);
-                        //console.log('Parsed message payload:', payload);
-                        this.notifySubscribers(payload);
-                    } catch (error) {
-                        //console.error('Error parsing message payload:', error);
-                    }
-                }
-                else if (frame.command === 'RECEIPT') {
-                    //console.log('Received receipt:', frame);
-                }
-            };
-
-            this.ws.onerror = (error) => {
-                //console.error('WebSocket Error:', error);
-                this.connected = false;
-                this.setConnectionStatus('error');
-                this.handleReconnect();
-            };
-
-            this.ws.onclose = () => {
-                //console.log('WebSocket Closed');
-                this.connected = false;
-                this.setConnectionStatus('disconnected');
-                this.handleReconnect();
-            };
-
+            this.setupWebSocket();
         } catch (error) {
-            //console.error('Connection Error:', error);
-            this.setConnectionStatus('error');
+            console.error('WebSocket connection error:', error);
             this.handleReconnect();
         }
+    }
+
+    setupWebSocket() {
+        this.ws.onopen = () => {
+            console.log('WebSocket Connected');
+            this.reconnectAttempts = 0;
+            
+            // Send STOMP CONNECT frame
+            setTimeout(() => {
+                if (this.ws.readyState === WebSocket.OPEN) {
+                    const connectFrame = 'CONNECT\n' +
+                        'accept-version:1.1,1.0\n' +
+                        'heart-beat:4000,4000\n' +
+                        '\n\0';
+                    this.ws.send(connectFrame);
+                }
+            }, 100);
+        };
+
+        this.ws.onmessage = (event) => {
+            //console.log('Received raw message:', event.data);
+            const frame = this.parseStompFrame(event.data);
+            //console.log('Parsed frame:', frame);
+            
+            if (frame.command === 'CONNECTED') {
+                console.log('STOMP Connected');
+                this.connected = true;
+                this.setConnectionStatus('connected');
+                // Subscribe to health updates
+                const subscribeFrame = 'SUBSCRIBE\n' +
+                    'id:sub-0\n' +
+                    'destination:/topic/health\n' +
+                    '\n\0';
+                //console.log('Sending subscribe frame:', subscribeFrame);
+                this.ws.send(subscribeFrame);
+            }
+            else if (frame.command === 'MESSAGE') {
+                try {
+                    // Parse JSON directly
+                    const payload = JSON.parse(frame.body);
+                    //console.log('Parsed message payload:', payload);
+                    this.notifySubscribers(payload);
+                } catch (error) {
+                    //console.error('Error parsing message payload:', error);
+                }
+            }
+            else if (frame.command === 'RECEIPT') {
+                //console.log('Received receipt:', frame);
+            }
+        };
+
+        this.ws.onerror = (error) => {
+            //console.error('WebSocket Error:', error);
+            this.connected = false;
+            this.setConnectionStatus('error');
+            this.handleReconnect();
+        };
+
+        this.ws.onclose = () => {
+            //console.log('WebSocket Closed');
+            this.connected = false;
+            this.setConnectionStatus('disconnected');
+            this.handleReconnect();
+        };
     }
 
     parseStompFrame(data) {
@@ -134,11 +139,21 @@ class ServiceHealthWebSocket {
 
     handleReconnect() {
         if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            console.log(`Reconnect attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts}`);
-            setTimeout(() => this.connect(), 5000);
+            const delay = Math.min(
+                this.reconnectDelay * Math.pow(1.5, this.reconnectAttempts),
+                this.maxReconnectDelay
+            );
+            
+            setTimeout(() => {
+                this.reconnectAttempts++;
+                this.connect();
+            }, delay);
+            
+            this.connectionStatus = 'reconnecting';
+            this.notifyConnectionSubscribers();
         } else {
-            console.error('Max reconnection attempts reached');
+            this.connectionStatus = 'failed';
+            this.notifyConnectionSubscribers();
         }
     }
 
@@ -152,6 +167,10 @@ class ServiceHealthWebSocket {
 
     notifySubscribers(data) {
         this.subscribers.forEach(callback => callback(data));
+    }
+
+    notifyConnectionSubscribers() {
+        this.connectionSubscribers.forEach(callback => callback(this.connectionStatus));
     }
 
     disconnect() {

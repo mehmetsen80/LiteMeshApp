@@ -1,59 +1,110 @@
-const API_BASE_URL = import.meta.env.VITE_API_GATEWAY_URL || 'https://localhost:7777';
+import axiosInstance from './axiosInstance';
 
 const authService = {
-  register: async (username, email, password) => {
+  registerUser: async (username, email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          username: email,
-          email,
-          password 
-        }),
+      console.log('Making registration request:', { username, email });
+      const response = await axiosInstance.post('/api/auth/register', {
+        username,
+        email,
+        password
       });
+      const data = response.data;
+      console.log('Registration response:', data);
 
-      if (!response.ok) {
-        const error = await response.json();
-        return { error: error.message || 'Registration failed. Please try again.' };
+      if (!data.token || !data.username) {
+        console.error('Invalid registration response:', data);
+        return { error: 'Invalid response from server' };
       }
 
-      const data = await response.json();
       return { data };
     } catch (error) {
-      if (!navigator.onLine || error instanceof TypeError && error.message === 'Failed to fetch') {
-        return { error: 'Unable to connect to the server. Please check your connection.' };
+      console.error('Registration error:', error);
+      if (error.response) {
+        return { error: error.response.data.message || 'Registration failed' };
       }
       return { error: error.message };
     }
   },
-  login: async (email, password) => {
+
+  loginUser: async (email, password) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username: email, password }),
+      const response = await axiosInstance.post('/api/auth/login', {
+        username: email,
+        password
+      });
+      const data = response.data;
+
+      return { data };
+    } catch (error) {
+      console.error('Login error:', error);
+      if (error.response) {
+        return { error: error.response.data.message || 'Login failed' };
+      }
+      return { error: error.message };
+    }
+  },
+
+  validatePassword: async (password) => {
+    try {
+      const response = await axiosInstance.post('/api/users/validate-password', { password });
+      const data = response.data;
+
+      return { data };
+    } catch (error) {
+      console.error('Password validation error:', error);
+      if (error.response) {
+        return { error: error.response.data.message || 'Password validation failed' };
+      }
+      return { error: error.message };
+    }
+  },
+
+  handleSSOCallback: async (code) => {
+    // Add a flag to localStorage to prevent duplicate requests
+    const processingKey = `processing_${code}`;
+    console.log('Checking processing state:', {
+      code: code?.substring(0, 10) + '...',
+      isProcessing: localStorage.getItem(processingKey)
+    });
+    
+    if (localStorage.getItem(processingKey)) {
+      console.log('SSO callback already in progress for this code');
+      return null;
+    }
+    
+    localStorage.setItem(processingKey, 'true');
+    
+    try {
+      console.log('Sending SSO callback request to backend:', {
+        url: '/api/auth/sso/callback',
+        code: code?.substring(0, 10) + '...',
+        fullCode: code
       });
 
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        return { error: responseData.error || responseData.message || 'Login failed' };
-      }
-
-      return { data: responseData };
+      const response = await axiosInstance.post('/api/auth/sso/callback', { code });
+      console.log('Backend response:', {
+        status: response.status,
+        data: response.data
+      });
+      return response.data;
     } catch (error) {
-      if (!navigator.onLine || error instanceof TypeError && error.message === 'Failed to fetch') {
-        return { error: 'Unable to connect to the server. Please check your connection.' };
+      // Check if this is a "Code already in use" error
+      if (error.response?.data?.code === 'AUTHENTICATION_ERROR' && 
+          error.response?.data?.message === 'Code already in use') {
+        console.log('Code already used but token exists, proceeding...');
+        return null;
       }
-      return { error: error.message };
+      console.error('SSO callback error:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message
+      });
+      throw error;
+    } finally {
+      localStorage.removeItem(processingKey);
     }
   },
-  // ... rest of the service
 };
 
 export default authService;

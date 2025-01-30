@@ -1,0 +1,29 @@
+.toast-container {
+  --toastify-color-success: #28a745;
+  --toastify-color-error: #dc3545;
+  --toastify-icon-color-success: var(--toastify-color-success);
+  --toastify-icon-color-error: var(--toastify-color-error);
+}
+
+.Toastify__toast {
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.Toastify__toast-body {
+  padding: 4px 8px;
+}
+
+.Toastify__toast--success {
+  background-color: var(--toastify-color-success);
+}
+
+.Toastify__toast--error {
+  background-color: var(--toastify-color-error);
+}
+
+.Toastify__progress-bar {
+  height: 3px;
+} 

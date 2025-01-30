@@ -2,7 +2,7 @@ package org.lite.gateway.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.service.MetricService;
-import org.lite.gateway.service.RouteService;
+import org.lite.gateway.service.ApiRouteService;
 import org.lite.gateway.service.impl.ApiRouteLocatorImpl;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -20,12 +20,12 @@ public class GatewayConfig implements WebFluxConfigurer {
     
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder routeLocationBuilder,
-                                    RouteService routeService,
+                                     ApiRouteService apiRouteService,
                                     ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory,
                                     RedisTemplate<String, String> redisTemplate,
                                     MetricService metricService) {
         return new ApiRouteLocatorImpl(routeLocationBuilder,
-                routeService, reactiveResilience4JCircuitBreakerFactory, redisTemplate, metricService);
+                apiRouteService, reactiveResilience4JCircuitBreakerFactory, redisTemplate, metricService);
     }
 
     @Bean

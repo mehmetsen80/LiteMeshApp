@@ -39,6 +39,32 @@ function Home() {
           </Link>
         </div>
 
+        <div className="dashboard-card">
+          <Link to="/teams" className="card-icon-link">
+            <div className="card-icon">
+              <i className="fas fa-users"></i>
+            </div>
+          </Link>
+          <h3>Teams</h3>
+          <p>Manage your teams and collaborate with members</p>
+          <Link to="/teams" className="card-link">
+            Manage Teams <i className="fas fa-arrow-right"></i>
+          </Link>
+        </div>
+
+        <div className="dashboard-card">
+          <Link to="/organizations" className="card-icon-link">
+            <div className="card-icon">
+              <i className="fas fa-building"></i>
+            </div>
+          </Link>
+          <h3>Organizations</h3>
+          <p>Manage your organizations and their teams</p>
+          <Link to="/organizations" className="card-link">
+            Manage Organizations <i className="fas fa-arrow-right"></i>
+          </Link>
+        </div>
+
         <div className="dashboard-card disabled">
           <Link to="/alerts" className="card-icon-link">
             <div className="card-icon">

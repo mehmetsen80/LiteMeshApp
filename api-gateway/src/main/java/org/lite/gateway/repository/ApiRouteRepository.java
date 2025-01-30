@@ -17,6 +17,7 @@ public interface ApiRouteRepository extends ReactiveMongoRepository<ApiRoute, St
     @Query(value = "{ 'healthCheck.enabled': true }", fields = "{ 'routeIdentifier': 1, 'healthCheck': 1 }")
     Flux<ApiRoute> findAllHealthCheckConfigs();
 
+    @Query("{ 'routeIdentifier': ?0 }")
     Mono<ApiRoute> findByRouteIdentifier(String routeIdentifier);
 
     @Query(value = "{ 'id': ?0 }")

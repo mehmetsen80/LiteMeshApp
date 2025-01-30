@@ -1,0 +1,61 @@
+.btn-create {
+    min-width: 120px;
+    transition: all 0.2s ease;
+}
+
+.btn-create:not(:disabled):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-cancel {
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:not(:disabled):hover {
+    background-color: #e2e6ea;
+}
+
+.form-control {
+    transition: border-color 0.2s ease;
+}
+
+.form-control:focus {
+    box-shadow: 0 0 0 0.2rem rgba(12, 5, 109, 0.15);
+}
+
+.alert {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.1);
+}
+
+.alert.fade {
+    opacity: 0;
+    transition: opacity 0.15s linear;
+}
+
+.alert.fade.show {
+    opacity: 1;
+}
+
+.text-muted.small {
+    font-size: 0.875rem;
+    color: #6c757d !important;
+    margin-top: 0.25rem;
+}
+
+.form-text {
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* Add these styles for the organization dropdown */
+.form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0, 0, 89, 0.25);
+}
+
+.form-select:disabled {
+  background-color: #e9ecef;
+  cursor: not-allowed;
+} 

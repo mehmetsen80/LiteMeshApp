@@ -13,4 +13,13 @@ public class DashboardUpdate {
     private String serviceId;
     private ServiceHealthStatus status;
     private Map<String, TrendAnalysis> trends;
-} 
+
+    @Override
+    public String toString() {
+        return "DashboardUpdate{" +
+                "serviceId='" + serviceId + '\'' +
+                ", status=" + status +
+                ", trends=" + trends +
+                '}';
+    }
+}

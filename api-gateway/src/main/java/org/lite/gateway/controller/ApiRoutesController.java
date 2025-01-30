@@ -7,7 +7,7 @@ import org.lite.gateway.entity.RouteVersionMetadata;
 import org.lite.gateway.exception.DuplicateRouteException;
 import org.lite.gateway.dto.ErrorResponse;
 import org.lite.gateway.dto.RouteExistenceResponse;
-import org.lite.gateway.service.ApiRoutesService;
+import org.lite.gateway.service.ApiRouteService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import org.lite.gateway.dto.RouteExistenceResponse.ExistenceDetail;
 import org.lite.gateway.dto.RouteExistenceRequest;
+import org.lite.gateway.dto.ErrorCode;
 
 @RestController
 @RequestMapping("/api/routes")
@@ -23,18 +24,18 @@ import org.lite.gateway.dto.RouteExistenceRequest;
 @Slf4j
 public class ApiRoutesController {
 
-    private final ApiRoutesService apiRoutesService;
+    private final ApiRouteService apiRouteService;
 
     @GetMapping
     public Flux<ApiRoute> getAllRoutes() {
         log.info("Fetching all API routes");
-        return apiRoutesService.getAllRoutes();
+        return apiRouteService.getAllRoutes();
     }
 
     @GetMapping("/{id}")
     public Mono<ResponseEntity<ApiRoute>> getRoute(@PathVariable String id) {
         log.info("Fetching route with id: {}", id);
-        return apiRoutesService.getRouteById(id)
+        return apiRouteService.getRouteById(id)
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
     }
@@ -42,43 +43,66 @@ public class ApiRoutesController {
     @GetMapping("/identifier/{routeIdentifier}")
     public Mono<ResponseEntity<ApiRoute>> getRouteByIdentifier(@PathVariable String routeIdentifier) {
         log.info("Fetching route with identifier: {}", routeIdentifier);
-        return apiRoutesService.getRouteByIdentifier(routeIdentifier)
+        return apiRouteService.getRouteByIdentifier(routeIdentifier)
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Mono<ResponseEntity<Object>> createRoute(@Valid @RequestBody ApiRoute route) {
-        log.info("Creating new route with identifier: {}", route.getRouteIdentifier());
-        return apiRoutesService.createRoute(route)
-            .<ResponseEntity<Object>>map(savedRoute -> ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(savedRoute))
+    public Mono<ResponseEntity<?>> createRoute(@Valid @RequestBody ApiRoute route) {
+        if (route.getPath() == null || route.getPath().trim().isEmpty()) {
+            return Mono.just(ResponseEntity.badRequest()
+                .<ErrorResponse>body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_PATH_REQUIRED,
+                    "Route path is required",
+                    HttpStatus.BAD_REQUEST.value()
+                )));
+        }
+
+        return apiRouteService.createRoute(route)
+            .<ResponseEntity<?>>map(r -> ResponseEntity.ok().body(r))
             .onErrorResume(DuplicateRouteException.class, e -> 
                 Mono.just(ResponseEntity
                     .status(HttpStatus.CONFLICT)
-                    .body(new ErrorResponse(
-                        "DUPLICATE_ROUTE",
+                    .body(ErrorResponse.fromErrorCode(
+                        ErrorCode.ROUTE_ALREADY_EXISTS,
                         e.getMessage(),
                         HttpStatus.CONFLICT.value()
-                    ))));
+                    )))
+            );
     }
 
     @PutMapping("/{id}")
-    public Mono<ResponseEntity<ApiRoute>> updateRoute(
+    public Mono<ResponseEntity<?>> updateRoute(
             @PathVariable String id,
             @Valid @RequestBody ApiRoute route) {
-        log.info("Updating route with id: {}", id);
-        route.setId(id); // Ensure ID matches path variable
-        return apiRoutesService.updateRoute(route)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+        if (route.getPath() == null || route.getPath().trim().isEmpty()) {
+            return Mono.just(ResponseEntity.badRequest()
+                .<ErrorResponse>body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_PATH_REQUIRED,
+                    "Route path is required",
+                    HttpStatus.BAD_REQUEST.value()
+                )));
+        }
+
+        route.setId(id);
+        return apiRouteService.updateRoute(route)
+            .<ResponseEntity<?>>map(r -> ResponseEntity.ok().body(r))
+            .onErrorResume(DuplicateRouteException.class, e -> 
+                Mono.just(ResponseEntity
+                    .status(HttpStatus.CONFLICT)
+                    .body(ErrorResponse.fromErrorCode(
+                        ErrorCode.ROUTE_ALREADY_EXISTS,
+                        e.getMessage(),
+                        HttpStatus.CONFLICT.value()
+                    )))
+            );
     }
 
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> deleteRoute(@PathVariable String id) {
         log.info("Deleting route with id: {}", id);
-        return apiRoutesService.deleteRoute(id)
+        return apiRouteService.deleteRoute(id)
             .then(Mono.just(ResponseEntity.noContent().<Void>build()))
             .defaultIfEmpty(ResponseEntity.notFound().build());
     }
@@ -90,13 +114,13 @@ public class ApiRoutesController {
             @RequestParam(required = false) Boolean healthCheckEnabled) {
         log.info("Searching routes with term: {}, method: {}, healthCheck: {}", 
             searchTerm, method, healthCheckEnabled);
-        return apiRoutesService.searchRoutes(searchTerm, method, healthCheckEnabled);
+        return apiRouteService.searchRoutes(searchTerm, method, healthCheckEnabled);
     }
 
     @GetMapping("/identifier/{routeIdentifier}/versions")
     public Flux<ApiRoute> getAllVersions(@PathVariable String routeIdentifier) {
         log.info("Fetching all versions for route: {}", routeIdentifier);
-        return apiRoutesService.getAllVersions(routeIdentifier);
+        return apiRouteService.getAllVersions(routeIdentifier);
     }
 
     @GetMapping("/identifier/{routeIdentifier}/versions/{version}")
@@ -104,14 +128,13 @@ public class ApiRoutesController {
             @PathVariable String routeIdentifier,
             @PathVariable Integer version) {
         log.info("Fetching version {} of route: {}", version, routeIdentifier);
-        return apiRoutesService.getSpecificVersion(routeIdentifier, version)
+        return apiRouteService.getSpecificVersion(routeIdentifier, version)
             .<ResponseEntity<Object>>map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse(
-                    "VERSION_NOT_FOUND",
-                    String.format("Version %d of route '%s' does not exist", 
-                        version, routeIdentifier),
+                .body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_VERSION_NOT_FOUND,
+                    String.format("Version %d of route '%s' does not exist", version, routeIdentifier),
                     HttpStatus.NOT_FOUND.value()
                 )));
     }
@@ -122,13 +145,13 @@ public class ApiRoutesController {
             @RequestParam Integer version1,
             @RequestParam Integer version2) {
         log.info("Comparing versions {} and {} of route: {}", version1, version2, routeIdentifier);
-        return apiRoutesService.compareVersions(routeIdentifier, version1, version2)
+        return apiRouteService.compareVersions(routeIdentifier, version1, version2)
             .<ResponseEntity<Object>>map(ResponseEntity::ok)
             .onErrorResume(e -> 
                 Mono.just(ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse(
-                        "VERSION_COMPARISON_ERROR",
+                    .body(ErrorResponse.fromErrorCode(
+                        ErrorCode.ROUTE_VERSION_COMPARISON_ERROR,
                         String.format("Cannot compare versions %d and %d of route '%s'. " +
                             "Make sure both versions exist and the route identifier is correct.", 
                             version1, version2, routeIdentifier),
@@ -136,8 +159,8 @@ public class ApiRoutesController {
                     ))))
             .defaultIfEmpty(ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(new ErrorResponse(
-                    "ROUTE_NOT_FOUND",
+                .body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_NOT_FOUND,
                     String.format("Route '%s' does not exist", routeIdentifier),
                     HttpStatus.NOT_FOUND.value()
                 )));
@@ -148,7 +171,7 @@ public class ApiRoutesController {
             @PathVariable String routeIdentifier,
             @PathVariable Integer version) {
         log.info("Rolling back route {} to version {}", routeIdentifier, version);
-        return apiRoutesService.rollbackToVersion(routeIdentifier, version)
+        return apiRouteService.rollbackToVersion(routeIdentifier, version)
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
     }
@@ -156,7 +179,7 @@ public class ApiRoutesController {
     @GetMapping("/identifier/{routeIdentifier}/metadata")
     public Flux<RouteVersionMetadata> getVersionMetadata(@PathVariable String routeIdentifier) {
         log.info("Fetching version metadata for route: {}", routeIdentifier);
-        return apiRoutesService.getVersionMetadata(routeIdentifier);
+        return apiRouteService.getVersionMetadata(routeIdentifier);
     }
 
     @GetMapping("/check")
@@ -177,7 +200,7 @@ public class ApiRoutesController {
                     .build()));
         }
         
-        return apiRoutesService.checkRouteExistence(request)
+        return apiRouteService.checkRouteExistence(request)
             .map(ResponseEntity::ok);
     }
 } 

@@ -11,7 +11,6 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @Builder
@@ -27,18 +26,18 @@ public class Team {
 
     private String description;
     
-    @Indexed
-    private List<String> ownerIds;
-    
     @Builder.Default
     private TeamStatus status = TeamStatus.ACTIVE;
-    
-    /** List of ApiRoute.id references that this team can access */
-    private List<String> routeIds;
     
     @CreatedDate
     private LocalDateTime createdAt;
     
     @LastModifiedDate
     private LocalDateTime updatedAt;
+
+    private String createdBy;
+    private String updatedBy;
+
+    @Indexed
+    private String organizationId;
 }

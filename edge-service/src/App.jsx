@@ -1,57 +1,44 @@
 import './App.css'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import AdminLayout from './layouts/AdminLayout';
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Metrics from './pages/Metrics';
-import ServiceStatus from './pages/ServiceStatus';
+import { BrowserRouter as Router } from 'react-router-dom';
+import { AuthProvider } from './contexts/AuthContext';
 import './assets/styles/global.css';
-import Alerts from './pages/Alerts';
-import ProtectedRoute from './components/common/ProtectedRoute';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import AppRoutes from './routes/AppRoutes';
+import { useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 
-// Public Route Component (accessible only when not logged in)
-const PublicRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (user) return <Navigate to="/" replace />;
-  return children;
-};
+function RouteLogger() {
+  const location = useLocation();
+  
+  useEffect(() => {
+    const fullUrl = new URL(window.location.href);
+    console.log('Route changed:', {
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+      fullUrl: fullUrl.toString(),
+      params: Object.fromEntries(fullUrl.searchParams.entries())
+    });
+  }, [location]);
+  
+  return null;
+}
 
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            } 
-          />
-          <Route 
-            path="/register" 
-            element={
-              <PublicRoute>
-                <Register />
-              </PublicRoute>
-            } 
-          />
-          <Route element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route path="/" element={<Home />} key="home" />
-            <Route path="/metrics" element={<Metrics />} key="metrics" />
-            <Route path="/service-status" element={<ServiceStatus />} key="service-status" />
-            <Route path="/alerts" element={<Alerts />} key="alerts" />
-          </Route>
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AuthProvider>
+      <div>
+        <RouteLogger />
+        <AuthProvider>
+          <div style={{ display: 'none' }}>
+            Current route: {window.location.pathname}
+            Search: {window.location.search}
+          </div>
+          <AppRoutes />
+          <ToastContainer />
+        </AuthProvider>
+      </div>
     </Router>
   );
 }

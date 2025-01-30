@@ -21,4 +21,12 @@ public class TrendAnalysis {
             
         return new TrendAnalysis(percentageChange, direction);
     }
-} 
+
+    @Override
+    public String toString() {
+        return "TrendAnalysis{" +
+                "percentageChange=" + percentageChange +
+                ", direction=" + direction +
+                '}';
+    }
+}

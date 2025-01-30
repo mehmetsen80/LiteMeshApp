@@ -1,5 +1,6 @@
 package org.lite.gateway.config;
 
+import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.service.DynamicRouteService;
@@ -32,13 +33,16 @@ import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsConfigurationSource;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import java.util.ArrayList;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -49,6 +53,9 @@ public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
 
     @Value("${cors.allowed-origins}")
     private String allowedOrigins;
@@ -71,10 +78,17 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-    //DO NOT DELETE THIS, IT'S BEING USED
+    //For Keycloak RS256 tokens
     @Bean
-    public ReactiveJwtDecoder jwtDecoder() {
+    public ReactiveJwtDecoder keycloakJwtDecoder() {
         return NimbusReactiveJwtDecoder.withJwkSetUri(jwkSetUri).build();
+    }
+
+    //For user HS256 tokens
+    @Bean
+    public ReactiveJwtDecoder userJwtDecoder() {
+        return NimbusReactiveJwtDecoder.withSecretKey(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
+            .build();
     }
 
     @Bean
@@ -91,7 +105,8 @@ public class SecurityConfig {
                             return cn;  // Return the Common Name (CN) as the principal
                         })
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
+                        .jwtDecoder(keycloakJwtDecoder())))
                 .authorizeExchange(exchange -> exchange
                         .anyExchange()
                         .access(this::dynamicPathAuthorization))
@@ -116,10 +131,25 @@ public class SecurityConfig {
 
     //We are injecting the gateway token here
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)  // Ensure this runs early
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     public WebFilter tokenRelayWebFilter(AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
         return (exchange, chain) -> {
-            log.info("TokenRelayWebFilter applied to request: {}", exchange.getRequest().getURI());
+            // Check if we've already processed this request
+            if (exchange.getAttribute("TOKEN_RELAY_PROCESSED") != null) {
+                return chain.filter(exchange);
+            }
+            
+            String path = exchange.getRequest().getPath().toString();
+            // Skip token relay for certain paths
+            if (path.startsWith("/actuator") || 
+                path.startsWith("/favicon")) {
+                return chain.filter(exchange);
+            }
+            log.info("TokenRelayWebFilter for path: {}", path);
+
+            // Store the original user token if it exists
+            String userToken = exchange.getRequest().getHeaders().getFirst("Authorization");
+            log.info("Incoming token: {}", userToken);
 
             OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
                     .withClientRegistrationId("lite-mesh-gateway-client")
@@ -131,18 +161,41 @@ public class SecurityConfig {
                     .flatMap(authorizedClient -> {
                         if (authorizedClient != null && authorizedClient.getAccessToken() != null) {
                             String gatewayToken = authorizedClient.getAccessToken().getTokenValue();
-                            log.info("Gateway Token retrieved: {}", gatewayToken);
-                            // Forward the gateway's token to the downstream service
-                            exchange.getRequest().mutate().header("Authorization", "Bearer " + gatewayToken);
-                        } else {
-                            //log.warn("No access token available for the client");
-                            log.warn("No access token available for the gateway");
+                            
+                            // Mark this request as processed
+                            exchange.getAttributes().put("TOKEN_RELAY_PROCESSED", true);
+
+                            ServerHttpRequest request = exchange.getRequest().mutate()
+                            .headers(headers -> {
+                                headers.set("Authorization", "Bearer " + gatewayToken);
+                                if (userToken != null) {
+                                    String token = userToken.startsWith("Bearer ") ? 
+                                        userToken.substring(7) : userToken;
+                                    headers.set("X-User-Token", token);
+                                    log.info("User token set for path: {}", path);
+                                }
+                            })
+                                .build();
+
+                            return chain.filter(exchange.mutate().request(request).build());
                         }
-                        return chain.filter(exchange);
+
+                        ServerHttpRequest request = exchange.getRequest().mutate()
+                            .headers(headers -> {
+                                if (userToken != null) {
+                                    String token = userToken.startsWith("Bearer ") ? 
+                                        userToken.substring(7) : userToken;
+                                    headers.set("X-User-Token", token);
+                                    log.info("Only user token set for path: {}", path);
+                                }
+                            })
+                            .build();
+
+                        return chain.filter(exchange.mutate().request(request).build());
                     })
                     .onErrorResume(error -> {
-                        log.error("Failed to authorize client: {}", error.getMessage());
-                        return chain.filter(exchange); // Continue the filter chain even if token acquisition fails
+                        log.error("Failed to authorize client for path {}: {}", path, error.getMessage());
+                        return chain.filter(exchange);
                     });
         };
     }

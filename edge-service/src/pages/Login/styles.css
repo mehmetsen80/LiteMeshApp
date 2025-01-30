@@ -103,3 +103,21 @@
     background: rgba(255, 255, 255, 0.98);
   }
 }
+
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #6c757d;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #dee2e6;
+}
+
+.separator-text {
+  padding: 0 1rem;
+}

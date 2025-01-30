@@ -21,19 +21,7 @@ export default defineConfig(({ mode }) => {
     },
     server: {
       port: 3000,
-      proxy: {
-        '/api': {
-          target: apiGatewayUrl,
-          secure: false,
-          changeOrigin: true,
-          ws: true,
-          configure: (proxy, _options) => {
-            proxy.on('error', (err, _req, _res) => {
-              console.log('proxy error', err);
-            });
-          }
-        }
-      },
+      strictPort: true,
       cors: true,
       open: true,
     },

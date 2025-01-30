@@ -4,8 +4,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.config.GatewayRoutesRefresher;
 import org.lite.gateway.entity.ApiRoute;
+import org.lite.gateway.service.ApiRouteService;
 import org.lite.gateway.service.DynamicRouteService;
-import org.lite.gateway.service.RouteService;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -20,7 +20,7 @@ import static org.springframework.web.reactive.function.BodyInserters.fromValue;
 @Component
 @Slf4j
 public class ApiRouteHandler {
-    private final RouteService routeService;
+    private final ApiRouteService apiRouteService;
 
     private final DynamicRouteService dynamicRouteService;
 
@@ -33,12 +33,12 @@ public class ApiRouteHandler {
         return apiRoute.flatMap(route ->
                 ServerResponse.status(HttpStatus.OK)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(routeService.create(route), ApiRoute.class));
+                        .body(apiRouteService.createRoute(route), ApiRoute.class));
     }
 
     public Mono<ServerResponse> getById(ServerRequest serverRequest) {
         final String apiId = serverRequest.pathVariable("routeId");
-        Mono<ApiRoute> apiRoute = routeService.getById(apiId);
+        Mono<ApiRoute> apiRoute = apiRouteService.getRouteById(apiId);
         return apiRoute.flatMap(route -> ServerResponse.ok()
                         .body(fromValue(route)))
                 .switchIfEmpty(ServerResponse.notFound()
@@ -46,7 +46,7 @@ public class ApiRouteHandler {
     }
 
     public Mono<ServerResponse> refreshRoutes(ServerRequest serverRequest) {
-        return routeService.getAll()
+        return apiRouteService.getAllRoutes()
                 .collectList()
                 .doOnSuccess(list -> {
                     list.forEach(apiRoute -> {

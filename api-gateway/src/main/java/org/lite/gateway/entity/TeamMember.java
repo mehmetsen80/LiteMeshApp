@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
+import org.springframework.data.annotation.Transient;
 
 import java.time.LocalDateTime;
 
@@ -25,6 +26,8 @@ public class TeamMember {
     
     private String teamId;
     private String userId;
+    @Transient
+    private String username;
     private TeamRole role;
     private TeamMemberStatus status;
     

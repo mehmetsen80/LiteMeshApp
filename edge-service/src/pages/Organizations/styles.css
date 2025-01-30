@@ -1,0 +1,66 @@
+.organizations-container {
+  padding: 20px;
+}
+
+.card {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  background-color: white;
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem;
+}
+
+.organizations-icon {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.create-organization-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.create-organization-btn:hover:not(:disabled) {
+  background-color: #0a0459;
+  border-color: #0a0459;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  color: #495057;
+  text-align: left;
+}
+
+.table tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.table td {
+  text-align: left;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover {
+  background-color: #0a0459;
+  border-color: #0a0459;
+} 

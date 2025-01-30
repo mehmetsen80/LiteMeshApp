@@ -12,6 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
@@ -29,6 +30,7 @@ public class User implements UserDetails {
     private String id;
 
     @Indexed(unique = true)
+    @NotBlank(message = "Username is required")
     private String username;
     
     @Indexed(unique = true)

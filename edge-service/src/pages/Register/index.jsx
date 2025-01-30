@@ -1,24 +1,64 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Form, Button, Alert } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
+import authService from '../../services/authService';
 import './styles.css';
 
 function Register() {
+  const { register } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
     confirmPassword: ''
   });
-  const [errors, setErrors] = useState({
-    general: '',
-    username: '',
-    email: '',
-    password: ''
+  const [passwordStrength, setPasswordStrength] = useState({
+    isStrong: false,
+    error: null
   });
-  const [isLoading, setIsLoading] = useState(false);
-  const navigate = useNavigate();
-  const { register } = useAuth();
+  const [usernameError, setUsernameError] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Username validation
+  useEffect(() => {
+    if (formData.username) {
+      setUsernameError(
+        formData.username.length < 6 
+          ? 'Username must be at least 6 characters long'
+          : ''
+      );
+    } else {
+      setUsernameError('');
+    }
+  }, [formData.username]);
+
+  // Password validation
+  useEffect(() => {
+    const validatePassword = async () => {
+      if (formData.password) {
+        try {
+          const { data, error } = await authService.validatePassword(formData.password);
+          if (error) {
+            setPasswordStrength({ isStrong: false, error });
+            return;
+          }
+          setPasswordStrength(data);
+        } catch (err) {
+          setPasswordStrength({ 
+            isStrong: false, 
+            error: 'Password validation failed' 
+          });
+        }
+      } else {
+        setPasswordStrength({ isStrong: false, error: null });
+      }
+    };
+    
+    const timeoutId = setTimeout(validatePassword, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.password]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -26,46 +66,41 @@ function Register() {
       ...prev,
       [name]: value
     }));
+    setError('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrors({
-      general: '',
-      username: '',
-      email: '',
-      password: ''
-    });
-    setIsLoading(true);
+    setError('');
+    setLoading(true);
 
     if (formData.password !== formData.confirmPassword) {
-      setErrors(prev => ({
-        ...prev,
-        password: 'Passwords do not match'
-      }));
-      setIsLoading(false);
+      setError('Passwords do not match');
+      setLoading(false);
+      return;
+    }
+
+    if (!passwordStrength.isStrong) {
+      setError('Please ensure your password meets all requirements');
+      setLoading(false);
       return;
     }
 
     try {
-      console.log('Submitting registration form...');
-      const result = await register(formData.username, formData.email, formData.password);
-      if (result.error) {
-        setErrors(prev => ({
-          ...prev,
-          general: result.error
-        }));
+      const { error } = await register(
+        formData.username,
+        formData.email,
+        formData.password
+      );
+      
+      if (error) {
+        setError(error);
         return;
       }
-      console.log('Registration successful, navigating...');
-      navigate('/', { replace: true });
     } catch (err) {
-      setErrors(prev => ({
-        ...prev,
-        general: err.message || 'Registration failed'
-      }));
+      setError(err.message || 'Registration failed');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -77,94 +112,82 @@ function Register() {
             <h2>Create Account</h2>
             <p className="text-muted">Join us to monitor your microservices</p>
           </div>
-          
-          {errors.general && (
-            <div className="alert alert-danger" role="alert">
-              {errors.general}
-            </div>
+
+          {error && (
+            <Alert variant="danger">{error}</Alert>
           )}
 
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="username" className="form-label">Username</label>
-              <input
+          <Form onSubmit={handleSubmit}>
+            <Form.Group className="mb-3">
+              <Form.Label>Username</Form.Label>
+              <Form.Control
                 type="text"
-                className={`form-control ${errors.username ? 'is-invalid' : ''}`}
-                id="username"
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
                 required
-                autoComplete="username"
-                placeholder="Choose a username"
-                disabled={isLoading}
+                placeholder="Enter username"
+                disabled={loading}
               />
-              {errors.username && (
-                <div className="invalid-feedback">
-                  {errors.username}
-                </div>
+              {usernameError && (
+                <Form.Text className="text-danger">
+                  {usernameError}
+                </Form.Text>
               )}
-            </div>
+            </Form.Group>
 
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label">Email</label>
-              <input
+            <Form.Group className="mb-3">
+              <Form.Label>Email</Form.Label>
+              <Form.Control
                 type="email"
-                className={`form-control ${errors.email ? 'is-invalid' : ''}`}
-                id="email"
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
                 required
-                autoComplete="email"
-                placeholder="Enter your email"
-                disabled={isLoading}
+                placeholder="Enter email"
+                disabled={loading}
               />
-              {errors.email && (
-                <div className="invalid-feedback">
-                  {errors.email}
-                </div>
-              )}
-            </div>
+            </Form.Group>
 
-            <div className="mb-3">
-              <label htmlFor="password" className="form-label">Password</label>
-              <input
+            <Form.Group className="mb-3">
+              <Form.Label>Password</Form.Label>
+              <Form.Control
                 type="password"
-                className="form-control"
-                id="password"
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
                 required
-                autoComplete="new-password"
-                placeholder="Create a password"
-                disabled={isLoading}
+                placeholder="Enter password"
+                disabled={loading}
               />
-            </div>
+              {formData.password && (
+                <div className="password-strength-container">
+                  <div className={`password-strength ${passwordStrength.isStrong ? 'strong' : 'weak'}`}>
+                    {passwordStrength.error || (passwordStrength.isStrong ? 'Password is strong' : 'Password is weak')}
+                  </div>
+                </div>
+              )}
+            </Form.Group>
 
-            <div className="mb-4">
-              <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
-              <input
+            <Form.Group className="mb-4">
+              <Form.Label>Confirm Password</Form.Label>
+              <Form.Control
                 type="password"
-                className="form-control"
-                id="confirmPassword"
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
-                autoComplete="new-password"
-                placeholder="Confirm your password"
-                disabled={isLoading}
+                placeholder="Confirm password"
+                disabled={loading}
               />
-            </div>
+            </Form.Group>
 
-            <button 
+            <Button 
               type="submit" 
-              className="btn btn-primary w-100"
-              disabled={isLoading}
+              className="w-100"
+              disabled={loading || usernameError || !passwordStrength.isStrong}
             >
-              {isLoading ? (
+              {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
                   Creating Account...
@@ -172,12 +195,12 @@ function Register() {
               ) : (
                 'Create Account'
               )}
-            </button>
-          </form>
+            </Button>
+          </Form>
 
           <div className="mt-4 text-center">
             <p className="mb-0">
-              Already have an account? <Link to="/login">Sign In</Link>
+              Already have an account? <Link to="/login">Login</Link>
             </p>
           </div>
         </div>

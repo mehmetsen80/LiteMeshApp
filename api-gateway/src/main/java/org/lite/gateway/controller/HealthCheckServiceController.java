@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.PreDestroy;
 
+import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.Executors;
@@ -20,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import reactor.core.publisher.Mono;
 
 import org.lite.gateway.model.DashboardUpdate;
+import org.springframework.messaging.MessageDeliveryException;
 
 @RestController
 @RequestMapping("/health")
@@ -60,9 +62,17 @@ public class HealthCheckServiceController {
                 })
             )
             .collectList()
-            .subscribe(updates -> {
-                simpMessagingTemplate.convertAndSend("/topic/health", updates);
-            });
+            .subscribe(this::sendHealthUpdate);
+    }
+
+    private void sendHealthUpdate(List<DashboardUpdate> payload) {
+        try {
+            log.info("sendHealthUpdate {}", payload);
+            simpMessagingTemplate.convertAndSend("/topic/health", payload);
+        } catch (MessageDeliveryException e) {
+            log.warn("Failed to send health update: {}", e.getMessage());
+            // Optionally implement retry logic here if needed
+        }
     }
 
     // Triggered when a client subscribes
