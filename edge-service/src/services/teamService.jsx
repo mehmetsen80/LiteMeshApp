@@ -1,34 +1,24 @@
 import axiosInstance from './axiosInstance';
-import logger from '../utils/logger';
 
 const teamService = {
   // Get all teams
   getAllTeams: async () => {
     try {
-      logger.debug('Fetching all teams');
       const response = await axiosInstance.get('/api/teams');
-      logger.debug('Teams fetched successfully', response.data);
       return { data: response.data };
     } catch (error) {
-      logger.error('Failed to fetch teams', error);
-      return { 
-        error: error.response?.data?.message || 'Failed to fetch teams' 
-      };
+      console.error('Error fetching teams:', error);
+      return { error: error.message };
     }
   },
 
   // Create new team
   createTeam: async (teamData) => {
     try {
-      logger.debug('Creating new team', teamData);
       const response = await axiosInstance.post('/api/teams', teamData);
-      logger.info('Team created successfully', response.data);
       return { data: response.data };
     } catch (error) {
-      logger.error('Failed to create team', error);
-      return { 
-        error: error.response?.data?.message || 'Failed to create team' 
-      };
+      return { error: error.message };
     }
   },
 
@@ -42,24 +32,17 @@ const teamService = {
       });
       return { data: response.data };
     } catch (error) {
-      return { 
-        error: error.response?.data?.message || 'Failed to update team' 
-      };
+      return { error: error.message };
     }
   },
 
   // Delete team
   deleteTeam: async (teamId) => {
     try {
-      logger.debug(`Deleting team with id: ${teamId}`);
       const response = await axiosInstance.delete(`/api/teams/${teamId}`);
-      logger.info('Team deleted successfully', { teamId });
       return { data: response.data };
     } catch (error) {
-      logger.error(`Failed to delete team with id: ${teamId}`, error);
-      return { 
-        error: error.response?.data?.message || 'Failed to delete team' 
-      };
+      return { error: error.message };
     }
   },
 
@@ -69,9 +52,7 @@ const teamService = {
       const response = await axiosInstance.get(`/api/teams/${teamId}/members`);
       return { data: response.data };
     } catch (error) {
-      return { 
-        error: error.response?.data?.message || 'Failed to fetch team members' 
-      };
+      return { error: error.message };
     }
   },
 
@@ -90,9 +71,7 @@ const teamService = {
       );
       return { data: response.data };
     } catch (error) {
-      return {
-        error: error.response?.data?.message || 'Failed to add team member'
-      };
+      return { error: error.message };
     }
   },
 
@@ -102,9 +81,7 @@ const teamService = {
       const response = await axiosInstance.delete(`/api/teams/${teamId}/members/${userId}`);
       return { data: response.data };
     } catch (error) {
-      return { 
-        error: error.response?.data?.message || 'Failed to remove team member' 
-      };
+      return { error: error.message };
     }
   },
 
@@ -117,7 +94,7 @@ const teamService = {
       );
       return { data: response.data };
     } catch (error) {
-      return { error: error.response?.data?.message || error.message };
+      return { error: error.message };
     }
   },
 
@@ -127,9 +104,7 @@ const teamService = {
       const response = await axiosInstance.delete(`/api/teams/${teamId}/routes/${routeId}`);
       return { data: response.data };
     } catch (error) {
-      return {
-        error: error.response?.data?.message || 'Failed to remove route from team'
-      };
+      return { error: error.message };
     }
   },
 
@@ -139,9 +114,7 @@ const teamService = {
       const response = await axiosInstance.put(`/api/teams/${teamId}/activate`);
       return { data: response.data };
     } catch (error) {
-      return {
-        error: error.response?.data?.message || 'Failed to activate team'
-      };
+      return { error: error.message };
     }
   },
 
@@ -151,9 +124,7 @@ const teamService = {
       const response = await axiosInstance.put(`/api/teams/${teamId}/deactivate`);
       return { data: response.data };
     } catch (error) {
-      return {
-        error: error.response?.data?.message || 'Failed to deactivate team'
-      };
+      return { error: error.message };
     }
   },
 
@@ -163,7 +134,7 @@ const teamService = {
       const response = await axiosInstance.get('/api/routes');
       return { data: response.data };
     } catch (error) {
-      return { error: error.response?.data?.message || 'Failed to fetch routes' };
+      return { error: error.message };
     }
   },
 
@@ -175,9 +146,7 @@ const teamService = {
       console.log('API response:', response.data);
       return { data: response.data };
     } catch (error) {
-      return { 
-        error: error.response?.data?.message || 'Failed to fetch team routes' 
-      };
+      return { error: error.message };
     }
   },
 };

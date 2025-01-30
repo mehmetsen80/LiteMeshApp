@@ -54,7 +54,6 @@ function Callback() {
             return;
           }
         }
-        
 
         if (state !== savedState) {
           navigate('/login');// console.error('State mismatch, possible CSRF attack');
