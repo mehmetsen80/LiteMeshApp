@@ -33,13 +33,11 @@ public class OrganizationsController {
 
     @GetMapping
     public Flux<OrganizationDTO> getAllOrganizations() {
-        log.debug("REST request to get all Organizations");
         return organizationService.getAllOrganizations();
     }
 
     @GetMapping("/{id}")
     public Mono<ResponseEntity<OrganizationDTO>> getOrganization(@PathVariable String id) {
-        log.debug("REST request to get Organization : {}", id);
         return organizationService.getOrganizationById(id)
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
@@ -49,7 +47,6 @@ public class OrganizationsController {
     public Mono<ResponseEntity<?>> createOrganization(
             @Valid @RequestBody Organization organization,
             ServerWebExchange exchange) {
-        log.debug("REST request to create Organization : {}", organization);
         return userContextService.getCurrentUser(exchange)
             .flatMap(username -> {
                 organization.setCreatedBy(username);
@@ -82,7 +79,6 @@ public class OrganizationsController {
             @PathVariable String id,
             @Valid @RequestBody Organization organization,
             ServerWebExchange exchange) {
-        log.debug("REST request to update Organization : {}", organization);
         return userContextService.getCurrentUser(exchange)
             .flatMap(username -> {
                 organization.setUpdatedBy(username);
@@ -111,7 +107,6 @@ public class OrganizationsController {
 
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<?>> deleteOrganization(@PathVariable String id) {
-        log.debug("REST request to delete Organization : {}", id);
         return organizationService.deleteOrganization(id)
             .then(Mono.<ResponseEntity<?>>just(ResponseEntity.ok().build()))
             .onErrorResume(OrganizationOperationException.class, e ->
@@ -129,7 +124,6 @@ public class OrganizationsController {
 
     @GetMapping("/search")
     public Flux<OrganizationDTO> searchOrganizations(@RequestParam String query) {
-        log.debug("REST request to search organizations with query: {}", query);
         return organizationService.searchOrganizations(query);
     }
 } 

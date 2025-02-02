@@ -6,9 +6,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.inventory.model.GreetingResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -16,6 +19,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @RestController
+@RequestMapping(produces = MediaType.APPLICATION_JSON_VALUE)
 @Slf4j
 public class InventoryController {
 
@@ -40,7 +44,7 @@ public class InventoryController {
         this.restTemplate = restTemplate;
     }
 
-    @GetMapping("/greet")
+    @GetMapping(value = "/greet", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GreetingResponse> getInventory(HttpServletRequest request) {
         log.info("Greetings from Inventory Service!");
         
@@ -58,7 +62,11 @@ public class InventoryController {
             response.setInstanceId(instanceId);
             response.setPort(service.getPort());
             response.setUrl(request.getRequestURL().toString());
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            
+            return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .header(HttpHeaders.VARY, "Origin, Access-Control-Request-Method, Access-Control-Request-Headers")
+                .body(response);
             
         } catch (Exception e) {
             log.error("Error getting service information: {}", e.getMessage());
@@ -67,13 +75,15 @@ public class InventoryController {
     }
 
     // Method to call Product Service from Inventory Service
-    @GetMapping("/callProduct")
+    @GetMapping(value = "/callProduct", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GreetingResponse> callProductService(){
         String url = gatewayBaseUrl + "/product/greet";
         try {
             GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
             log.info("Response from Product Service: {}", response);
-            return new ResponseEntity<>(response, HttpStatus.OK);
+            return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(response);
         } catch (Exception e) {
             log.error("Error calling Product Service", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);

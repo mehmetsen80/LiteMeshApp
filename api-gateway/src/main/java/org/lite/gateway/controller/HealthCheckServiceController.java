@@ -45,7 +45,7 @@ public class HealthCheckServiceController {
 
     // Send updates every 5 seconds
     private void startCheckUpdates() {
-        scheduler.scheduleAtFixedRate(this::sendHealthUpdate, 0, 5, TimeUnit.SECONDS);
+        //scheduler.scheduleAtFixedRate(this::sendHealthUpdate, 0, 5, TimeUnit.SECONDS);
     }
 
     private void sendHealthUpdate() {

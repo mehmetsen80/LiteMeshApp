@@ -50,8 +50,8 @@ function Header() {
                   </a>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" href="#" onClick={(e) => handleNavClick('/alerts', e)}>
-                    Alerts
+                  <a className="nav-link" href="#" onClick={(e) => handleNavClick('/teams', e)}>
+                    Teams
                   </a>
                 </li>
               </>
