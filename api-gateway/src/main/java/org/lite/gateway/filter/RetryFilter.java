@@ -40,7 +40,7 @@ public class RetryFilter implements GatewayFilter, Ordered {
             int maxAttempts = retryRecord.maxAttempts();
             Duration waitDuration = retryRecord.waitDuration();
             String retryExceptions = retryRecord.retryExceptions();
-            log.info("Applying Retry for route: {}", routeId);
+            //log.info("Applying Retry for route: {}", routeId);
 
             RetryConfig retryConfig = RetryConfig.custom()
                     .maxAttempts(maxAttempts)
@@ -51,35 +51,31 @@ public class RetryFilter implements GatewayFilter, Ordered {
             RetryBackoffSpec retryBackoffSpec = buildRetryBackoffSpec(maxAttempts, waitDuration, retryConfig);
             BodyCaptureRequest requestDecorator = new BodyCaptureRequest(exchange.getRequest());
             BodyCaptureResponse responseDecorator = new BodyCaptureResponse(exchange.getResponse());
-            ServerWebExchange mutatedExchange = exchange.mutate()
-                    .request(requestDecorator)
-                    .response(responseDecorator)
-                    .build();
 
             // We wrap the entire downstream call (chain.filter) inside the retry logic
             // We use Mono.defer to make sure that each retry triggers a fresh request to the downstream service
             // Use Mono.defer to ensure fresh invocation on every retry
             return
                     Mono.defer(() -> {
-                        log.info("Sending request to downstream service...");
-                        return chain.filter(mutatedExchange) // Send the request to the downstream service
+                        //log.info("Sending request to downstream service...");
+                        return chain.filter(exchange) // Send the request to the downstream service
                                 .onErrorResume(throwable -> {
                                     // Handle upstream (gateway-level) errors
                                     log.error("Error occurred: {}", throwable.getMessage());
 
                                     if (isUpstreamError(throwable)) {
-                                        log.info("Detected an upstream error, skipping retry.");
+                                        //log.info("Detected an upstream error, skipping retry.");
                                         // Directly handle upstream errors and bypass downstream retry
-                                        return handleErrorFallback(mutatedExchange, throwable);
+                                        return handleErrorFallback(exchange, throwable);
                                     }
 
                                     // If not upstream, rethrow to allow retry
                                     return Mono.error(throwable);
                                 })
-                                .then(Mono.defer(() -> handleResponse(responseDecorator, mutatedExchange))); // Handle response after downstream call
+                                .then(Mono.defer(() -> handleResponse(responseDecorator, exchange))); // Handle response after downstream call
                     })
                     .retryWhen(retryBackoffSpec) // Retry on errors from the downstream call
-                    .onErrorResume(throwable -> handleErrorFallback(mutatedExchange, throwable));
+                    .onErrorResume(throwable -> handleErrorFallback(exchange, throwable));
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
@@ -95,7 +91,7 @@ public class RetryFilter implements GatewayFilter, Ordered {
         return responseDecorator.getBody()
                 .then(Mono.defer(()->{
                     HttpStatusCode statusCode = responseDecorator.getStatusCode();
-                    log.info("Downstream response status: {}", statusCode);
+                    //log.info("Downstream response status: {}", statusCode);
                     String fullBody = responseDecorator.getFullBody();
 
                     // Check for 5xx server errors to trigger retry
@@ -105,24 +101,28 @@ public class RetryFilter implements GatewayFilter, Ordered {
                         return Mono.error(new RuntimeException(fullBody)); // Trigger retry
                     }
 
-                    // If the response is successful, complete the response correctly
+                    // If the response is successful, pass it through without modification
                     if (statusCode != null && statusCode.is2xxSuccessful()) {
-                        log.info("Successful downstream response, returning to client");
-                        exchange.getResponse().setStatusCode(statusCode); // Set the response status code
-                        exchange.getResponse().getHeaders().addAll(responseDecorator.getHeaders()); // Copy headers if necessary
-                        DataBuffer buffer = exchange.getResponse().bufferFactory()
-                                .wrap(fullBody.getBytes(StandardCharsets.UTF_8));
-                        return exchange.getResponse().writeWith(Mono.just(buffer)); // Write the response body
+                        //log.info("Successful downstream response, returning to client");
+                        //exchange.getResponse().setStatusCode(statusCode);
+                        
+                        // Copy all original headers
+                        //exchange.getResponse().getHeaders().putAll(responseDecorator.getHeaders());
+
+                        return exchange.getResponse().setComplete();
+                        
+                        // Write the original body without any parsing/modification
+//                        DataBuffer buffer = exchange.getResponse().bufferFactory()
+//                            .wrap(fullBody.getBytes(StandardCharsets.UTF_8));
+//                        return exchange.getResponse().writeWith(Mono.just(buffer));
                     }
 
-                    // If non-retrievable status, propagate as error to stop retry
                     return Mono.error(new RuntimeException("Non-retrievable response status: " + statusCode));
                 }));
     }
 
     public Mono<Void> handleErrorFallback(ServerWebExchange exchange, Throwable throwable) {
-        log.error("Error during retry: {}", throwable.getMessage());
-        log.info("throwable.getClass().getName(): " + throwable.getClass().getName());
+        log.error("Error during retry: {} throwable.getClass().getName(): {}", throwable.getMessage(), throwable.getClass().getName());
 
         // Unwrap the original exception if retries are exhausted
         Throwable unwrappedThrowable = throwable;
@@ -136,9 +136,7 @@ public class RetryFilter implements GatewayFilter, Ordered {
             unwrappedThrowable = throwable.getCause();  // Use the cause if available
         }
 
-        log.error("Original exception: {}", unwrappedThrowable.getMessage());
-        log.error("Original exception class name: {}", unwrappedThrowable.getClass().getName());
-
+        log.error("Original exception message: {} and class name: {}", unwrappedThrowable.getMessage(), unwrappedThrowable.getClass().getName());
 
         // Propagate the `Authorization` header and other required headers
         HttpHeaders headers = exchange.getRequest().getHeaders();
@@ -151,21 +149,17 @@ public class RetryFilter implements GatewayFilter, Ordered {
 
         // Set the appropriate status code based on the type of error
         if (unwrappedThrowable instanceof TimeoutException) {
-            log.info("Inside TimeoutException");
             return Mono.error(unwrappedThrowable);
         } else if (unwrappedThrowable instanceof org.springframework.cloud.gateway.support.NotFoundException) {
-            log.info("inside NotFoundException");
             return Mono.error(unwrappedThrowable);
         } else if(unwrappedThrowable instanceof RuntimeException){
             return Mono.error(unwrappedThrowable);
         } else if (throwable.getClass().getName().equals("reactor.core.Exceptions$RetryExhaustedException")){
-            log.info("inside Exceptions$RetryExhaustedException");
             return Mono.error(new RuntimeException(throwable.getMessage() + " => " + unwrappedThrowable.getMessage()  + " " + statusCode));
         }
 
         // You can add more exception-to-status mappings as needed
         exchange.getResponse().setStatusCode(statusCode);
-        //String errorResponse = String.format("{\"error\": \"%s\", \"message\": \"Something went wrong in the downstream service.\"}", throwable.getMessage());
         byte[] bytes = unwrappedThrowable.getMessage().getBytes(StandardCharsets.UTF_8);
         DataBuffer buffer = exchange.getResponse().bufferFactory().wrap(bytes);
         return exchange.getResponse().writeWith(Mono.just(buffer));
@@ -174,8 +168,6 @@ public class RetryFilter implements GatewayFilter, Ordered {
     private RetryBackoffSpec buildRetryBackoffSpec(int maxAttempts, Duration waitDuration, RetryConfig retryConfig) {
         return reactor.util.retry.Retry.fixedDelay(maxAttempts, waitDuration)
                 .filter(throwable -> {
-                    log.info("Checking retry ability of throwable: {}", throwable.getMessage());
-
                     if (throwable instanceof TimeoutException ||
                             (throwable instanceof WebClientResponseException &&
                                     ((WebClientResponseException) throwable).getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE)) {
@@ -196,31 +188,38 @@ public class RetryFilter implements GatewayFilter, Ordered {
     }
 
     private boolean shouldRetryOnException(Throwable throwable, String retryExceptions) {
-
-        log.info("inside shouldRetryOnException");
+        if (throwable == null) {
+            log.warn("Throwable is null in shouldRetryOnException");
+            return false;
+        }
+        
+        //log.info("inside shouldRetryOnException");
+        String message = throwable.getMessage();
+        
         // Check if it's a RuntimeException and contains '503' message
-        if (throwable instanceof RuntimeException && throwable.getMessage() != null &&
-                throwable.getMessage().contains("503 SERVICE_UNAVAILABLE")) {
-            log.info("Should not retry for the error 503 Service Unavailable.");
+        if (throwable instanceof RuntimeException && 
+            message != null && 
+            message.contains("503 SERVICE_UNAVAILABLE")) {
+            //log.info("Should not retry for the error 503 Service Unavailable.");
             return false; // Skip retry for 503 errors
         }
 
-        if(throwable !=  null && throwable.getMessage().contains("429 TOO_MANY_REQUESTS")){
-            log.info("Should not retry for the error 429 TOO_MANY_REQUESTS");
+        if(message != null && message.contains("429 TOO_MANY_REQUESTS")) {
+            log.error("Should not retry for the error 429 TOO_MANY_REQUESTS");
             return false;  // Skip retry for 429 TOO_MANY_REQUESTS
         }
 
         // If it's a WebClientResponseException, check for specific status codes
         if (throwable instanceof WebClientResponseException webClientEx) {
             if (webClientEx.getStatusCode() == HttpStatus.SERVICE_UNAVAILABLE) {
-                log.info("Skipping retry for 503 Service Unavailable.");
+                log.error("Skipping retry for 503 Service Unavailable.");
                 return false; // Skip retry for 503 errors
             }
         }
 
         // Other retry logic (e.g., for TimeoutException)
         if (throwable instanceof TimeoutException) {
-            log.info("Skipping retry for TimeoutException.");
+            log.error("Skipping retry for TimeoutException.");
             return false;
         }
 
@@ -229,6 +228,7 @@ public class RetryFilter implements GatewayFilter, Ordered {
                 try {
                     Class<?> clazz = Class.forName(exceptionClassName.trim());
                     if (clazz.isInstance(throwable)) {
+                        log.info("Will retry for exception: {}", throwable.getClass().getName());
                         return true;
                     }
                 } catch (ClassNotFoundException e) {
@@ -236,6 +236,7 @@ public class RetryFilter implements GatewayFilter, Ordered {
                 }
             }
         }
+        log.info("No retry configured for exception: {}", throwable.getClass().getName());
         return false;
     }
 

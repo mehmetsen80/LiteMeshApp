@@ -69,7 +69,19 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
             booleanSpec.and().method(apiRoute.getMethod());
         }
 
-        applyFilters(booleanSpec, apiRoute);
+        // Add filter to check actual request path before applying resilience filters
+        booleanSpec.filters(f -> f.filter((exchange, chain) -> {
+            String pathEndpoint = exchange.getRequest().getURI().getPath();
+            
+            // Skip resilience filters for health check endpoints
+            if (pathEndpoint.endsWith("/health") || pathEndpoint.endsWith("/health/")) {
+                return chain.filter(exchange);
+            }
+            
+            // Apply resilience filters for non-health endpoints
+            applyFilters(booleanSpec, apiRoute);
+            return chain.filter(exchange);
+        }));
 
         // Add a custom filter to capture metrics only for real requests
         booleanSpec.filters(f -> f.filter((exchange, chain) -> {

@@ -168,6 +168,8 @@ public class SecurityConfig {
                             ServerHttpRequest request = exchange.getRequest().mutate()
                             .headers(headers -> {
                                 headers.set("Authorization", "Bearer " + gatewayToken);
+                                headers.set("Accept", "application/json");
+                                headers.set("Content-Type", "application/json");
                                 if (userToken != null) {
                                     String token = userToken.startsWith("Bearer ") ? 
                                         userToken.substring(7) : userToken;
@@ -182,6 +184,8 @@ public class SecurityConfig {
 
                         ServerHttpRequest request = exchange.getRequest().mutate()
                             .headers(headers -> {
+                                headers.set("Accept", "application/json");
+                                headers.set("Content-Type", "application/json");
                                 if (userToken != null) {
                                     String token = userToken.startsWith("Bearer ") ? 
                                         userToken.substring(7) : userToken;

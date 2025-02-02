@@ -18,6 +18,7 @@ public class UserContextService {
     public static final String SYSTEM_USER = "SYSTEM";
 
     private final ReactiveJwtDecoder userJwtDecoder;
+    private final ReactiveJwtDecoder keycloakJwtDecoder;
 
     /**
      * Get current user from request headers (for controller endpoints)
@@ -37,10 +38,17 @@ public class UserContextService {
                 String token = userToken.startsWith("Bearer ") ? 
                     userToken.substring(7) : userToken;
                 
-                // Decode and validate the user token
-                return userJwtDecoder.decode(token)
+                // Try to determine if this is a Keycloak token by checking its structure
+                boolean isKeycloakToken = isKeycloakToken(token);
+                //log.debug("Token type: {}", isKeycloakToken ? "Keycloak" : "User");
+                
+                ReactiveJwtDecoder decoder = isKeycloakToken ? keycloakJwtDecoder : userJwtDecoder;
+                
+                return decoder.decode(token)
                     .map(jwt -> {
-                        String username = jwt.getClaimAsString("username");
+                        String username = isKeycloakToken ? 
+                            jwt.getClaimAsString("preferred_username") : 
+                            jwt.getClaimAsString("username");
                         log.debug("Decoded token claims: {}", jwt.getClaims());
                         log.debug("Username from token: {}", username);
                         if (username == null || username.trim().isEmpty()) {
@@ -66,5 +74,25 @@ public class UserContextService {
                 }
                 return context.getAuthentication().getName();
             });
+    }
+
+    private boolean isKeycloakToken(String token) {
+        try {
+            // Split the token into parts
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return false;
+            }
+            
+            // Decode the header
+            String header = new String(java.util.Base64.getDecoder().decode(parts[0]));
+            
+            // Check for Keycloak-specific claims or structure
+            return header.contains("\"kid\"") && // Keycloak tokens typically have a key ID
+                   header.contains("\"RS256\""); // Keycloak uses RS256 by default
+        } catch (Exception e) {
+            log.error("Error parsing token: {}", e.getMessage());
+            return false;
+        }
     }
 } 

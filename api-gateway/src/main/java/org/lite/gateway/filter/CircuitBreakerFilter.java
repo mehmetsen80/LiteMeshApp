@@ -51,6 +51,12 @@ public class CircuitBreakerFilter implements GatewayFilter, Ordered {
         //statusCode >= 500
         if ("HttpResponsePredicate".equals(circuitBreakerRecord.recordFailurePredicate())) {
             cbConfigBuilder.recordException(throwable -> {
+                if (throwable == null) {
+                    log.warn("Throwable is null in recordException");
+                    return false;
+                }
+                
+                String message = throwable.getMessage();
                 log.info("inside recordException: {}", throwable.getMessage());
 
                 // Treat TimeoutException as a failure
@@ -68,17 +74,17 @@ public class CircuitBreakerFilter implements GatewayFilter, Ordered {
                 }
 
                 if(throwable instanceof RuntimeException runtimeException){
-                    if(runtimeException.getMessage().contains("429 TOO_MANY_REQUESTS")){
-                        log.info("Recording  429 TOO_MANY_REQUESTS in CircuitBreaker.");
+                    if(message != null && message.contains("429 TOO_MANY_REQUESTS")){
+                        log.info("Recording  429 TOO_MANY_REQUESTS in CircuitBreaker. {}", runtimeException.getMessage());
                         return true;
                     }
                 }
 
                 // Record other exceptions as failures based on conditions
                 if (throwable instanceof Exception) {
-                    if (throwable.getMessage() != null &&
-                            (throwable.getMessage().contains("5xx") ||
-                                    throwable.getMessage().contains("recorded a timeout exception"))) {
+                    if (message != null &&
+                            (message.contains("5xx") ||
+                                    message.contains("recorded a timeout exception"))) {
                         log.info("Recording 503 Service Unavailable or 504 errors in CircuitBreaker.");
                         return true; // Short-circuit for 503 and 504 errors
                     }
