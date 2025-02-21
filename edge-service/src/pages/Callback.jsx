@@ -29,7 +29,7 @@ function Callback() {
         // Check if this code has already been processed
         const processingKey = `processing_${code}`;
         if (localStorage.getItem(processingKey)) {
-          window.location.href = '/';//Code already being processed, redirecting to home
+          window.location.href = '/dashboard';  // Changed from '/' to '/dashboard'
           return;
         }
 
@@ -71,8 +71,8 @@ function Callback() {
             if (response.success) {
               // Wait for state to be fully updated
               await new Promise(resolve => setTimeout(resolve, 500));
-              // Use navigate for smoother transition since state is now consistent
-              navigate('/', { replace: true });//avigating to home
+              // Navigate to dashboard instead of home
+              navigate('/dashboard', { replace: true });
             } else {
               navigate('/login', { replace: true });//SSO failed
             }

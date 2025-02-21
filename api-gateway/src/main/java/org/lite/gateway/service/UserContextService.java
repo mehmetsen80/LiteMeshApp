@@ -76,9 +76,8 @@ public class UserContextService {
             });
     }
 
-    private boolean isKeycloakToken(String token) {
+    public boolean isKeycloakToken(String token) {
         try {
-            // Split the token into parts
             String[] parts = token.split("\\.");
             if (parts.length != 3) {
                 return false;
@@ -88,8 +87,34 @@ public class UserContextService {
             String header = new String(java.util.Base64.getDecoder().decode(parts[0]));
             
             // Check for Keycloak-specific claims or structure
-            return header.contains("\"kid\"") && // Keycloak tokens typically have a key ID
-                   header.contains("\"RS256\""); // Keycloak uses RS256 by default
+            // Keycloak tokens always have a kid, and can use either RS256 (access) or HS512 (refresh)
+            return header.contains("\"kid\""); // Only check for kid, don't check algorithm
+        } catch (Exception e) {
+            log.error("Error parsing token: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean isRefreshToken(String token) {
+        try {
+            // Split the token into parts
+            String[] parts = token.split("\\.");
+            if (parts.length != 3) {
+                return false;
+            }
+            
+            // For standard login, check header for HS256 algorithm
+            String header = new String(java.util.Base64.getDecoder().decode(parts[0]));
+            if (header.contains("\"alg\":\"HS256\"")) {
+                // This is a standard login token, verify it has a subject
+                String payload = new String(java.util.Base64.getDecoder().decode(parts[1]));
+                return payload.contains("\"sub\":");
+            }
+            
+            // For SSO/Keycloak tokens, check for typ:Refresh
+            String payload = new String(java.util.Base64.getDecoder().decode(parts[1]));
+            return payload.contains("\"typ\":\"Refresh\"");
+            
         } catch (Exception e) {
             log.error("Error parsing token: {}", e.getMessage());
             return false;

@@ -1,0 +1,49 @@
+.custom-button {
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  font-size: 1.0rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Primary variant */
+.custom-button-primary {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.custom-button-primary:hover {
+  background: var(--primary-dark);
+  transform: translateY(-1px);
+}
+
+/* Secondary variant */
+.custom-button-secondary {
+  background: white;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.custom-button-secondary:hover {
+  background: #f8f9fa;
+  transform: translateY(-1px);
+}
+
+/* Disabled state */
+.custom-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Full width utility */
+.w-100 {
+  width: 100%;
+} 

@@ -32,9 +32,11 @@ public enum ErrorCode {
     ROUTE_ALREADY_ASSIGNED("ROUTE_3002", "Route already assigned", ErrorSeverity.ERROR, ErrorCategory.VALIDATION),
     ROUTE_OPERATION_ERROR("ROUTE_3003", "Route operation failed", ErrorSeverity.ERROR, ErrorCategory.OPERATION),
     ROUTE_PATH_REQUIRED("ROUTE_3004", "Route path is required", ErrorSeverity.ERROR, ErrorCategory.VALIDATION),
-    ROUTE_ALREADY_EXISTS("ROUTE_3005", "Route already exists", ErrorSeverity.ERROR, ErrorCategory.VALIDATION),
-    ROUTE_VERSION_NOT_FOUND("ROUTE_3006", "Route version not found", ErrorSeverity.ERROR, ErrorCategory.NOT_FOUND),
-    ROUTE_VERSION_COMPARISON_ERROR("ROUTE_3007", "Route version comparison failed", ErrorSeverity.ERROR, ErrorCategory.OPERATION),
+    ROUTE_IDENTIFIER_REQUIRED("ROUTE_3005", "Route identifier is required", ErrorSeverity.ERROR, ErrorCategory.VALIDATION),
+    ROUTE_URI_REQUIRED("ROUTE_3006", "Route URI is required", ErrorSeverity.ERROR, ErrorCategory.VALIDATION),
+    ROUTE_ALREADY_EXISTS("ROUTE_3007", "Route already exists", ErrorSeverity.ERROR, ErrorCategory.VALIDATION),
+    ROUTE_VERSION_NOT_FOUND("ROUTE_3008", "Route version not found", ErrorSeverity.ERROR, ErrorCategory.NOT_FOUND),
+    ROUTE_VERSION_COMPARISON_ERROR("ROUTE_3009", "Route version comparison failed", ErrorSeverity.ERROR, ErrorCategory.OPERATION),
 
     // Authentication/Authorization Errors (4000-4999)
     UNAUTHORIZED("AUTH_4001", "Unauthorized access", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
@@ -83,6 +85,17 @@ public enum ErrorCode {
         this.defaultMessage = defaultMessage;
         this.severity = severity;
         this.category = category;
+    }
+
+    ErrorCode(String code) {
+        this.code = code;
+        this.defaultMessage = null;
+        this.severity = null;
+        this.category = null;
+    }
+
+    public String getCode() {
+        return code;
     }
 }
 

@@ -10,7 +10,11 @@ import org.lite.gateway.dto.RouteExistenceResponse;
 import org.lite.gateway.dto.VersionComparisonResult;
 import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.entity.ApiRouteVersion;
+import org.lite.gateway.entity.FilterConfig;
+import org.lite.gateway.entity.HealthCheckConfig;
 import org.lite.gateway.entity.RouteVersionMetadata;
+import org.lite.gateway.entity.HealthThresholds;
+import org.lite.gateway.entity.AlertRule;
 import org.lite.gateway.exception.DuplicateRouteException;
 import org.lite.gateway.repository.ApiRouteRepository;
 import org.lite.gateway.repository.ApiRouteVersionRepository;
@@ -84,33 +88,86 @@ public class ApiRouteServiceImpl implements ApiRouteService {
     }
 
     private Mono<ApiRoute> checkDuplicates(ApiRoute route) {
-        return Mono.zip(
-                apiRouteRepository.existsById(route.getId()),
-                apiRouteRepository.existsByRouteIdentifier(route.getRouteIdentifier())
-        ).flatMap(tuple -> {
-            boolean idExists = tuple.getT1();
-            boolean identifierExists = tuple.getT2();
-
-            if (idExists) {
-                return Mono.error(new DuplicateRouteException(
-                        "Route with id " + route.getId() + " already exists"));
-            }
-            if (identifierExists) {
-                return Mono.error(new DuplicateRouteException(
+        // Only check for duplicate identifiers during creation (when id is null)
+        if (route.getId() == null) {
+            return apiRouteRepository.existsByRouteIdentifier(route.getRouteIdentifier())
+                .flatMap(exists -> {
+                    if (exists) {
+                        return Mono.error(new DuplicateRouteException(
+                            "Route with identifier " + route.getRouteIdentifier() + " already exists"));
+                    }
+                    return Mono.just(route);
+                });
+        }
+        
+        // During update, check both id and identifier don't conflict with other routes
+        return apiRouteRepository.findByRouteIdentifier(route.getRouteIdentifier())
+            .flatMap(existingRoute -> {
+                if (!existingRoute.getId().equals(route.getId())) {
+                    return Mono.error(new DuplicateRouteException(
                         "Route with identifier " + route.getRouteIdentifier() + " already exists"));
-            }
-            return Mono.just(route);
-        });
+                }
+                return Mono.just(route);
+            })
+            .switchIfEmpty(Mono.just(route));
     }
 
     public Mono<ApiRoute> updateRoute(ApiRoute route) {
-        return apiRouteRepository.findById(route.getId())
+        return apiRouteRepository.findByRouteIdentifier(route.getRouteIdentifier())
                 .flatMap(existingRoute -> {
+                    // Preserve immutable fields
                     route.setId(existingRoute.getId());
                     route.setRouteIdentifier(existingRoute.getRouteIdentifier());
+                    route.setUri(existingRoute.getUri());
+                    route.setPath(existingRoute.getPath());
+                   
+                    // Handle mutable fields
+                    if (route.getMethod() == null || route.getMethod().isEmpty()) {
+                        route.setMethod(existingRoute.getMethod());
+                    }
+                    if (route.getScope() == null) {
+                        route.setScope(existingRoute.getScope());
+                    }
+                    if (route.getMaxCallsPerDay() == null) {
+                        route.setMaxCallsPerDay(existingRoute.getMaxCallsPerDay());
+                    }
+
+                    // Handle filters
+                    if (route.getFilters() != null) {
+                        route.getFilters().forEach(filter -> {
+                            // Handle CircuitBreaker special cases
+                            if ("CircuitBreaker".equals(filter.getName()) && filter.getArgs() != null) {
+                                existingRoute.getFilters().stream()
+                                    .filter(ef -> "CircuitBreaker".equals(ef.getName()))
+                                    .findFirst()
+                                    .ifPresent(existingFilter -> {
+                                        // Preserve recordFailurePredicate and HttpResponsePredicate
+                                        if (existingFilter.getArgs().containsKey("recordFailurePredicate")) {
+                                            filter.getArgs().put("recordFailurePredicate", 
+                                                existingFilter.getArgs().get("recordFailurePredicate"));
+                                        }
+                                    });
+                            }
+                            
+                            // Validate and convert numeric values for all filters
+                            if (filter.getArgs() != null) {
+                                validateAndConvertFilterArgs(filter);
+                            }
+                        });
+                    } else {
+                        route.setFilters(existingRoute.getFilters());
+                    }
+                   
                     route.setVersion(existingRoute.getVersion() + 1);
                     route.setCreatedAt(existingRoute.getCreatedAt());
                     route.setUpdatedAt(System.currentTimeMillis());
+
+                    // Handle health check
+                    if (route.getHealthCheck() != null) {
+                        sanitizeHealthCheckConfig(route.getHealthCheck());
+                    } else {
+                        route.setHealthCheck(existingRoute.getHealthCheck());
+                    }
 
                     return saveVersionIfNotExists(existingRoute)
                             .then(saveVersionIfNotExists(route))
@@ -126,6 +183,48 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                         log.info("Successfully updated route: {}", updatedRoute.getRouteIdentifier()))
                 .doOnError(error ->
                         log.error("Error updating route: {}", error.getMessage()));
+    }
+
+    private void validateAndConvertFilterArgs(FilterConfig filter) {
+        switch (filter.getName()) {
+            case "RedisRateLimiter":
+                ensureNumericValue(filter.getArgs(), "replenishRate");
+                ensureNumericValue(filter.getArgs(), "burstCapacity");
+                ensureNumericValue(filter.getArgs(), "requestedTokens");
+                break;
+            case "TimeLimiter":
+                ensureNumericValue(filter.getArgs(), "timeoutDuration");
+                ensureBooleanValue(filter.getArgs(), "cancelRunningFuture");
+                break;
+            case "CircuitBreaker":
+                ensureNumericValue(filter.getArgs(), "slidingWindowSize");
+                ensureNumericValue(filter.getArgs(), "failureRateThreshold");
+                ensureNumericValue(filter.getArgs(), "permittedNumberOfCallsInHalfOpenState");
+                ensureBooleanValue(filter.getArgs(), "automaticTransitionFromOpenToHalfOpenEnabled");
+                break;
+            case "Retry":
+                ensureNumericValue(filter.getArgs(), "maxAttempts");
+                break;
+        }
+    }
+
+    private void ensureNumericValue(Map<String, String> args, String key) {
+        if (args.containsKey(key)) {
+            try {
+                Integer.parseInt(args.get(key));
+            } catch (NumberFormatException e) {
+                log.warn("Invalid numeric value for {}: {}", key, args.get(key));
+            }
+        }
+    }
+
+    private void ensureBooleanValue(Map<String, String> args, String key) {
+        if (args.containsKey(key)) {
+            String value = args.get(key).toLowerCase();
+            if (!value.equals("true") && !value.equals("false")) {
+                args.put(key, "false");
+            }
+        }
     }
 
     private Mono<ApiRouteVersion> saveVersionIfNotExists(ApiRoute route) {
@@ -463,5 +562,37 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                 .updatedAt(route.getUpdatedAt())
                 .version(route.getVersion())
                 .build();
+    }
+
+    private void sanitizeHealthCheckConfig(HealthCheckConfig healthCheck) {
+        // Skip if health check is null
+        if (healthCheck == null) {
+            return;
+        }
+
+        if (healthCheck.getAlertRules() != null) {
+            List<AlertRule> sanitizedRules = new ArrayList<>();
+            healthCheck.getAlertRules().forEach(rule -> {
+                sanitizedRules.add(rule);
+            });
+            healthCheck.setAlertRules(sanitizedRules);
+        }
+        
+        if (healthCheck.getThresholds() != null) {
+            HealthThresholds thresholds = healthCheck.getThresholds();
+            // Handle each threshold field individually
+            if (thresholds.getCpuThreshold() != null) {
+                thresholds.setCpuThreshold(thresholds.getCpuThreshold());
+            }
+            if (thresholds.getMemoryThreshold() != null) {
+                thresholds.setMemoryThreshold(thresholds.getMemoryThreshold());
+            }
+            if (thresholds.getResponseTimeThreshold() != null) {
+                thresholds.setResponseTimeThreshold(thresholds.getResponseTimeThreshold());
+            }
+            if (thresholds.getTimeoutThreshold() != null) {
+                thresholds.setTimeoutThreshold(thresholds.getTimeoutThreshold());
+            }
+        }
     }
 }

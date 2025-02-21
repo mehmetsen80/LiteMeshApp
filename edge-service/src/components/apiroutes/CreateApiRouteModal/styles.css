@@ -1,0 +1,160 @@
+.modal-header {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.modal-header .btn-close {
+  filter: brightness(0) invert(1);
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.form-control:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: #0056b3;
+  border-color: #0056b3;
+}
+
+/* Multiple select styling */
+.form-select[multiple] {
+  padding: 0.5rem;
+}
+
+.form-select[multiple] option {
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.form-select[multiple] option:last-child {
+  border-bottom: none;
+}
+
+/* Read-only inputs */
+.form-control[readonly] {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+.method-select-container {
+  position: relative;
+}
+
+.method-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  margin-top: 2px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  z-index: 1000;
+}
+
+.method-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.method-option:hover {
+  background-color: #f8f9fa;
+}
+
+.method-option.selected {
+  background-color: #e9ecef;
+}
+
+.checkbox {
+  width: 16px;
+  height: 16px;
+  border: 1px solid #ced4da;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+}
+
+.method-option.selected .checkbox {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem;
+}
+
+.modal-footer .btn {
+  min-width: 120px;
+}
+
+.scope-help-icon {
+  color: #6c757d;
+  cursor: help;
+  display: inline-flex;
+  align-items: center;
+}
+
+.scope-help-icon:hover {
+  color: var(--primary-color);
+}
+
+/* Tooltip styling */
+.tooltip-inner {
+  max-width: 400px !important;
+  text-align: left;
+  padding: 12px !important;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  white-space: normal !important;
+}
+
+.tooltip-inner br {
+  margin-bottom: 6px;
+}
+
+.tooltip-inner a {
+  color: white !important;
+  text-decoration: underline !important;
+  font-weight: 500;
+}
+
+.tooltip-inner a:hover {
+  text-decoration: none !important;
+}
+
+/* Override Bootstrap's default tooltip width */
+.tooltip {
+  max-width: none !important;
+  pointer-events: auto !important;
+  transition: opacity 0.3s ease-in-out !important;
+}
+
+.persistent-tooltip {
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 9999 !important;
+}
+
+/* Make links in tooltip clickable */
+.tooltip a {
+  position: relative;
+  z-index: 10000;
+} 

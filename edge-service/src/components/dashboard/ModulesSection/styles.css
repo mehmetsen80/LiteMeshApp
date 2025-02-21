@@ -1,0 +1,20 @@
+.modules-section {
+  padding: 2rem;
+}
+
+.section-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.section-header h2 {
+  font-size: 2rem;
+  color: var(--heading-primary);
+  margin-bottom: 0.5rem;
+}
+
+.section-header p {
+  font-size: 1.1rem;
+}
+
+/* Rest of the dashboard styles can be moved here */

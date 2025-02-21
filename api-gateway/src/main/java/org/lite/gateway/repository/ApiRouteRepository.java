@@ -6,6 +6,7 @@ import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
 import org.springframework.lang.NonNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import java.time.Instant;
 
 public interface ApiRouteRepository extends ReactiveMongoRepository<ApiRoute, String> {
     @Query("{ 'healthCheck.enabled': true }")
@@ -40,4 +41,6 @@ public interface ApiRouteRepository extends ReactiveMongoRepository<ApiRoute, St
            "  { 'healthCheck.enabled': ?2 } " +
            "]}")
     Flux<ApiRoute> searchRoutes(String searchTerm, String method, Boolean healthCheckEnabled);
+
+    Mono<Long> countByCreatedAtAfter(Instant date);
 } 

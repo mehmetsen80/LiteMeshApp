@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Form, Button, Alert } from 'react-bootstrap';
-import { HiLockClosed } from 'react-icons/hi';
+import { Form, Alert } from 'react-bootstrap';
+import { HiLockClosed, HiHome } from 'react-icons/hi';
 import { useAuth } from '../../contexts/AuthContext';
+import Button from '../../components/common/Button';
 import './styles.css';
 
 function Login() {
-  const { login } = useAuth();
+  const { login, handleSSOLogin } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -42,29 +43,12 @@ function Login() {
     }
   };
 
-  const handleSSOLogin = () => {
-    const state = Math.random().toString(36).substring(7);
-    const stateData = {
-      value: state,
-      timestamp: Date.now()
-    };
-    sessionStorage.setItem('oauth_state', JSON.stringify(stateData));
-    
-    const params = new URLSearchParams({
-      client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID,
-      redirect_uri: `${window.location.origin}/callback`,
-      response_type: 'code',
-      state: state,
-      scope: 'openid'
-    });
-    
-    const authUrl = `${process.env.REACT_APP_KEYCLOAK_URL}/realms/${process.env.REACT_APP_KEYCLOAK_REALM}/protocol/openid-connect/auth`;
-    console.log('Redirecting to:', authUrl, 'with params:', params.toString());
-    window.location.href = `${authUrl}?${params}`;
-  };
-
   return (
-    <div className="auth-container">      
+    <div className="auth-container">
+      <Link to="/" className="home-link">
+        <HiHome size={20} />
+        Home
+      </Link>      
       <div className="auth-form-section">
         <div className="auth-card">
           <div className="auth-header">
@@ -73,11 +57,11 @@ function Login() {
           </div>
           
           <Button 
-            variant="outline-primary" 
-            className="w-100 mb-3"
+            variant="secondary"
+            fullWidth
             onClick={handleSSOLogin}
           >
-            <HiLockClosed className="me-2" />
+            <HiLockClosed />
             Sign in with SSO
           </Button>
           
@@ -119,24 +103,18 @@ function Login() {
             </Form.Group>
 
             <Button 
-              type="submit" 
-              className="w-100"
-              disabled={loading}
+              type="submit"
+              variant="primary"
+              fullWidth
+              loading={loading}
             >
-              {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
+              Sign In
             </Button>
           </Form>
 
           <div className="mt-4 text-center">
             <p className="mb-0">
-              Don't have an account? <Link to="/register">Register</Link>
+              Don't have an account? <Link to="/register" className="primary-link">Register</Link>
             </p>
           </div>
         </div>

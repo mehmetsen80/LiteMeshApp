@@ -19,6 +19,7 @@ import Alert from '@mui/material/Alert';
 import TrendChart from './TrendChart';
 import ErrorBoundary from '../../common/ErrorBoundary';
 import PropTypes from 'prop-types';
+import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord';
 
 const Transition = React.forwardRef(function Transition(props, ref) {
     const theme = useTheme();
@@ -158,129 +159,76 @@ const AnalysisSummaryDialog = ({
     loading,
     error 
 }) => {
-    // Wait for data before showing dialog content
-    const [showContent, setShowContent] = React.useState(false);
-
-    useEffect(() => {
-        if (data && !loading) {
-            setShowContent(true);
-        }
-        return () => setShowContent(false);  // Cleanup on unmount
-    }, [data, loading]);
+    // Add a prop to check if service is DOWN
+    const isServiceDown = !data && !loading && !error;
 
     return (
         <Dialog 
             open={open} 
             onClose={onClose}
-            maxWidth="lg"
+            maxWidth="md"
             fullWidth
-            TransitionComponent={Transition}
-            className="analysis-dialog"
-            PaperProps={{
-                sx: {
-                    minHeight: '80vh',
-                    maxHeight: '90vh'
-                }
-            }}
         >
-            <DialogTitle 
-                sx={{ 
-                    background: 'linear-gradient(135deg, #2c1f94, #4939bd, #6253c7)',
-                    color: 'white',
-                    py: 2,
-                    boxShadow: '0 3px 10px rgba(44, 31, 148, 0.3)',
-                    position: 'relative',
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: `
-                            linear-gradient(135deg, 
-                                rgba(255,255,255,0.2) 0%, 
-                                rgba(255,255,255,0.1) 25%, 
-                                rgba(255,255,255,0.05) 50%,
-                                transparent 100%
-                            )
-                        `,
-                        pointerEvents: 'none'
-                    }
-                }}
-            >
-                <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
-                    alignItems: 'center'
-                }}>
-                    <Box>
-                        <Typography variant="h5" sx={{ 
-                            fontWeight: 600,
-                            textShadow: '0 2px 4px rgba(0,0,0,0.25)',
-                            letterSpacing: '0.5px'
-                        }}>
-                            Analysis Summary
-                        </Typography>
-                        <Typography variant="subtitle1" sx={{ 
-                            mt: 0.5, 
-                            opacity: 0.95,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 1
-                        }}>
-                            <span className="service-status-dot"></span>
-                            {serviceId}
+            <DialogTitle>
+                <Box display="flex" alignItems="center">
+                    <Typography variant="h6" component="div" style={{ flexGrow: 1 }}>
+                        Service Analysis: {serviceId}
+                    </Typography>
+                    {/* Update status indicator based on service state */}
+                    <Box display="flex" alignItems="center" mr={2}>
+                        <FiberManualRecordIcon 
+                            sx={{ 
+                                color: isServiceDown ? 'error.main' :  // Red for DOWN
+                                       error ? 'error.main' :          // Red for error
+                                       loading ? 'warning.main' :      // Yellow for loading
+                                       'success.main',                 // Green for active
+                                marginRight: 1 
+                            }} 
+                        />
+                        <Typography variant="body2">
+                            {isServiceDown ? 'Service Down' :
+                             error ? 'Error' :
+                             loading ? 'Loading' : 'Active'}
                         </Typography>
                     </Box>
-                    <IconButton 
-                        onClick={onClose} 
-                        size="medium"
-                        sx={{ 
-                            color: 'white',
-                            '&:hover': {
-                                background: 'rgba(255,255,255,0.1)'
-                            }
-                        }}
-                    >
+                    <IconButton onClick={onClose}>
                         <CloseIcon />
                     </IconButton>
                 </Box>
             </DialogTitle>
-            <DialogContent sx={{ mt: 2 }}>
-                <ErrorBoundary>
-                    {loading && (
-                        <Box display="flex" justifyContent="center" p={3}>
-                            <CircularProgress />
-                        </Box>
-                    )}
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {error}
-                        </Alert>
-                    )}
-                    {showContent && !error && data && (
-                        <Box sx={{ 
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(2, 1fr)',
-                            gap: 2,
-                            mt: 2
-                        }}>
-                            <ErrorBoundary>
-                                <Box>
-                                    <MetricSummary title="CPU Usage" data={data.cpu} />
-                                    <MetricSummary title="Memory Usage" data={data.memory} />
-                                </Box>
-                            </ErrorBoundary>
-                            <ErrorBoundary>
-                                <Box>
-                                    <MetricSummary title="Response Time" data={data.responseTime} />
-                                    <MetricSummary title="Error Rate" data={data.error} />
-                                </Box>
-                            </ErrorBoundary>
-                        </Box>
-                    )}
-                </ErrorBoundary>
+            <DialogContent>
+                {isServiceDown ? (
+                    <Alert severity="error">
+                        Service is currently down. No analysis data available.
+                    </Alert>
+                ) : loading ? (
+                    <CircularProgress />
+                ) : error ? (
+                    <Alert severity="error">{error}</Alert>
+                ) : data ? (
+                    // Your existing analysis data display
+                    <Box sx={{ 
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, 1fr)',
+                        gap: 2,
+                        mt: 2
+                    }}>
+                        <ErrorBoundary>
+                            <Box>
+                                <MetricSummary title="CPU Usage" data={data.cpu} />
+                                <MetricSummary title="Memory Usage" data={data.memory} />
+                            </Box>
+                        </ErrorBoundary>
+                        <ErrorBoundary>
+                            <Box>
+                                <MetricSummary title="Response Time" data={data.responseTime} />
+                                <MetricSummary title="Error Rate" data={data.error} />
+                            </Box>
+                        </ErrorBoundary>
+                    </Box>
+                ) : (
+                    <Alert severity="info">No analysis data available</Alert>
+                )}
             </DialogContent>
         </Dialog>
     );

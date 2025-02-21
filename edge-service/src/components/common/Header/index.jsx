@@ -1,10 +1,15 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import './styles.css';
 
 function Header() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const isActive = (path) => {
+    return location.pathname === path ? 'active' : '';
+  };
 
   const handleNavClick = (path, e) => {
     if (e) e.preventDefault();
@@ -20,7 +25,7 @@ function Header() {
     <nav className="navbar navbar-expand-lg navbar-dark">
       <div className="container-fluid">
         <a className="navbar-brand" href="#" onClick={(e) => handleNavClick('/', e)}>
-          Admin Dashboard
+          LiteMesh
         </a>
         <button 
           className="navbar-toggler" 
@@ -35,23 +40,67 @@ function Header() {
             {user && (
               <>
                 <li className="nav-item">
-                  <a className="nav-link" href="#" onClick={(e) => handleNavClick('/', e)}>
+                  <a 
+                    className={`nav-link ${isActive('/')}`} 
+                    href="#" 
+                    onClick={(e) => handleNavClick('/', e)}
+                  >
                     Home
                   </a>
                 </li>
+
                 <li className="nav-item">
-                  <a className="nav-link" href="#" onClick={(e) => handleNavClick('/metrics', e)}>
+                  <a 
+                    className={`nav-link ${isActive('/dashboard')}`}
+                    href="#" 
+                    onClick={(e) => handleNavClick('/dashboard', e)}
+                  >
+                    Dashboard
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${isActive('/api-routes')}`}
+                    href="#" 
+                    onClick={(e) => handleNavClick('/api-routes', e)}
+                  >
+                    API Routes
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${isActive('/metrics')}`}
+                    href="#" 
+                    onClick={(e) => handleNavClick('/metrics', e)}
+                  >
                     Metrics
                   </a>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" href="#" onClick={(e) => handleNavClick('/service-status', e)}>
+                  <a 
+                    className={`nav-link ${isActive('/service-status')}`}
+                    href="#" 
+                    onClick={(e) => handleNavClick('/service-status', e)}
+                  >
                     Status
                   </a>
                 </li>
                 <li className="nav-item">
-                  <a className="nav-link" href="#" onClick={(e) => handleNavClick('/teams', e)}>
+                  <a 
+                    className={`nav-link ${isActive('/teams')}`}
+                    href="#" 
+                    onClick={(e) => handleNavClick('/teams', e)}
+                  >
                     Teams
+                  </a>
+                </li>
+                <li className="nav-item">
+                  <a 
+                    className={`nav-link ${isActive('/organizations')}`}
+                    href="#" 
+                    onClick={(e) => handleNavClick('/organizations', e)}
+                  >
+                    Orgs
                   </a>
                 </li>
               </>

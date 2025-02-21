@@ -1,0 +1,281 @@
+.edit-route-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: var(--primary-color);
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.back-button:hover {
+  background-color: #0056b3;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.form-section {
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.form-section h2 {
+  margin-bottom: 1.5rem;
+  color: var(--primary-color);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-group label {
+  color: #495057;
+  font-weight: 500;
+  text-align: left;
+  margin-bottom: 0.25rem;
+}
+
+.form-group input,
+.form-group select {
+  padding: 0.75rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+  width: 100%;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.filter-form {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #eaeaea;
+}
+
+.filter-form h3 {
+  margin-bottom: 1rem;
+  color: #495057;
+}
+
+.filter-args-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.health-check-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.thresholds-grid,
+.alert-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.alert-rule-form {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border: 1px solid #eaeaea;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.cancel-button,
+.save-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancel-button {
+  background: #fff;
+  color: #6c757d;
+  border: 1px solid #6c757d;
+}
+
+.save-button {
+  background: var(--primary-color);
+  color: white;
+}
+
+.cancel-button:hover {
+  background: #6c757d;
+  color: white;
+}
+
+.save-button:hover {
+  background: #0056b3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .filter-args-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .form-grid,
+  .filter-args-grid,
+  .thresholds-grid,
+  .alert-rules-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* React-Select customization */
+.react-select-container {
+  width: 100%;
+}
+
+.react-select__control {
+  border: 1px solid #dee2e6 !important;
+  border-radius: 6px !important;
+  min-height: 42px !important;
+}
+
+.react-select__control:hover {
+  border-color: var(--primary-color) !important;
+}
+
+.react-select__control--is-focused {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 0 0 1px var(--primary-color) !important;
+}
+
+.react-select__multi-value {
+  background-color: var(--primary-color) !important;
+  border-radius: 4px !important;
+  padding: 2px !important;
+}
+
+.react-select__multi-value__label {
+  color: white !important;
+}
+
+.react-select__multi-value__remove {
+  color: white !important;
+}
+
+.react-select__multi-value__remove:hover {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  color: white !important;
+}
+
+/* Hide the clear all button */
+.react-select__clear-indicator {
+  display: none !important;
+}
+
+.label-with-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.info-icon {
+  color: #6c757d;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: color 0.2s;
+}
+
+.info-icon:hover {
+  color: var(--primary-color);
+}
+
+.readonly-input {
+  background-color: #f8f9fa;
+  cursor: not-allowed;
+}
+
+/* React-Tooltip customization */
+:root {
+  --rt-color-dark: #333;
+  --rt-opacity: 1;
+}
+
+.react-tooltip {
+  max-width: 300px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  z-index: 1000;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.filter-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.filter-header h3 {
+  margin: 0;
+}
+
+.section-description {
+  color: #6c757d;
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+} 

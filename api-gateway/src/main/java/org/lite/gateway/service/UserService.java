@@ -25,4 +25,10 @@ public interface UserService {
     Mono<Map<String, Object>> validatePasswordStrength(String password);
     
     Mono<User> save(User user);
+
+    Mono<AuthResponse> refreshToken(String token);
+
+    Mono<User> createUserFromKeycloak(String username, String email);
+
+    Mono<User> createUserIfNotExists(String username, String email);
 } 

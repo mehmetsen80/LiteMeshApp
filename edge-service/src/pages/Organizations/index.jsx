@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Table, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Table, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { HiUserGroup, HiPlus, HiOfficeBuilding, HiPencil, HiTrash } from 'react-icons/hi';
+import Button from '../../components/common/Button';
 import CreateOrganizationModal from '../../components/organizations/CreateOrganizationModal';
 import EditOrganizationModal from '../../components/organizations/EditOrganizationModal';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -134,17 +135,22 @@ function Organizations() {
               <h4 className="mb-0">Organizations</h4>
             </div>
             <div className="ms-auto">
-              <button 
-                className="btn btn-primary create-organization-btn"
+              <Button 
                 onClick={() => setShowCreateModal(true)}
                 disabled={operationLoading}
+                variant="primary"
               >
                 {operationLoading ? (
-                  <><Spinner size="sm" animation="border" /> Creating...</>
+                  <>
+                    <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true" />
+                    Creating...
+                  </>
                 ) : (
-                  <><HiPlus /> Create Organization</>
+                  <>
+                    <HiPlus /> Create Organization
+                  </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

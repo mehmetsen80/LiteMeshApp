@@ -117,6 +117,17 @@ const ServiceHealthDashboard = () => {
     }, [expectedServices]);
 
     const handleAnalysisClick = async (serviceId) => {
+        // Find the service by ID
+        const service = services.find(s => s.serviceId === serviceId);
+        
+        // If service is DOWN, just open dialog without making API call
+        if (service?.status === 'DOWN') {
+            setAnalysisData(null);
+            setSelectedService(serviceId);
+            setDialogOpen(true);
+            return;
+        }
+
         setAnalysisLoading(true);
         setAnalysisError(null);
         try {
@@ -131,8 +142,11 @@ const ServiceHealthDashboard = () => {
             setSelectedService(serviceId);
             setDialogOpen(true);
         } catch (error) {
-            console.error('Error fetching analysis data:', error);
-            setAnalysisError(error.message);
+            // Don't set error for DOWN services
+            if (service?.status !== 'DOWN') {
+                console.error('Error fetching analysis data:', error);
+                setAnalysisError(error.message);
+            }
             setDialogOpen(true);
         } finally {
             setAnalysisLoading(false);
@@ -172,20 +186,22 @@ const ServiceHealthDashboard = () => {
                     />
                 ))}
             </div>
-            <AnalysisSummaryDialog
-                open={dialogOpen}
-                onClose={handleDialogClose}
-                data={analysisData}
-                serviceId={selectedService}
-                loading={analysisLoading}
-                error={analysisError}
-            />
+            {selectedService && (
+                <AnalysisSummaryDialog
+                    open={dialogOpen}
+                    onClose={handleDialogClose}
+                    data={analysisData}
+                    serviceId={selectedService}
+                    loading={analysisLoading}
+                    error={analysisError}
+                />
+            )}
             {loading && connectionStatus === 'connecting' && (
-                    <Alert severity="info">Services loading...</Alert>
-                )}
-                {connectionStatus === 'connected' && services.length === 0 && (
-                    <Alert severity="info">Loading services...</Alert>
-                )}
+                <Alert severity="info">Services loading...</Alert>
+            )}
+            {connectionStatus === 'connected' && services.length === 0 && (
+                <Alert severity="info">Loading services...</Alert>
+            )}
         </div>
     );
 };

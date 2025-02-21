@@ -27,10 +27,11 @@ spring:
         registration:
           lite-mesh-gateway-client:
             client-id: lite-mesh-gateway-client
-            client-secret: SVwQlpupiIKUctK1Vh0yYwLxgkMZjjqY
+            client-secret: ${KEYCLOAK_CLIENT_SECRET:SVwQlpupiIKUctK1Vh0yYwLxgkMZjjqY}
             authorization-grant-type: authorization_code
             scope: gateway.read
-            provider: keycloak  # identity-provider
+            redirect-uri: ${OAUTH2_REDIRECT_URI:http://localhost:3000/callback}
+            provider: keycloak
         provider:
           keycloak:
             token-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/token

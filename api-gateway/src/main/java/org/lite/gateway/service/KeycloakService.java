@@ -5,4 +5,5 @@ import reactor.core.publisher.Mono;
 
 public interface KeycloakService {
     Mono<AuthResponse> handleCallback(String code);
+    Mono<AuthResponse> refreshToken(String token);
 } 

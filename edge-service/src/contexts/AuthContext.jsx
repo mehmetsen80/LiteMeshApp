@@ -2,8 +2,16 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import { jwtDecode } from "jwt-decode";
+import { showWarningToast } from '../utils/toastConfig';
 
-const AuthContext = createContext(null);
+export const AuthContext = createContext({
+  user: null,
+  token: null,
+  isAuthenticated: false,
+  login: () => {},
+  logout: () => {},
+  handleRefreshToken: () => {},
+});
 
 export const AuthProvider = ({ children }) => {
   const location = useLocation();
@@ -14,6 +22,16 @@ export const AuthProvider = ({ children }) => {
     token,
     isAuthenticated
   });
+  
+  const setTokens = (accessToken, refreshToken) => {
+    localStorage.setItem('accessToken', accessToken);
+    localStorage.setItem('refreshToken', refreshToken);
+  };
+  
+  const clearTokens = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  };
   
   const authStateRef = useRef(createAuthState(null, null, false));
   
@@ -66,34 +84,101 @@ export const AuthProvider = ({ children }) => {
   
   const navigate = useNavigate();
 
+  const logout = () => {
+    // Clear all auth-related items from localStorage
+    localStorage.removeItem('authState');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    sessionStorage.removeItem('oauth_state');  // Clear SSO state too
+    
+    // Reset all state
+    setUser(null);
+    setToken(null);
+    setIsAuthenticated(false);
+    
+    // Clear any pending requests or intervals
+    if (window.refreshInterval) {
+        clearInterval(window.refreshInterval);
+    }
+    
+    // Navigate to login
+    navigate('/login');
+  };
+  
+  const handleRefreshToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      console.log('Starting refresh with token:', refreshToken?.substring(0, 20) + '...');
+
+      if (!refreshToken) {
+        console.error('No refresh token available');
+        logout();
+        return false;
+      }
+
+      const response = await authService.refreshToken(refreshToken);
+      console.log('Refresh response in context:', response);
+
+      if (response.success && response.data) {
+        // Store the complete auth state from the service
+        console.log('About to store auth state:', response.data);
+        
+        localStorage.setItem('authState', JSON.stringify(response.data));
+        localStorage.setItem('accessToken', response.data.token);
+        
+        // Only store refresh token if it's provided and different
+        if (response.data.refreshToken && response.data.refreshToken !== response.data.token) {
+          localStorage.setItem('refreshToken', response.data.refreshToken);
+        }
+
+        // Update context state
+        setUser(response.data.user);
+        setToken(response.data.token);
+        setIsAuthenticated(true);
+
+        return true;
+      } else {
+        console.error('Refresh failed:', response.error);
+        logout();
+        return false;
+      }
+    } catch (error) {
+      console.error('Error during refresh:', error);
+      logout();
+      return false;
+    }
+  };
+
   // Function to update all auth state at once
   const updateAuthState = (newState) => {
     // Validate state before updating
     if (newState.isAuthenticated && !newState.token) {
-      return;//Invalid auth state
+      return;
     }
     
     try {
-      authStateRef.current = newState;
+      // Update localStorage
       localStorage.setItem('authState', JSON.stringify(newState));
+      
+      // Explicitly store access token
+      if (newState.token) {
+        localStorage.setItem('accessToken', newState.token);
+      } else {
+        localStorage.removeItem('accessToken');
+      }
+      
+      // Update state
       setUser(newState.user);
       setToken(newState.token);
       setIsAuthenticated(newState.isAuthenticated);
       
-      // Verify only if we're setting an authenticated state
-      if (newState.isAuthenticated) {
-        if (!authStateRef.current.token) {
-          throw new Error('Failed to update authentication state');
-        }
-      }
+      console.log('Auth state updated:', {
+        hasUser: !!newState.user,
+        hasToken: !!newState.token,
+        isAuthenticated: newState.isAuthenticated
+      });
     } catch (error) {
-      // Reset to a clean state on error
-      const cleanState = createAuthState(null, null, false);
-      authStateRef.current = cleanState;
-      localStorage.removeItem('authState');
-      setUser(null);
-      setToken(null);
-      setIsAuthenticated(false);
+      console.error('Error updating auth state:', error);
     }
   };
 
@@ -115,12 +200,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('authState');
-    updateAuthState(createAuthState(null, null, false));
-    navigate('/login');
-  }, [navigate]);
-
   // Prevent unnecessary auth state updates
   useEffect(() => {
     // Skip update if we're already authenticated and have a user
@@ -138,39 +217,107 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, [user, token, checkAuth]);
 
-  // Token expiration check effect
-  useEffect(() => {
-    const checkTokenExpiration = async () => {
-      if (user?.token && isAuthenticated) {
-        try {
-          const decodedToken = jwtDecode(user.token);
-          const currentTime = Date.now() / 1000;
-          const timeUntilExpiry = decodedToken.exp - currentTime;
-          
-          // Only logout if token is expired or about to expire in less than 1 minute
-          if (timeUntilExpiry <= 60) {
-            logout(); //Token expiring soon, logging out
-          } else {
-            console.log('Token valid, expires in:', Math.round(timeUntilExpiry/60), 'minutes');
-          }
-        } catch (error) {
-          logout();//Token validation error in expiration check
-        }
+  // Modify the validateAuthState function
+  const validateAuthState = () => {
+    try {
+      const storedAuthState = localStorage.getItem('authState');
+      const accessToken = localStorage.getItem('accessToken');
+
+      // If we're on the login or callback page, skip validation
+      if (location.pathname === '/login' || location.pathname === '/callback') {
+        return true;
       }
-      setLoading(false);
-    };
-    
-    // Only start checking after initial auth is complete
-    if (!isAuthenticated || !user || loading) {
+
+      // If there's no auth state but we're not on a protected route, that's okay
+      if (!storedAuthState || !accessToken) {
+        console.log('No auth state found, but might be on public route');
+        return true;
+      }
+
+      // Parse and validate auth state only if it exists
+      if (storedAuthState) {
+        const authState = JSON.parse(storedAuthState);
+        if (!authState.token || !authState.user) {
+          console.log('Invalid auth state structure, clearing');
+          localStorage.removeItem('authState');
+          return false;
+        }
+
+        // If valid, update context state
+        setUser(authState.user);
+        setToken(authState.token);
+        setIsAuthenticated(true);
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error validating auth state:', error);
+      return false;
+    }
+  };
+
+  const checkTokenExpiration = async () => {
+    if (!validateAuthState()) {
+      logout();//Auth state validation failed
       return;
     }
-    
-    checkTokenExpiration();
-    // Check every minute
-    const interval = setInterval(checkTokenExpiration, 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, [user, isAuthenticated, logout, loading]);
+
+    const token = localStorage.getItem('accessToken');
+    const authState = JSON.parse(localStorage.getItem('authState'));
+
+    // Verify token matches auth state
+    if (token !== authState.token) {
+      logout();//Token mismatch between storage and auth state
+      return;
+    }
+
+    try {
+      const decoded = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+
+      if (decoded.exp <= currentTime) {
+        const refreshed = await handleRefreshToken();//Token expired, attempting refresh
+        if (!refreshed) {
+          console.error('Token refresh failed, logging out');
+          logout();
+        } else {
+          console.log('Token refresh successful');
+          // Verify refresh result
+          if (!validateAuthState()) {
+            console.error('Auth state invalid after refresh');
+            logout();
+          }
+        }
+      } else if (decoded.exp - currentTime < 120) {
+        console.log('Token expiring soon, attempting refresh');
+        const refreshed = await handleRefreshToken();
+        console.log('Proactive refresh result:', refreshed);
+      }
+    } catch (error) {
+      console.error('Token check error:', error);
+      logout();
+    }
+  };
+
+  // Modify the initial useEffect
+  useEffect(() => {
+    // Initial validation
+    if (!validateAuthState()) {
+      console.error('Initial validation failed, redirecting to login');
+      logout();
+      return;
+    }
+
+    // Only set up token check interval if we're authenticated
+    if (isAuthenticated) {
+      const interval = setInterval(checkTokenExpiration, 30000);
+      checkTokenExpiration();
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [isAuthenticated]); // Add isAuthenticated to dependencies
 
   const register = async (username, email, password) => {
     try {
@@ -202,32 +349,34 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const { data, error } = await authService.loginUser(username, password);
-      
-      if (error) {
-        return { error };
-      }
-      
-      const userData = { username: data.username, token: data.token };
-      
-      // Create new auth state
-      const newState = createAuthState(userData, data.token, true);
-      
-      // Validate the state before saving
-      if (!newState.token || !newState.user) {
-        console.error('Invalid auth state created:', newState);
-        return { error: 'Invalid authentication state' };
-      }
+      const response = await authService.loginUser(username, password);
+      if (response.data && response.data.token) {
+        // Create auth state with user info from the response
+        const authState = {
+          user: response.data.user,  // Use the entire user object directly
+          token: response.data.token,
+          isAuthenticated: true
+        };
 
-      // Save to localStorage and update state
-      localStorage.setItem('authState', JSON.stringify(newState));
-      updateAuthState(newState);
+        // Store everything
+        localStorage.setItem('authState', JSON.stringify(authState));
+        localStorage.setItem('accessToken', response.data.token);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
 
-      // Navigate immediately
-      navigate('/', { replace: true });
-      return { data };
-    } catch (err) {
-      return { error: err.message };
+        // Update context state
+        setUser(authState.user);
+        setToken(authState.token);
+        setIsAuthenticated(true);
+
+        // Navigate to dashboard
+        navigate('/dashboard');
+        return true;
+      } else {
+        throw new Error('Invalid login response - no token received');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
@@ -235,58 +384,71 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.handleSSOCallback(code);
       
-      if (response && response.token) {//Setting auth token...
-        const userData = { 
-          username: response.username,
-          token: response.token 
-        };
-        
-        // Create new auth state
-        const newState = createAuthState(userData, response.token, true);
-        
-        // Validate the state before saving
-        if (!newState.token || !newState.user) {
-          return { error: 'Invalid authentication state' };//Invalid auth state created
+      if (response && response.token) {
+        // Get the stored auth state
+        const authState = JSON.parse(localStorage.getItem('authState'));
+        if (!authState) {
+          console.error('No auth state found after SSO callback');
+          navigate('/login');
+          return { error: 'Authentication failed' };
         }
         
-        try {
-          // Update state in a single atomic operation
-          setLoading(true);  // Prevent other effects from running
-          authStateRef.current = newState;
-          localStorage.setItem('authState', JSON.stringify(newState));
-          setUser(newState.user);
-          setToken(newState.token);
-          setIsAuthenticated(true);
-          setLoading(false);
-        } catch (error) {
-          return { error: 'Failed to update authentication state' };
-        }
+        // Update the context state
+        setUser(authState.user);
+        setToken(authState.token);
+        setIsAuthenticated(true);
         
-        // Wait for state updates to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        // Verify storage
-        const savedState = localStorage.getItem('authState');
-        if (!savedState) {
-          return { error: 'Failed to save authentication state' };
-        }
-        
-        // Final verification of the complete state
-        const finalState = JSON.parse(savedState);
-        if (!finalState.token || !finalState.user || !finalState.isAuthenticated) {
-          return { error: 'Incomplete authentication state' };//Incomplete auth state after save
-        }
-        
-        
-        return { data: response, success: true };//SSO authentication complete
-      } else {
-        console.error('No token in response:', response);
-        return { error: 'Invalid response from server' };
+        navigate('/dashboard', { replace: true });//Auth state updated, redirecting to dashboard
+        return { data: response, success: true };
       }
+      
+      console.error('Invalid SSO response');
+      navigate('/login');
+      return { error: 'Invalid response from server' };
     } catch (error) {
       console.error('SSO callback error in context:', error);
+      navigate('/login');
       return { error: error.message };
     }
+  };
+
+  // Add a useEffect to check auth state on mount
+  useEffect(() => {
+    const checkAuthState = () => {
+      const authState = localStorage.getItem('authState');
+      if (authState) {
+        const parsed = JSON.parse(authState);
+        setUser(parsed.user);
+        setToken(parsed.token);
+        setIsAuthenticated(true);
+      }
+    };
+    
+    checkAuthState();
+  }, []);
+
+  const handleSSOLogin = () => {
+    // Clear any existing tokens first
+    clearTokens();
+    localStorage.removeItem('authState');
+    
+    const state = Math.random().toString(36).substring(7);
+    const stateData = {
+      value: state,
+      timestamp: Date.now()
+    };
+    sessionStorage.setItem('oauth_state', JSON.stringify(stateData));
+    
+    const params = new URLSearchParams({
+      client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID,
+      redirect_uri: `${window.location.origin}/callback`,
+      response_type: 'code',
+      state: state,
+      scope: 'openid'
+    });
+    
+    const authUrl = `${process.env.REACT_APP_KEYCLOAK_URL}/realms/${process.env.REACT_APP_KEYCLOAK_REALM}/protocol/openid-connect/auth`;
+    window.location.href = `${authUrl}?${params}`;
   };
 
   const value = {
@@ -295,10 +457,12 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    handleSSOLogin,
     handleSSOCallback,
     isAuthenticated,
     loading,
-    token
+    token,
+    handleRefreshToken,
   };
 
   return (
