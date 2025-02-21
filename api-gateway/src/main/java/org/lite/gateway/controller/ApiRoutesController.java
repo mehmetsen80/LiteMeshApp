@@ -17,6 +17,8 @@ import reactor.core.publisher.Mono;
 import org.lite.gateway.dto.RouteExistenceResponse.ExistenceDetail;
 import org.lite.gateway.dto.RouteExistenceRequest;
 import org.lite.gateway.dto.ErrorCode;
+import java.util.Map;
+import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/routes")
@@ -33,52 +35,82 @@ public class ApiRoutesController {
     }
 
     @GetMapping("/{id}")
-    public Mono<ResponseEntity<ApiRoute>> getRoute(@PathVariable String id) {
+    public Mono<ResponseEntity<?>> getRoute(@PathVariable String id) {
         log.info("Fetching route with id: {}", id);
         return apiRouteService.getRouteById(id)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .switchIfEmpty(Mono.just(ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_NOT_FOUND,
+                    String.format("Route with id '%s' not found", id),
+                    HttpStatus.NOT_FOUND.value()
+                ))));
     }
 
     @GetMapping("/identifier/{routeIdentifier}")
-    public Mono<ResponseEntity<ApiRoute>> getRouteByIdentifier(@PathVariable String routeIdentifier) {
+    public Mono<ResponseEntity<?>> getRouteByIdentifier(@PathVariable String routeIdentifier) {
         log.info("Fetching route with identifier: {}", routeIdentifier);
         return apiRouteService.getRouteByIdentifier(routeIdentifier)
-            .map(ResponseEntity::ok)
-            .defaultIfEmpty(ResponseEntity.notFound().build());
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
+            .switchIfEmpty(Mono.just(ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_NOT_FOUND,
+                    String.format("Route with identifier '%s' not found", routeIdentifier),
+                    HttpStatus.NOT_FOUND.value()
+                ))));
     }
 
     @PostMapping
     public Mono<ResponseEntity<?>> createRoute(@Valid @RequestBody ApiRoute route) {
-        if (route.getPath() == null || route.getPath().trim().isEmpty()) {
-            return Mono.just(ResponseEntity.badRequest()
-                .<ErrorResponse>body(ErrorResponse.fromErrorCode(
-                    ErrorCode.ROUTE_PATH_REQUIRED,
-                    "Route path is required",
-                    HttpStatus.BAD_REQUEST.value()
-                )));
-        }
-
         return apiRouteService.createRoute(route)
-            .<ResponseEntity<?>>map(r -> ResponseEntity.ok().body(r))
-            .onErrorResume(DuplicateRouteException.class, e -> 
-                Mono.just(ResponseEntity
+            .<ResponseEntity<?>>map(r -> {
+                Map<String, Object> response = new HashMap<>();
+                response.put("data", r);
+                response.put("message", String.format("API Route '%s' created successfully!", r.getRouteIdentifier()));
+                log.info("Created route with identifier: {}", r.getRouteIdentifier());
+                return ResponseEntity.ok().body(response);
+            })
+            .onErrorResume(DuplicateRouteException.class, e -> {
+                log.error("Failed to create route: {}", e.getMessage());
+                return Mono.just(ResponseEntity
                     .status(HttpStatus.CONFLICT)
                     .body(ErrorResponse.fromErrorCode(
                         ErrorCode.ROUTE_ALREADY_EXISTS,
                         e.getMessage(),
                         HttpStatus.CONFLICT.value()
-                    )))
-            );
+                    )));
+            });
     }
 
     @PutMapping("/{id}")
     public Mono<ResponseEntity<?>> updateRoute(
             @PathVariable String id,
             @Valid @RequestBody ApiRoute route) {
+        
+        // Validate required fields
+        if (route.getRouteIdentifier() == null || route.getRouteIdentifier().trim().isEmpty()) {
+            return Mono.just(ResponseEntity.badRequest()
+                .body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_IDENTIFIER_REQUIRED,
+                    "Route identifier is required",
+                    HttpStatus.BAD_REQUEST.value()
+                )));
+        }
+
+        if (route.getUri() == null || route.getUri().trim().isEmpty()) {
+            return Mono.just(ResponseEntity.badRequest()
+                .body(ErrorResponse.fromErrorCode(
+                    ErrorCode.ROUTE_URI_REQUIRED,
+                    "Route URI is required",
+                    HttpStatus.BAD_REQUEST.value()
+                )));
+        }
+
         if (route.getPath() == null || route.getPath().trim().isEmpty()) {
             return Mono.just(ResponseEntity.badRequest()
-                .<ErrorResponse>body(ErrorResponse.fromErrorCode(
+                .body(ErrorResponse.fromErrorCode(
                     ErrorCode.ROUTE_PATH_REQUIRED,
                     "Route path is required",
                     HttpStatus.BAD_REQUEST.value()

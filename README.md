@@ -1,4 +1,4 @@
-![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.9.1-brightgreen)
+![Build Status](https://github.com/mehmetsen80/LiteMeshApp/actions/workflows/maven.yml/badge.svg) ![Java 21](https://img.shields.io/badge/Java-21-blue) ![Version](https://img.shields.io/badge/version-0.9.2-brightgreen)
 
 
 # What is LiteMesh?
@@ -136,6 +136,9 @@ export GATEWAY_KEY_STORE="$KEY_BASE_DIR/gateway-keystore.jks"
 export GATEWAY_KEY_STORE_PASSWORD="123456"
 export GATEWAY_TRUST_STORE="$KEY_BASE_DIR/gateway-truststore.jks"
 export GATEWAY_TRUST_STORE_PASSWORD="123456"
+
+# OATH2 Redirect Url
+export OAUTH2_REDIRECT_URI="http://localhost:3000/callback"
 
 # SSL environment variables for client microservices
 export CLIENT_KEY_STORE="$KEY_BASE_DIR/client-keystore.jks"

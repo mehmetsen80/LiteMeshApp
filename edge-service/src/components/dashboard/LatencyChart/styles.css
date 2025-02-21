@@ -1,0 +1,62 @@
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 400px;
+  color: #666;
+}
+
+/* Match dashboard container styles */
+.card {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1) !important;
+  border: none !important;
+}
+
+.latency-info {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+.percentile-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 1rem;
+}
+
+.percentile-list li {
+  margin-bottom: 0.5rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.percentile-list li strong {
+  color: #495057;
+  margin-right: 0.5rem;
+}
+
+.percentile-list li:before {
+  content: "•";
+  position: absolute;
+  left: 0.5rem;
+  color: #6c757d;
+}
+
+/* Add this to your existing styles */
+.chart-title {
+  margin: 0;
+  text-align: left;
+  font-size: 1.25rem;
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Ensure the Row and Col components don't add unexpected margins */
+.row {
+  margin: 0;
+}
+
+.col {
+  padding: 0;
+} 

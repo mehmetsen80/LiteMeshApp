@@ -1,21 +1,34 @@
 package org.lite.gateway.entity;
 
 import lombok.Data;
+
+import org.springframework.data.mongodb.core.mapping.Field;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
 @Data
 public class HealthThresholds {
+    public HealthThresholds() {
+        this.cpuThreshold = 80.0;
+        this.memoryThreshold = 80.0;
+        this.responseTimeThreshold = 1000;
+    }
+
     @Min(value = 0, message = "CPU threshold must be at least 0")
     @Max(value = 100, message = "CPU threshold cannot exceed 100")
-    private double cpuThreshold = 80.0;
+    @Field("cpuThreshold")
+    private Double cpuThreshold;
     
     @Min(value = 0, message = "Memory threshold must be at least 0")
     @Max(value = 100, message = "Memory threshold cannot exceed 100")
-    private double memoryThreshold = 85.0;
+    @Field("memoryThreshold")
+    private Double memoryThreshold;
     
     @Min(value = 0, message = "Response time threshold must be at least 0")
-    private long responseTimeThreshold = 5000; // in milliseconds
+    @Field("responseTimeThreshold")
+    private Integer responseTimeThreshold;
     
-    private long timeoutThreshold = 5000L;  // 5 seconds timeout
+    @Field("timeoutThreshold")
+    private Integer timeoutThreshold = 5000;  // 5 seconds timeout
 } 

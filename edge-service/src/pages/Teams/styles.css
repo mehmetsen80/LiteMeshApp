@@ -1,0 +1,109 @@
+.teams-icon {
+  font-size: 24px;
+  color: #666;
+}
+
+.create-team-btn {
+  min-width: 160px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  padding: 0 12px;
+  display: flex;
+  white-space: nowrap;
+}
+
+.create-team-btn svg {
+  margin-right: 6px;
+  flex-shrink: 0;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+}
+
+/* Add some padding to table cells */
+.table td, .table th {
+  padding: 1rem;
+  vertical-align: middle;
+}
+
+/* Loading state styles */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.loading-spinner .spinner-border {
+  width: 3rem;
+  height: 3rem;
+  color: var(--primary-color);
+}
+
+/* Table loading state */
+.table-responsive {
+  position: relative;
+  min-height: 200px;
+}
+
+.table-responsive.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  z-index: 1;
+}
+
+.table-secondary {
+    background-color: rgba(0, 0, 0, 0.05) !important;  /* Slightly darker for inactive */
+}
+
+.table-secondary:hover {
+    background-color: rgba(0, 0, 0, 0.075) !important;  /* Even darker on hover */
+}
+
+/* Status badge styles */
+.badge {
+    font-weight: 500;
+    padding: 0.5em 0.75em;
+    font-size: 0.75em;
+}
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  min-width: fit-content;
+  height: 31px;  /* Fixed height for consistency */
+}
+
+.action-button svg {
+  flex-shrink: 0;  /* Prevents icon from shrinking */
+}
+
+.status-action-button {
+  width: 120px !important;  /* Fixed width for status action button */
+}
+
+/* TeamDetailsModal table styles */
+.table-responsive.mb-n3 {
+  margin-bottom: -1rem !important;
+}
+
+.table-responsive .table {
+  margin-bottom: 0;
+}
+
+.table-responsive .table td,
+.table-responsive .table th {
+  padding: 0.5rem;
+} 

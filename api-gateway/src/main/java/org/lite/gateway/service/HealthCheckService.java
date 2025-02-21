@@ -255,7 +255,7 @@ public class HealthCheckService {
     private String getHealthEndpoint(ApiRoute route) {
         String protocol = sslEnabled ? "https" : "http";
         String basePath = route.getPath().replaceAll("/\\*\\*", "");
-        String healthPath = route.getHealthCheck().getEndpoint();
+        String healthPath = route.getHealthCheck().getPath();
         return String.format("%s://%s:%d%s%s", 
             protocol, hostname, serverPort, basePath, healthPath);
     }

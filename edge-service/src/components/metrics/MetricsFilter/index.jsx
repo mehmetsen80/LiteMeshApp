@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Button from '../../common/Button';
 import { getDefaultDateRange, formatDateForApi } from '../../../utils/dateUtils';
 import './styles.css';
 
@@ -172,8 +173,19 @@ function MetricsFilter({ onFilterChange, services }) {
             <button type="button" onClick={() => handleQuickFilter('month')}>Last 30 Days</button>
           </div>
           <div className="action-buttons">
-            <button type="submit" className="apply-button">Apply Filters</button>
-            <button type="button" onClick={clearFilters} className="clear-button">Clear</button>
+            <Button 
+              type="submit"
+              variant="primary"
+            >
+              Apply Filters
+            </Button>
+            <Button 
+              type="button"
+              variant="secondary"
+              onClick={clearFilters}
+            >
+              Clear
+            </Button>
           </div>
         </div>
       </form>

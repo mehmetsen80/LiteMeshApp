@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Spinner } from 'react-bootstrap';
+import { Modal, Form } from 'react-bootstrap';
+import Button from '../common/Button';
 
 function EditOrganizationModal({ show, onHide, onSubmit, loading, organization }) {
   const [formData, setFormData] = useState({
@@ -95,18 +96,22 @@ function EditOrganizationModal({ show, onHide, onSubmit, loading, organization }
               {300 - (formData.description?.length || 0)} characters remaining
             </Form.Text>
           </Form.Group>
-          <div className="d-flex justify-content-end gap-2">
-            <Button variant="secondary" onClick={onHide}>
+          <Modal.Footer>
+            <Button 
+              variant="secondary" 
+              onClick={onHide}
+            >
               Cancel
             </Button>
-            <Button variant="primary" type="submit" disabled={loading}>
-              {loading ? (
-                <><Spinner size="sm" animation="border" /> Updating...</>
-              ) : (
-                'Update'
-              )}
+            <Button 
+              variant="primary" 
+              type="submit" 
+              disabled={loading}
+              loading={loading}
+            >
+              {loading ? 'Updating...' : 'Update'}
             </Button>
-          </div>
+          </Modal.Footer>
         </Form>
       </Modal.Body>
     </Modal>

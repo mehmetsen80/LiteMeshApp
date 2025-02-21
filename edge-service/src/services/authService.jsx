@@ -1,16 +1,15 @@
 import axiosInstance from './axiosInstance';
+import { jwtDecode } from 'jwt-decode';
 
 const authService = {
   registerUser: async (username, email, password) => {
     try {
-      console.log('Making registration request:', { username, email });
       const response = await axiosInstance.post('/api/auth/register', {
         username,
         email,
         password
       });
       const data = response.data;
-      console.log('Registration response:', data);
 
       if (!data.token || !data.username) {
         console.error('Invalid registration response:', data);
@@ -27,20 +26,38 @@ const authService = {
     }
   },
 
-  loginUser: async (email, password) => {
+  loginUser: async (username, password) => {
     try {
       const response = await axiosInstance.post('/api/auth/login', {
-        username: email,
+        username,
         password
       });
+      
       const data = response.data;
+      
+      if (data.token) {
+        const authState = {
+          user: {
+            username: data.user.username,
+            email: data.user.email,
+            roles: data.user.roles || []
+          },
+          token: data.token,
+          refreshToken: data.refreshToken,
+          success: data.success,
+          message: data.message
+        };
 
-      return { data };
+        // Store everything with proper keys
+        localStorage.setItem('authState', JSON.stringify(authState));
+        localStorage.setItem('accessToken', data.token);
+        localStorage.setItem('refreshToken', data.refreshToken);
+
+        return { data: authState };
+      }
+      return { error: 'Invalid response from server' };
     } catch (error) {
       console.error('Login error:', error);
-      if (error.response) {
-        return { error: error.response.data.message || 'Login failed' };
-      }
       return { error: error.message };
     }
   },
@@ -60,51 +77,94 @@ const authService = {
     }
   },
 
-  handleSSOCallback: async (code) => {
-    // Add a flag to localStorage to prevent duplicate requests
-    const processingKey = `processing_${code}`;
-    console.log('Checking processing state:', {
-      code: code?.substring(0, 10) + '...',
-      isProcessing: localStorage.getItem(processingKey)
-    });
-    
-    if (localStorage.getItem(processingKey)) {
-      console.log('SSO callback already in progress for this code');
-      return null;
-    }
-    
-    localStorage.setItem(processingKey, 'true');
-    
-    try {
-      console.log('Sending SSO callback request to backend:', {
-        url: '/api/auth/sso/callback',
-        code: code?.substring(0, 10) + '...',
-        fullCode: code
-      });
+  logout: () => {
+    // Clear all auth-related data from localStorage
+    localStorage.removeItem('authState');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+  },
 
+  handleSSOCallback: async (code) => {
+    try {
       const response = await axiosInstance.post('/api/auth/sso/callback', { code });
-      console.log('Backend response:', {
-        status: response.status,
-        data: response.data
-      });
-      return response.data;
-    } catch (error) {
-      // Check if this is a "Code already in use" error
-      if (error.response?.data?.code === 'AUTHENTICATION_ERROR' && 
-          error.response?.data?.message === 'Code already in use') {
-        console.log('Code already used but token exists, proceeding...');
-        return null;
+
+      if (response.data?.token) {
+        const authState = {
+          user: response.data.user || {
+            username: response.data.username,
+            roles: response.data.roles || []
+          },
+          token: response.data.token,
+          isAuthenticated: true
+        };
+        
+        // Store auth state and access token
+        localStorage.setItem('authState', JSON.stringify(authState));
+        localStorage.setItem('accessToken', response.data.token);
+        
+        // Store refresh token only if it exists and is different from access token
+        if (response.data.refreshToken && response.data.refreshToken !== response.data.token) {
+          localStorage.setItem('refreshToken', response.data.refreshToken);//Storing refresh token from SSO
+        }
+
+        return response.data;
       }
-      console.error('SSO callback error:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message
-      });
+
+      throw new Error('Invalid response from SSO callback');
+    } catch (error) {
+      console.error('SSO callback error:', error);
+      authService.logout();
       throw error;
-    } finally {
-      localStorage.removeItem(processingKey);
     }
   },
+
+  refreshToken: async (refreshToken) => {
+    try {
+      const response = await axiosInstance.post('/api/auth/refresh', 
+        { refresh_token: refreshToken }
+      );
+
+      if (response.data?.token) {
+        const authState = {
+          user: response.data.user,
+          token: response.data.token,
+          refreshToken: response.data.refreshToken,
+          isAuthenticated: true
+        };
+
+        return {
+          success: true,
+          data: authState
+        };
+      }
+      return {
+        success: false,
+        error: 'Invalid response structure'
+      };
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to refresh token'
+      };
+    }
+  },
+
+  // Silent refresh - attempts to refresh without showing warnings
+  silentRefresh: async () => {
+    try {
+      const refreshToken = localStorage.getItem('refreshToken');
+      if (!refreshToken) {
+        console.log('No refresh token available');
+        return false;
+      }
+
+      return await authService.refreshToken(refreshToken);
+    } catch (error) {
+      console.error('Silent refresh failed:', error);
+      return false;
+    }
+  }
 };
 
 export default authService;

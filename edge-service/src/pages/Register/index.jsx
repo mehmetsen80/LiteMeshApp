@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Form, Button, Alert } from 'react-bootstrap';
+import { Form, Alert } from 'react-bootstrap';
+import { HiHome } from 'react-icons/hi';
 import { useAuth } from '../../contexts/AuthContext';
+import Button from '../../components/common/Button';
 import authService from '../../services/authService';
 import './styles.css';
 
@@ -106,6 +108,10 @@ function Register() {
 
   return (
     <div className="auth-container">
+      <Link to="/" className="home-link">
+        <HiHome size={20} />
+        Home
+      </Link>
       <div className="auth-form-section">
         <div className="auth-card">
           <div className="auth-header">
@@ -183,24 +189,19 @@ function Register() {
             </Form.Group>
 
             <Button 
-              type="submit" 
-              className="w-100"
+              type="submit"
+              variant="primary"
+              fullWidth
+              loading={loading}
               disabled={loading || usernameError || !passwordStrength.isStrong}
             >
-              {loading ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                  Creating Account...
-                </>
-              ) : (
-                'Create Account'
-              )}
+              Create Account
             </Button>
           </Form>
 
           <div className="mt-4 text-center">
             <p className="mb-0">
-              Already have an account? <Link to="/login">Login</Link>
+              Already have an account? <Link to="/login" className="primary-link">Login</Link>
             </p>
           </div>
         </div>

@@ -1,0 +1,18 @@
+.dropdown-toggle::after {
+  margin-left: 0.5em;
+}
+
+.badge.bg-info {
+  font-size: 0.7em;
+  padding: 0.3em 0.6em;
+}
+
+.dropdown-item i {
+  width: 1.5em;
+  text-align: center;
+}
+
+.dropdown-item:disabled {
+  cursor: default;
+  opacity: 0.8;
+} 

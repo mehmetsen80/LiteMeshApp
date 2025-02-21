@@ -1,13 +1,14 @@
 .metrics-container {
-  padding: 20px;
+  padding: 20px 20px 20px 20px;
   background-color: #f8f9fa;
   min-height: calc(100vh - 60px);
+  margin: 0 auto;
 }
 
 .metrics-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 10px;
 }
 
 .section {

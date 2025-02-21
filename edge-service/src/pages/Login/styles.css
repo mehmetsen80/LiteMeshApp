@@ -2,7 +2,7 @@
   min-height: 100vh;
   width: 100%;
   position: relative;
-  background-image: url('/images/brand_guidelines.jpg');
+  background-image: url('/images/banner_side_panel.jpg');
   background-size: 100% auto;
   background-position: center;
   background-repeat: no-repeat;
@@ -79,13 +79,6 @@
 .btn-primary:hover {
   background-color: #357abd;
 }
-
-/* Responsive design */
-/* @media (min-width: 768px) {
-  .auth-image-section {
-    display: block;
-  }
-} */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {

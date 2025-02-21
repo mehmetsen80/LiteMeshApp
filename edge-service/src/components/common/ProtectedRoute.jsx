@@ -15,17 +15,7 @@ const ProtectedRoute = ({ children }) => {
   const isStoredAuthValid = parsedAuthState?.isAuthenticated && 
     parsedAuthState?.user && 
     parsedAuthState?.token;
-  
-  console.log('ProtectedRoute check:', {
-    isAuthenticated,
-    loading,
-    user,
-    storedAuthValid: isStoredAuthValid,
-    token,
-    pathname: location.pathname,
-    isCallbackPath: location.pathname === '/callback'
-  });
-  
+
   // Allow access if either context or storage has valid credentials
   const hasValidAuth = isAuthenticated || isStoredAuthValid;
   

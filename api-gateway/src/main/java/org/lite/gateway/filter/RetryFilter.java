@@ -103,18 +103,7 @@ public class RetryFilter implements GatewayFilter, Ordered {
 
                     // If the response is successful, pass it through without modification
                     if (statusCode != null && statusCode.is2xxSuccessful()) {
-                        //log.info("Successful downstream response, returning to client");
-                        //exchange.getResponse().setStatusCode(statusCode);
-                        
-                        // Copy all original headers
-                        //exchange.getResponse().getHeaders().putAll(responseDecorator.getHeaders());
-
                         return exchange.getResponse().setComplete();
-                        
-                        // Write the original body without any parsing/modification
-//                        DataBuffer buffer = exchange.getResponse().bufferFactory()
-//                            .wrap(fullBody.getBytes(StandardCharsets.UTF_8));
-//                        return exchange.getResponse().writeWith(Mono.just(buffer));
                     }
 
                     return Mono.error(new RuntimeException("Non-retrievable response status: " + statusCode));

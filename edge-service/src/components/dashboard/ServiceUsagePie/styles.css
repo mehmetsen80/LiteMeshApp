@@ -1,0 +1,24 @@
+.service-usage-card {
+  margin-bottom: 2rem;
+}
+
+.pie-container {
+  height: 400px;
+  position: relative;
+  margin: 0 auto;
+  max-width: 600px;
+}
+
+.error-message {
+  color: #dc3545;
+  text-align: center;
+  padding: 2rem;
+}
+
+.chart-title {
+  margin: 0;
+  text-align: left;
+  font-size: 1.25rem;
+  color: #495057;
+  font-weight: 600;
+} 

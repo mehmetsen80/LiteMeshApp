@@ -1,0 +1,26 @@
+.token-view-container {
+  padding: 2rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.token-view-container textarea {
+  font-family: monospace;
+  font-size: 0.9em;
+}
+
+.token-view-container .form-control[readonly] {
+  background-color: #f8f9fa;
+  cursor: text;
+}
+
+.token-view-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.token-view-container button {
+  width: 100%;
+  margin-top: 1rem;
+} 
