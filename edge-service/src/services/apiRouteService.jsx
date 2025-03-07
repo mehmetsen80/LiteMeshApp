@@ -41,9 +41,9 @@ export const apiRouteService = {
     }
   },
 
-  async deleteRoute(routeIdentifier) {
+  async deleteRoute(routeIdentifier, teamId) {
     try {
-      await axiosInstance.delete(`/api/routes/${routeIdentifier}`);
+      await axiosInstance.delete(`/api/routes/${routeIdentifier}?teamId=${teamId}`);
       return true;
     } catch (error) {
       console.error('Error deleting route:', error);

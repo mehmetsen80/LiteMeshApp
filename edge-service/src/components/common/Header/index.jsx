@@ -1,15 +1,18 @@
+import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../../contexts/AuthContext';
 import './styles.css';
+import { Navbar, Container, Nav } from 'react-bootstrap';
+import UserTeamMenu from './UserTeamMenu';
+import { useTeam } from '../../../contexts/TeamContext';
+import TokenExpiryDisplay from './TokenExpiryDisplay';
+import { NavLink } from 'react-router-dom';
 
-function Header() {
+const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const isActive = (path) => {
-    return location.pathname === path ? 'active' : '';
-  };
+  const { currentTeam } = useTeam();
 
   const handleNavClick = (path, e) => {
     if (e) e.preventDefault();
@@ -21,111 +24,41 @@ function Header() {
     console.log('Navigation attempted');
   };
 
-  return (
-    <nav className="navbar navbar-expand-lg navbar-dark">
-      <div className="container-fluid">
-        <a className="navbar-brand" href="#" onClick={(e) => handleNavClick('/', e)}>
-          LiteMesh
-        </a>
-        <button 
-          className="navbar-toggler" 
-          type="button" 
-          data-bs-toggle="collapse" 
-          data-bs-target="#navbarNav"
-        >
-          <span className="navbar-toggler-icon"></span>
-        </button>
-        <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav me-auto">
-            {user && (
-              <>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${isActive('/')}`} 
-                    href="#" 
-                    onClick={(e) => handleNavClick('/', e)}
-                  >
-                    Home
-                  </a>
-                </li>
+  // Check if we're on the ViewToken page
+  const isViewTokenPage = location.pathname === '/view-token';
 
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${isActive('/dashboard')}`}
-                    href="#" 
-                    onClick={(e) => handleNavClick('/dashboard', e)}
-                  >
-                    Dashboard
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${isActive('/api-routes')}`}
-                    href="#" 
-                    onClick={(e) => handleNavClick('/api-routes', e)}
-                  >
-                    API Routes
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${isActive('/metrics')}`}
-                    href="#" 
-                    onClick={(e) => handleNavClick('/metrics', e)}
-                  >
-                    Metrics
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${isActive('/service-status')}`}
-                    href="#" 
-                    onClick={(e) => handleNavClick('/service-status', e)}
-                  >
-                    Status
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${isActive('/teams')}`}
-                    href="#" 
-                    onClick={(e) => handleNavClick('/teams', e)}
-                  >
-                    Teams
-                  </a>
-                </li>
-                <li className="nav-item">
-                  <a 
-                    className={`nav-link ${isActive('/organizations')}`}
-                    href="#" 
-                    onClick={(e) => handleNavClick('/organizations', e)}
-                  >
-                    Orgs
-                  </a>
-                </li>
-              </>
-            )}
-          </ul>
+  return (
+    <Navbar expand="lg" className="app-header">
+      <Container fluid>
+        <Navbar.Brand as={Link} to="/">Linqra</Navbar.Brand>
+        <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        <Navbar.Collapse id="basic-navbar-nav">
+          <Nav className="me-auto">
+            <Nav.Link as={NavLink} to="/">Home</Nav.Link>
+            <span className="nav-separator"> | </span>
+            <Nav.Link as={NavLink} to="/dashboard">Dashboard</Nav.Link>
+            <span className="nav-separator"> | </span>
+            <Nav.Link as={NavLink} to="/api-routes">API Routes</Nav.Link>
+            <span className="nav-separator"> | </span>
+            <Nav.Link as={NavLink} to="/metrics">API Metrics</Nav.Link>
+            <span className="nav-separator"> | </span>
+            <Nav.Link as={NavLink} to="/service-status">Service Status</Nav.Link>
+          </Nav>
           {user ? (
-            <div className="d-flex align-items-center">
-              <span className="text-light me-3">Welcome, {user.username}</span>
-              <button 
-                className="btn btn-outline-light" 
-                onClick={logout}
-              >
-                Sign Out
-              </button>
+            <div className="d-flex align-items-center gap-3">
+              {isViewTokenPage && <TokenExpiryDisplay />}
+              <UserTeamMenu />
             </div>
           ) : (
             <div className="d-flex">
-              <a href="#" className="btn btn-outline-light me-2" onClick={(e) => handleNavClick('/login', e)}>Login</a>
-              <a href="#" className="btn btn-light" onClick={(e) => handleNavClick('/register', e)}>Register</a>
+              <Nav.Link href="#" onClick={(e) => handleNavClick('/login', e)}>Login</Nav.Link>
+              <Nav.Link href="#" onClick={(e) => handleNavClick('/register', e)}>Register</Nav.Link>
             </div>
           )}
-        </div>
-      </div>
-    </nav>
+        </Navbar.Collapse>
+      </Container>
+    </Navbar>
   );
-}
+};
 
 export default Header;

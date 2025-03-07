@@ -4,16 +4,20 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.config.KeycloakProperties;
 import org.lite.gateway.dto.AuthResponse;
+import org.lite.gateway.repository.UserRepository;
 import org.lite.gateway.service.JwtService;
 import org.lite.gateway.service.KeycloakService;
 import org.lite.gateway.service.UserContextService;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.Base64;
+
+import java.util.*;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.MediaType;
@@ -23,10 +27,7 @@ import org.springframework.util.MultiValueMap;
 import org.lite.gateway.service.CodeCacheService;
 import org.lite.gateway.exception.InvalidAuthenticationException;
 import org.lite.gateway.exception.TokenExpiredException;
-import java.util.List;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.HashMap;
+import org.lite.gateway.entity.User;
 
 
 @Service
@@ -40,6 +41,8 @@ public class KeycloakServiceImpl implements KeycloakService {
     private final ObjectMapper objectMapper;
     private final CodeCacheService codeCacheService;
     private final UserContextService userContextService;
+    private final UserRepository userRepository;
+    private final TransactionalOperator transactionalOperator;
 
     @Override
     public Mono<AuthResponse> handleCallback(String code) {
@@ -154,24 +157,67 @@ public class KeycloakServiceImpl implements KeycloakService {
 
     private Mono<AuthResponse> validateAndCreateSession(KeycloakTokenResponse tokenResponse) {
         return jwtService.extractClaims(tokenResponse.getAccessToken())
-            .map(claims -> {
+            .flatMap(claims -> {
                 String username = claims.get("preferred_username", String.class);
                 String email = claims.get("email", String.class);
+                
+                //The roles are in the realm_access.roles claim and we
                 List<String> roles = claims.get("realm_access", Map.class) != null ?
                     ((Map<String, List<String>>) claims.get("realm_access", Map.class)).get("roles") :
                     new ArrayList<>();
 
-                Map<String, Object> user = new HashMap<>();
-                user.put("username", username);
-                user.put("email", email);
-                user.put("roles", roles);
+                Mono<AuthResponse> authResponseMono = userRepository.findByUsername(username)
+                    .flatMap(existingUser -> {
+                        // Case 2: User exists, create AuthResponse
+                        Map<String, Object> userMap = new HashMap<>();
+                        userMap.put("username", existingUser.getUsername());
+                        userMap.put("email", existingUser.getEmail());
+                        userMap.put("roles", existingUser.getRoles());
+                        userMap.put("id", existingUser.getId());
+                        userMap.put("authType", "SSO");
 
-                return AuthResponse.builder()
-                    .token(tokenResponse.getAccessToken())
-                    .refreshToken(tokenResponse.getRefreshToken())
-                    .user(user)
-                    .success(true)
-                    .build();
+                        return Mono.just(AuthResponse.builder()
+                            .token(tokenResponse.getAccessToken())
+                            .refreshToken(tokenResponse.getRefreshToken())
+                            .user(userMap)
+                            .message("Login successful")
+                            .success(true)
+                            .build());
+                    })
+                    .switchIfEmpty(
+                        // Case 1: User doesn't exist, create and save new user
+                        Mono.just(new User())
+                            .map(newUser -> {
+                                newUser.setUsername(username);
+                                newUser.setEmail(email);
+                                newUser.setActive(true);
+                                newUser.setRoles(Set.of("USER"));
+                                newUser.setPassword(""); // Empty password for SSO users
+                                return newUser;
+                            })
+                            .flatMap(userRepository::save)
+                            .map(savedUser -> {
+                                Map<String, Object> userMap = new HashMap<>();
+                                userMap.put("username", savedUser.getUsername());
+                                userMap.put("email", savedUser.getEmail());
+                                userMap.put("roles", savedUser.getRoles());
+                                userMap.put("id", savedUser.getId());
+                                userMap.put("authType", "SSO");
+
+                                return AuthResponse.builder()
+                                    .token(tokenResponse.getAccessToken())
+                                    .refreshToken(tokenResponse.getRefreshToken())
+                                    .user(userMap)
+                                    .message("User created and logged in successfully")
+                                    .success(true)
+                                    .build();
+                            })
+                    );
+
+                return transactionalOperator.execute(status -> authResponseMono)
+                    .single()
+                    .doOnSuccess(response -> log.info("SSO transaction completed successfully"))
+                    .doOnError(e -> log.error("SSO transaction failed: {}", e.getMessage()));
             });
     }
 
@@ -278,14 +324,6 @@ public class KeycloakServiceImpl implements KeycloakService {
         });
     }
 }
-
-record KeycloakTokenRequest(
-    String code,
-    String clientId,
-    String clientSecret,
-    String redirectUri,
-    String grantType
-) {}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 record KeycloakTokenResponse(

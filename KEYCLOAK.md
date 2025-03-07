@@ -69,7 +69,7 @@ client-secret: chFLPrOnco5yvNdLsdmH0itOzavuUYqz
 ```
 
 ## ADDING CLIENT SCOPES
-Let's add inventory-service an product-service scopes
+Let's add inventory-service and product-service scopes
 
 ### inventory-service.read
 <div align="center">

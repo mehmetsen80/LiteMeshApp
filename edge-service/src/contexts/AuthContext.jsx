@@ -2,19 +2,24 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { useNavigate, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
 import { jwtDecode } from "jwt-decode";
-import { showWarningToast } from '../utils/toastConfig';
+import { showWarningToast, showErrorToast } from '../utils/toastConfig';
+import { useEnvironment } from './EnvironmentContext';
+// Create context without export
+const AuthContext = createContext(null);
 
-export const AuthContext = createContext({
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  login: () => {},
-  logout: () => {},
-  handleRefreshToken: () => {},
-});
+// Export the hook separately before the provider
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
+// Provider component as named export
 export const AuthProvider = ({ children }) => {
   const location = useLocation();
+  const { loadEnvironment } = useEnvironment();
   
   // Define the standard auth state structure
   const createAuthState = (user, token, isAuthenticated) => ({
@@ -23,116 +28,57 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated
   });
   
-  const setTokens = (accessToken, refreshToken) => {
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
-  };
-  
-  const clearTokens = () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-  };
-  
+  // Add refreshTimerRef
+  const refreshTimerRef = useRef(null);
   const authStateRef = useRef(createAuthState(null, null, false));
   
-  // Function to get initial state from localStorage
-  const getInitialState = () => {
-    try {
-      const savedAuthState = localStorage.getItem('authState');
-      
-      if (savedAuthState) {
-        const parsedAuthState = JSON.parse(savedAuthState);
-       
-        // Ensure we have a valid token
-        if (!parsedAuthState?.token) {
-          localStorage.removeItem('authState');
-          return createAuthState(null, null, false);
-        }
-        
-        // Validate token
-        try {
-          const decodedToken = jwtDecode(parsedAuthState.token);
-          if (decodedToken.exp < Date.now() / 1000) {//tored token expired, clearing state
-            localStorage.removeItem('authState');//stored token expired, clearing state
-            return createAuthState(null, null, false);
-          }
-          
-          // Token is valid, return the full state
-          return { 
-            user: parsedAuthState.user,
-            token: parsedAuthState.token,
-            isAuthenticated: true
-          };
-        } catch (error) {
-          localStorage.removeItem('authState');//oken validation error
-          return createAuthState(null, null, false);
-        }
-      }
-      return createAuthState(null, null, false);//No auth state in storage
-    } catch (error) {
-      localStorage.removeItem('authState');
-      return createAuthState(null, null, false);//Error reading from localStorage
-    }
-  };
-
-  const initialState = getInitialState();
-  
-  const [user, setUser] = useState(initialState.user);
-  const [loading, setLoading] = useState(false);  // Changed to false since we load synchronously
-  const [isAuthenticated, setIsAuthenticated] = useState(initialState.isAuthenticated);
-  const [token, setToken] = useState(initialState.token);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   
   const navigate = useNavigate();
 
-  const logout = () => {
-    // Clear all auth-related items from localStorage
-    localStorage.removeItem('authState');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
-    sessionStorage.removeItem('oauth_state');  // Clear SSO state too
-    
+
+  const logout = useCallback(() => {
     // Reset all state
     setUser(null);
     setToken(null);
     setIsAuthenticated(false);
-    
-    // Clear any pending requests or intervals
-    if (window.refreshInterval) {
-        clearInterval(window.refreshInterval);
-    }
-    
-    // Navigate to login
-    navigate('/login');
-  };
+    authService.logout();
+  }, []);
   
-  const handleRefreshToken = async () => {
+  const handleRefreshToken = useCallback(async () => {
     try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      console.log('Starting refresh with token:', refreshToken?.substring(0, 20) + '...');
-
+      const authData = JSON.parse(localStorage.getItem('authState') || '{}');
+      const refreshToken = authData.refreshToken;
+      
       if (!refreshToken) {
-        console.error('No refresh token available');
+        console.log('No refresh token available, logging out');
         logout();
         return false;
       }
 
       const response = await authService.refreshToken(refreshToken);
-      console.log('Refresh response in context:', response);
-
+      
       if (response.success && response.data) {
-        // Store the complete auth state from the service
-        console.log('About to store auth state:', response.data);
-        
-        localStorage.setItem('authState', JSON.stringify(response.data));
-        localStorage.setItem('accessToken', response.data.token);
-        
-        // Only store refresh token if it's provided and different
-        if (response.data.refreshToken && response.data.refreshToken !== response.data.token) {
-          localStorage.setItem('refreshToken', response.data.refreshToken);
+        // Only update state if the user data has actually changed
+        if (JSON.stringify(user) !== JSON.stringify(response.data.user)) {
+          setUser(response.data.user);
         }
+        
+        // Update auth state
+        const authState = {
+          user: response.data.user,
+          token: response.data.token,
+          refreshToken: response.data.refreshToken,
+          isAuthenticated: true
+        };
+        
+        // Single source of truth in localStorage
+        localStorage.setItem('authState', JSON.stringify(authState));
 
-        // Update context state
-        setUser(response.data.user);
         setToken(response.data.token);
         setIsAuthenticated(true);
 
@@ -143,11 +89,11 @@ export const AuthProvider = ({ children }) => {
         return false;
       }
     } catch (error) {
-      console.error('Error during refresh:', error);
+      console.error('Token refresh failed:', error);
       logout();
       return false;
     }
-  };
+  }, [logout, user]);
 
   // Function to update all auth state at once
   const updateAuthState = (newState) => {
@@ -157,20 +103,25 @@ export const AuthProvider = ({ children }) => {
     }
     
     try {
-      // Update localStorage
-      localStorage.setItem('authState', JSON.stringify(newState));
-      
-      // Explicitly store access token
-      if (newState.token) {
-        localStorage.setItem('accessToken', newState.token);
-      } else {
-        localStorage.removeItem('accessToken');
-      }
+      const authState = {
+        user: newState.user,
+        token: newState.token,
+        refreshToken: newState.refreshToken,
+        isAuthenticated: newState.isAuthenticated
+      };
+
+      // Update localStorage with single source of truth
+      localStorage.setItem('authState', JSON.stringify(authState));
       
       // Update state
       setUser(newState.user);
       setToken(newState.token);
       setIsAuthenticated(newState.isAuthenticated);
+
+      // Set up refresh token timer if we have a valid token
+      if (newState.token) {
+        setupRefreshTokenTimer(newState.token);
+      }
       
       console.log('Auth state updated:', {
         hasUser: !!newState.user,
@@ -221,7 +172,6 @@ export const AuthProvider = ({ children }) => {
   const validateAuthState = () => {
     try {
       const storedAuthState = localStorage.getItem('authState');
-      const accessToken = localStorage.getItem('accessToken');
 
       // If we're on the login or callback page, skip validation
       if (location.pathname === '/login' || location.pathname === '/callback') {
@@ -229,25 +179,23 @@ export const AuthProvider = ({ children }) => {
       }
 
       // If there's no auth state but we're not on a protected route, that's okay
-      if (!storedAuthState || !accessToken) {
+      if (!storedAuthState) {
         console.log('No auth state found, but might be on public route');
         return true;
       }
 
-      // Parse and validate auth state only if it exists
-      if (storedAuthState) {
-        const authState = JSON.parse(storedAuthState);
-        if (!authState.token || !authState.user) {
-          console.log('Invalid auth state structure, clearing');
-          localStorage.removeItem('authState');
-          return false;
-        }
-
-        // If valid, update context state
-        setUser(authState.user);
-        setToken(authState.token);
-        setIsAuthenticated(true);
+      // Parse and validate auth state
+      const authState = JSON.parse(storedAuthState);
+      if (!authState.token || !authState.user) {
+        console.log('Invalid auth state structure, clearing');
+        localStorage.removeItem('authState');
+        return false;
       }
+
+      // If valid, update context state
+      setUser(authState.user);
+      setToken(authState.token);
+      setIsAuthenticated(true);
 
       return true;
     } catch (error) {
@@ -256,36 +204,34 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const checkTokenExpiration = async () => {
+  const checkTokenExpiration = useCallback(async () => {
     if (!validateAuthState()) {
-      logout();//Auth state validation failed
-      return;
+      logout(); // Auth state validation failed
+      return false;
     }
 
-    const token = localStorage.getItem('accessToken');
     const authState = JSON.parse(localStorage.getItem('authState'));
 
-    // Verify token matches auth state
-    if (token !== authState.token) {
-      logout();//Token mismatch between storage and auth state
-      return;
-    }
-
     try {
-      const decoded = jwtDecode(token);
+      const decoded = jwtDecode(authState.token);
       const currentTime = Date.now() / 1000;
 
       if (decoded.exp <= currentTime) {
-        const refreshed = await handleRefreshToken();//Token expired, attempting refresh
+        if (refreshing) return false;
+        
+        setRefreshing(true);
+        const refreshed = await handleRefreshToken();
         if (!refreshed) {
           console.error('Token refresh failed, logging out');
           logout();
+          return false;
         } else {
           console.log('Token refresh successful');
           // Verify refresh result
           if (!validateAuthState()) {
             console.error('Auth state invalid after refresh');
             logout();
+            return false;
           }
         }
       } else if (decoded.exp - currentTime < 120) {
@@ -296,8 +242,13 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Token check error:', error);
       logout();
+      return false;
+    } finally {
+      setRefreshing(false);
     }
-  };
+
+    return true;
+  }, [refreshing]);
 
   // Modify the initial useEffect
   useEffect(() => {
@@ -310,40 +261,54 @@ export const AuthProvider = ({ children }) => {
 
     // Only set up token check interval if we're authenticated
     if (isAuthenticated) {
-      const interval = setInterval(checkTokenExpiration, 30000);
+      // Check token expiration immediately
       checkTokenExpiration();
-
+      
+      // Set up a longer interval for token checks (e.g., every 5 minutes)
+      const interval = setInterval(checkTokenExpiration, 300000); // 5 minutes
+      
       return () => {
         clearInterval(interval);
       };
     }
-  }, [isAuthenticated]); // Add isAuthenticated to dependencies
+  }, [isAuthenticated]);
 
   const register = async (username, email, password) => {
     try {
-      const { data, error } = await authService.registerUser(username, email, password);
-      if (error) {
-        return { error };
-      }
-
-      // Create new auth state
-      const newState = createAuthState(data, data.token, true);
+      const response = await authService.registerUser(username, email, password);
       
-      // Validate the state before saving
-      if (!newState.token || !newState.user) {
-        console.error('Invalid auth state created:', newState);
-        return { error: 'Invalid authentication state' };
+      if (response.data && response.data.token) {
+        // Create auth state with all necessary info from the response
+        const authState = {
+          user: response.data.user,
+          token: response.data.token,
+          refreshToken: response.data.refreshToken,
+          isAuthenticated: true
+        };
+
+        // Update context state
+        setUser(authState.user);
+        setToken(authState.token);
+        setIsAuthenticated(true);
+
+        // Store single source of truth
+        localStorage.setItem('authState', JSON.stringify(authState));
+
+        await loadEnvironment();
+
+        // Add a small delay to ensure state is updated before navigation
+        setTimeout(() => {
+          localStorage.setItem('lastLoginTime', new Date().toISOString());
+          navigate('/dashboard');
+        }, 100);
+        
+        return true;
+      } else {
+        throw new Error('Invalid registration response - no token received');
       }
-
-      // Save to localStorage and update state
-      localStorage.setItem('authState', JSON.stringify(newState));
-      updateAuthState(newState);
-
-      // Navigate immediately
-      navigate('/', { replace: true });
-      return { data };
     } catch (err) {
-      return { error: err.message };
+      console.error('Registration error:', err);
+      throw err;
     }
   };
 
@@ -351,73 +316,131 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authService.loginUser(username, password);
       if (response.data && response.data.token) {
-        // Create auth state with user info from the response
         const authState = {
-          user: response.data.user,  // Use the entire user object directly
+          user: response.data.user,
           token: response.data.token,
+          refreshToken: response.data.refreshToken,
           isAuthenticated: true
         };
 
-        // Store everything
-        localStorage.setItem('authState', JSON.stringify(authState));
-        localStorage.setItem('accessToken', response.data.token);
-        localStorage.setItem('refreshToken', response.data.refreshToken);
-
-        // Update context state
         setUser(authState.user);
         setToken(authState.token);
         setIsAuthenticated(true);
+        localStorage.setItem('authState', JSON.stringify(authState));
 
-        // Navigate to dashboard
-        navigate('/dashboard');
+        await loadEnvironment();
+        
+        setTimeout(() => {
+          localStorage.setItem('lastLoginTime', new Date().toISOString());
+          navigate('/dashboard');
+        }, 100);
+
         return true;
       } else {
-        throw new Error('Invalid login response - no token received');
+        // Handle specific error cases from the backend
+        if (response.error) {
+          throw new Error(response.error);
+        }
+        throw new Error('Authentication failed');
       }
     } catch (error) {
       console.error('Login error:', error);
+      // Show the error message from the server or a fallback message
+      showErrorToast(error.message || 'Authentication failed');
       throw error;
     }
   };
 
-  const handleSSOCallback = async (code) => {
+  const handleSSOCallback = useCallback(async (code) => {
     try {
-      const response = await authService.handleSSOCallback(code);
+      // Get and validate state parameter
+      const params = new URLSearchParams(window.location.search);
+      const receivedState = params.get('state');
+      const storedStateData = JSON.parse(sessionStorage.getItem('oauth_state') || '{}');
       
-      if (response && response.token) {
-        // Get the stored auth state
-        const authState = JSON.parse(localStorage.getItem('authState'));
-        if (!authState) {
-          console.error('No auth state found after SSO callback');
-          navigate('/login');
-          return { error: 'Authentication failed' };
-        }
-        
-        // Update the context state
-        setUser(authState.user);
-        setToken(authState.token);
-        setIsAuthenticated(true);
-        
-        navigate('/dashboard', { replace: true });//Auth state updated, redirecting to dashboard
-        return { data: response, success: true };
+      // Validate state parameter
+      if (!receivedState || receivedState !== storedStateData.value) {
+        console.error('Invalid state parameter');
+        navigate('/login');
+        return false;
       }
-      
-      console.error('Invalid SSO response');
-      navigate('/login');
-      return { error: 'Invalid response from server' };
-    } catch (error) {
-      console.error('SSO callback error in context:', error);
-      navigate('/login');
-      return { error: error.message };
-    }
-  };
 
-  // Add a useEffect to check auth state on mount
+      // Clear state after validation
+      sessionStorage.removeItem('oauth_state');
+
+      const response = await authService.handleSSOCallback(code);
+      console.log('SSO callback response:', response);
+
+      if (response.success) {  // Check response.success instead of response.data
+        const newAuthState = {
+          token: response.token,           // Direct from response
+          refreshToken: response.refreshToken,  // Direct from response
+          user: response.user,             // Direct from response
+          isAuthenticated: true
+        };
+
+        updateAuthState(newAuthState);
+
+        await loadEnvironment();
+
+        // Navigate after state is updated
+        setTimeout(() => {
+          // Add this where login is successful in your auth service or context
+          localStorage.setItem('lastLoginTime', new Date().toISOString());
+          navigate('/dashboard');
+        }, 100);
+        
+        return true;
+      }
+
+      if (response.error) {
+        if (response.error === "Code already in use") {
+          // Clear any existing state before redirecting
+          localStorage.removeItem('authState');
+          sessionStorage.removeItem('oauth_state');
+
+          const keycloakUrl = process.env.REACT_APP_KEYCLOAK_URL;
+          const realm = process.env.REACT_APP_KEYCLOAK_REALM;
+          const clientId = process.env.REACT_APP_KEYCLOAK_CLIENT_ID;
+          const redirectUri = encodeURIComponent(window.location.origin + '/callback');
+          
+          // Generate new state with timestamp
+          const state = Math.random().toString(36).substring(7);
+          const timestamp = Date.now();
+          sessionStorage.setItem('oauth_state', JSON.stringify({
+            value: state,
+            timestamp
+          }));
+
+          // Force a fresh login by adding prompt=login and timestamp
+          window.location.href = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=openid&prompt=login&timestamp=${timestamp}`;
+          return;
+        }
+        throw new Error(response.error);
+      }
+
+      updateAuthState(createAuthState(null, null, false));
+      localStorage.removeItem('authState');
+      navigate('/login');
+      return false;
+
+    } catch (error) {
+      console.error('SSO callback error:', error);
+      updateAuthState(createAuthState(null, null, false));
+      sessionStorage.removeItem('oauth_state');
+      localStorage.removeItem('authState');
+      navigate('/login');
+      return false;
+    }
+  }, [navigate, updateAuthState]);
+
+  // Add this to check initial auth state
   useEffect(() => {
     const checkAuthState = () => {
       const authState = localStorage.getItem('authState');
       if (authState) {
         const parsed = JSON.parse(authState);
+        console.log('Found stored auth state:', parsed);
         setUser(parsed.user);
         setToken(parsed.token);
         setIsAuthenticated(true);
@@ -427,55 +450,165 @@ export const AuthProvider = ({ children }) => {
     checkAuthState();
   }, []);
 
-  const handleSSOLogin = () => {
-    // Clear any existing tokens first
-    clearTokens();
-    localStorage.removeItem('authState');
+  const handleSSOLogin = async () => {
+    console.log('handleSSOLogin');
     
+    // Check if we already have valid auth
+    const currentAuthState = localStorage.getItem('authState');
+    if (currentAuthState) {
+      const isValid = await checkTokenExpiration();
+      if (isValid) {
+        console.log('Valid auth found, redirecting to dashboard');
+        navigate('/dashboard');
+        return;
+      }
+    }
+
+    // Clear any existing invalid auth state before SSO login
+    localStorage.removeItem('authState');
+    sessionStorage.removeItem('oauth_state');
+
+    // Generate new state for PKCE with timestamp
     const state = Math.random().toString(36).substring(7);
+    const timestamp = Date.now();
     const stateData = {
       value: state,
-      timestamp: Date.now()
+      timestamp
     };
     sessionStorage.setItem('oauth_state', JSON.stringify(stateData));
     
-    const params = new URLSearchParams({
-      client_id: process.env.REACT_APP_KEYCLOAK_CLIENT_ID,
-      redirect_uri: `${window.location.origin}/callback`,
-      response_type: 'code',
-      state: state,
-      scope: 'openid'
-    });
+    // Get environment variables
+    const keycloakUrl = process.env.REACT_APP_KEYCLOAK_URL;
+    const clientId = process.env.REACT_APP_KEYCLOAK_CLIENT_ID;
+    const redirectUri = encodeURIComponent(window.location.origin + '/callback');
+    const realm = process.env.REACT_APP_KEYCLOAK_REALM;
     
-    const authUrl = `${process.env.REACT_APP_KEYCLOAK_URL}/realms/${process.env.REACT_APP_KEYCLOAK_REALM}/protocol/openid-connect/auth`;
-    window.location.href = `${authUrl}?${params}`;
+    // Build auth URL with state parameter and timestamp
+    const authUrl = `${keycloakUrl}/realms/${realm}/protocol/openid-connect/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&state=${state}&scope=openid&timestamp=${timestamp}`;
+    
+    // Redirect to Keycloak
+    window.location.href = authUrl;
   };
+
+  const setupRefreshTokenTimer = useCallback((token) => {
+    try {
+      if (!token) return;
+      
+      console.log('Setting up refresh timer...');
+      
+      // Clear any existing timer
+      if (refreshTimerRef.current) {
+        console.log('Clearing existing timer');
+        clearTimeout(refreshTimerRef.current);
+      }
+
+      const decodedToken = jwtDecode(token);
+      const expiresIn = decodedToken.exp * 1000;
+      const currentTime = Date.now();
+      const timeUntilExpiry = expiresIn - currentTime;
+      
+      if (timeUntilExpiry < 30000) {
+        console.log('Token expired or expiring soon, logging out');
+        logout();
+        return;
+      }
+
+      const refreshTime = timeUntilExpiry - 120000;
+      console.log('Setting up new refresh timer for', refreshTime / 1000, 'seconds');
+      
+      refreshTimerRef.current = setTimeout(() => {
+        console.log('Refresh timer triggered');
+        refreshToken();
+      }, refreshTime);
+
+    } catch (error) {
+      console.error('Error setting up refresh timer:', error);
+    }
+  }, [logout]);
+
+  const refreshToken = useCallback(async () => {
+    if (refreshing) {
+      console.log('Token refresh already in progress, skipping');
+      return;
+    }
+
+    try {
+      setRefreshing(true);
+      const currentAuthState = JSON.parse(localStorage.getItem('authState') || '{}');
+      if (!currentAuthState.refreshToken) {
+        logout();
+        return;
+      }
+
+      const response = await authService.refreshToken(currentAuthState.refreshToken);
+      
+      if (response.success && response.data) {
+        const { token, refreshToken, user } = response.data;
+        
+        const newAuthState = {
+          user,
+          token,
+          refreshToken,
+          isAuthenticated: true
+        };
+
+        localStorage.setItem('authState', JSON.stringify(newAuthState));
+        updateAuthState(newAuthState);
+        setupRefreshTokenTimer(token);
+      } else {
+        logout();
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      logout();
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const initAuth = () => {
+      const authState = JSON.parse(localStorage.getItem('authState') || '{}');
+      if (authState.token) {
+        setUser(authState.user);
+      }
+      setLoading(false);
+    };
+
+    initAuth();
+  }, []);
+
+  // Add cleanup in useEffect
+  useEffect(() => {
+    return () => {
+      // Cleanup timer on unmount
+      if (refreshTimerRef.current) {
+        clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Add this single useEffect
+  useEffect(() => {
+    authService.setupAuthInterceptors(logout);
+  }, [logout]);
 
   const value = {
     user,
-    setUser,
-    login,
-    register,
-    logout,
-    handleSSOLogin,
-    handleSSOCallback,
-    isAuthenticated,
     loading,
-    token,
+    isAuthenticated: !!user,
+    login,
+    logout,
+    register,
+    checkAuth,
     handleRefreshToken,
+    handleSSOLogin,
+    handleSSOCallback
   };
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

@@ -16,7 +16,7 @@ public interface ApiRouteService {
     Mono<ApiRoute> getRouteByIdentifier(String routeIdentifier);
     Mono<ApiRoute> createRoute(ApiRoute route);
     Mono<ApiRoute> updateRoute(ApiRoute route);
-    Mono<Void> deleteRoute(String id);
+    Mono<Void> deleteRoute(String routeIdentifier, String teamId, String username);
     
     // Search operations
     Flux<ApiRoute> searchRoutes(String searchTerm, String method, Boolean healthCheckEnabled);

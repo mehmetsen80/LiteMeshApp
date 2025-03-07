@@ -8,14 +8,12 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.Valid;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.List;
-import java.util.Set;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Arrays;
+import org.springframework.data.annotation.Transient;
 
 
 @Document("apiRoutes")
@@ -40,7 +38,7 @@ public class ApiRoute{
         this.healthCheck = healthCheck;
         
         // Initialize empty collections
-        this.permissions = new HashSet<>();
+        //this.permissions = new HashSet<>();
         this.filters = createDefaultFilters();
     }
 
@@ -160,9 +158,9 @@ public class ApiRoute{
     @Valid
     @NotNull(message = "Health check configuration is required")
     HealthCheckConfig healthCheck;
-    
-    @JsonIgnore
-    private Set<RoutePermission> permissions;
+
+    @Transient
+    private String teamId; // Helper field for route creation, not stored in DB
 }
 
 

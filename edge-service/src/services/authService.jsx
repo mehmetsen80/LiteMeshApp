@@ -1,9 +1,11 @@
 import axiosInstance from './axiosInstance';
-import { jwtDecode } from 'jwt-decode';
 
 const authService = {
   registerUser: async (username, email, password) => {
     try {
+      // Clear existing auth state before registration
+      localStorage.removeItem('authState');
+      
       const response = await axiosInstance.post('/api/auth/register', {
         username,
         email,
@@ -11,12 +13,23 @@ const authService = {
       });
       const data = response.data;
 
-      if (!data.token || !data.username) {
+      if (!data.token || !data.user?.username) {
         console.error('Invalid registration response:', data);
         return { error: 'Invalid response from server' };
       }
 
-      return { data };
+      // Create and store auth state, just like in loginUser
+      const authState = {
+        user: data.user,
+        token: data.token,
+        refreshToken: data.refreshToken,
+        isAuthenticated: true
+      };
+
+      // Store auth state as single source of truth
+      localStorage.setItem('authState', JSON.stringify(authState));
+
+      return { data: authState };
     } catch (error) {
       console.error('Registration error:', error);
       if (error.response) {
@@ -28,6 +41,9 @@ const authService = {
 
   loginUser: async (username, password) => {
     try {
+      // Clear existing auth state before login attempt
+      localStorage.removeItem('authState');
+      
       const response = await axiosInstance.post('/api/auth/login', {
         username,
         password
@@ -37,21 +53,14 @@ const authService = {
       
       if (data.token) {
         const authState = {
-          user: {
-            username: data.user.username,
-            email: data.user.email,
-            roles: data.user.roles || []
-          },
+          user: data.user,
           token: data.token,
           refreshToken: data.refreshToken,
-          success: data.success,
-          message: data.message
+          isAuthenticated: true
         };
 
-        // Store everything with proper keys
+        // Store auth state as single source of truth
         localStorage.setItem('authState', JSON.stringify(authState));
-        localStorage.setItem('accessToken', data.token);
-        localStorage.setItem('refreshToken', data.refreshToken);
 
         return { data: authState };
       }
@@ -78,65 +87,41 @@ const authService = {
   },
 
   logout: () => {
-    // Clear all auth-related data from localStorage
+    // Clear auth state and team selection
     localStorage.removeItem('authState');
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('currentTeamId');
+    sessionStorage.clear();
+    
+    // Force reload to clear any in-memory state
+    window.location.href = '/login';
   },
 
   handleSSOCallback: async (code) => {
     try {
       const response = await axiosInstance.post('/api/auth/sso/callback', { code });
-
-      if (response.data?.token) {
-        const authState = {
-          user: response.data.user || {
-            username: response.data.username,
-            roles: response.data.roles || []
-          },
-          token: response.data.token,
-          isAuthenticated: true
-        };
-        
-        // Store auth state and access token
-        localStorage.setItem('authState', JSON.stringify(authState));
-        localStorage.setItem('accessToken', response.data.token);
-        
-        // Store refresh token only if it exists and is different from access token
-        if (response.data.refreshToken && response.data.refreshToken !== response.data.token) {
-          localStorage.setItem('refreshToken', response.data.refreshToken);//Storing refresh token from SSO
-        }
-
-        return response.data;
-      }
-
-      throw new Error('Invalid response from SSO callback');
+      return response.data;
     } catch (error) {
-      console.error('SSO callback error:', error);
-      authService.logout();
       throw error;
     }
   },
 
   refreshToken: async (refreshToken) => {
     try {
-      const response = await axiosInstance.post('/api/auth/refresh', 
-        { refresh_token: refreshToken }
-      );
+      const response = await axiosInstance.post('/api/auth/refresh', {
+        refresh_token: refreshToken
+      });
 
       if (response.data?.token) {
-        const authState = {
-          user: response.data.user,
-          token: response.data.token,
-          refreshToken: response.data.refreshToken,
-          isAuthenticated: true
-        };
-
         return {
           success: true,
-          data: authState
+          data: {
+            user: response.data.user,
+            token: response.data.token,
+            refreshToken: response.data.refreshToken
+          }
         };
       }
+      
       return {
         success: false,
         error: 'Invalid response structure'
@@ -150,20 +135,17 @@ const authService = {
     }
   },
 
-  // Silent refresh - attempts to refresh without showing warnings
-  silentRefresh: async () => {
-    try {
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        console.log('No refresh token available');
-        return false;
+  setupAuthInterceptors: (logout) => {
+    axiosInstance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (error.response?.status === 401) {
+          console.log('Received 401 response, logging out...');
+          logout();
+        }
+        return Promise.reject(error);
       }
-
-      return await authService.refreshToken(refreshToken);
-    } catch (error) {
-      console.error('Silent refresh failed:', error);
-      return false;
-    }
+    );
   }
 };
 

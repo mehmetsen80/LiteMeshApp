@@ -3,10 +3,10 @@ package org.lite.gateway.repository;
 import org.lite.gateway.entity.ApiRoute;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
-import org.springframework.lang.NonNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.time.Instant;
+import java.util.List;
 
 public interface ApiRouteRepository extends ReactiveMongoRepository<ApiRoute, String> {
     @Query("{ 'healthCheck.enabled': true }")
@@ -20,10 +20,6 @@ public interface ApiRouteRepository extends ReactiveMongoRepository<ApiRoute, St
 
     @Query("{ 'routeIdentifier': ?0 }")
     Mono<ApiRoute> findByRouteIdentifier(String routeIdentifier);
-
-    @Query(value = "{ 'id': ?0 }")
-    @NonNull
-    Mono<ApiRoute> findById(@NonNull String id);
 
     Mono<Boolean> existsByRouteIdentifier(String routeIdentifier);
 
@@ -43,4 +39,6 @@ public interface ApiRouteRepository extends ReactiveMongoRepository<ApiRoute, St
     Flux<ApiRoute> searchRoutes(String searchTerm, String method, Boolean healthCheckEnabled);
 
     Mono<Long> countByCreatedAtAfter(Instant date);
+
+    Mono<Long> countByIdIn(List<String> ids);
 } 

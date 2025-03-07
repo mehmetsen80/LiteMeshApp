@@ -45,7 +45,7 @@ RUN keytool -importkeystore -srckeystore /app/gateway-truststore.jks \
 
 # Set other service-specific environment variables
 ENV REDIS_GATEWAY_URL=redis-service
-ENV MONGO_GATEWAY_URL=mongodb-service
+#ENV MONGO_GATEWAY_URL=mongodb-service
 ENV KEYCLOAK_GATEWAY_URL=keycloak-service
 ENV KEYCLOAK_GATEWAY_PORT=8080
 ENV EUREKA_GATEWAY_URL=discovery-service

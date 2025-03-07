@@ -48,8 +48,8 @@ spring:
           jwk-set-uri: http://${KEYCLOAK_GATEWAY_URL:localhost}:${KEYCLOAK_GATEWAY_PORT:8281}/realms/LiteMesh/protocol/openid-connect/certs
   data:
     mongodb:
-      uri:  mongodb://root:mongopw@${MONGO_GATEWAY_URL:localhost}
-      database: LiteMesh
+      uri: mongodb://root:mongopw@localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0&authSource=admin&readConcernLevel=majority
+      database: Linqra
   cloud:
     circuitbreaker:
       resilience4j:
@@ -131,22 +131,27 @@ logging:
     name: logs/api-gateway.log
   level:
     root: INFO
-    org.springframework.security: DEBUG
-    org.springframework.web: DEBUG
-    org.springframework.web.reactive.function.client: DEBUG
-    org.springframework.security.oauth2.client: DEBUG
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.cloud.loadbalancer: TRACE
-    org.springframework.cloud.client.discovery: TRACE
-    org.springframework.cloud.netflix.eureka: DEBUG
-    io.github.resilience4j.circuitbreaker: DEBUG
-    io.github.resilience4j.circuitbreaker.internal: DEBUG
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    org.springframework.web.reactive.function.client: INFO
+    org.springframework.security.oauth2.client: INFO
+    org.springframework.cloud.gateway: INFO
+    org.springframework.cloud.loadbalancer: INFO
+    org.springframework.cloud.client.discovery: INFO
+    org.springframework.cloud.netflix.eureka: INFO
+    io.github.resilience4j.circuitbreaker: INFO
     org.springframework.cloud.gateway.route.RouteDefinitionLocator: INFO
-    org.springframework.cloud.gateway.filter.ratelimit: DEBUG
-    org.springframework.data.redis: DEBUG
+    org.springframework.cloud.gateway.filter.ratelimit: INFO
+    org.springframework.data.redis: INFO
+    org.springframework.web.socket: INFO
+    org.springframework.messaging: INFO
+    org.springframework.security.web.server.authentication.AuthenticationWebFilter: ERROR
     javax.net.ssl: DEBUG
-    org.springframework.web.socket: DEBUG
-    org.springframework.messaging: DEBUG
+    org.mongodb.driver: ERROR
+    org.mongodb.driver.cluster: WARN
+    org.mongodb.driver.connection: WARN
+    org.mongodb.driver.protocol: WARN
+    org.mongodb.driver.operation: WARN
 
 notifications:
   email:

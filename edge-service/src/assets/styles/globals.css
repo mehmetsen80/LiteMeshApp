@@ -207,4 +207,29 @@ h6, .h6 {
 .home-link:hover {
   opacity: 1;
   color: white;
-} 
+}
+
+
+.not-authorized-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.not-authorized-icon {
+  font-size: 3rem;
+  display: block;
+  margin: 0 auto;
+}
+
+.not-found-container {
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.not-found-icon {
+  font-size: 3rem;
+  display: block;
+  margin: 0 auto;
+}  

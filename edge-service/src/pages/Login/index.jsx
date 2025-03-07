@@ -59,7 +59,10 @@ function Login() {
           <Button 
             variant="secondary"
             fullWidth
-            onClick={handleSSOLogin}
+            onClick={() => {
+              console.log('SSO button clicked'); // Debug log
+              handleSSOLogin();
+            }}
           >
             <HiLockClosed />
             Sign in with SSO

@@ -16,7 +16,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Data
@@ -40,7 +40,7 @@ public class User implements UserDetails {
     private String firstName;
     private String lastName;
     @Builder.Default
-    private List<String> roles = List.of("USER");
+    private Set<String> roles = Set.of("USER");
     @Builder.Default
     private boolean isActive = true;
     @CreatedDate

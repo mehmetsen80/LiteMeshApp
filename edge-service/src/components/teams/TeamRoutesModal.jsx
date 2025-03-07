@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Spinner, Table } from 'react-bootstrap';
+import { Modal, Form, Spinner, Table } from 'react-bootstrap';
 import Select from 'react-select';
-import teamService from '../../services/teamService';
+import { teamService } from '../../services/teamService';
 import ConfirmationModal from '../common/ConfirmationModal';
+import Button from '../common/Button';
 
 const TeamRoutesModal = ({ show, onHide, team, onAddRoute, onRemoveRoute, loading }) => {
     const [selectedRoute, setSelectedRoute] = useState(null);
@@ -22,9 +23,8 @@ const TeamRoutesModal = ({ show, onHide, team, onAddRoute, onRemoveRoute, loadin
 
     const permissionOptions = [
         { value: 'VIEW', label: 'View' },
-        { value: 'EXECUTE', label: 'Execute' },
-        { value: 'MANAGE', label: 'Manage' },
-        { value: 'MONITOR', label: 'Monitor' }
+        { value: 'USE', label: 'Use' },
+        { value: 'MANAGE', label: 'Manage' }
     ];
 
     useEffect(() => {
@@ -156,17 +156,13 @@ const TeamRoutesModal = ({ show, onHide, team, onAddRoute, onRemoveRoute, loadin
                         </Form.Group>
 
                         <Button 
-                            variant="primary" 
+                            variant="primary"
                             type="submit"
                             disabled={loading || searching || !selectedRoute || permissions.length === 0}
+                            loading={loading || searching}
+                            fullWidth={true}
                         >
-                            {searching ? (
-                                <><Spinner size="sm" animation="border" /> Searching...</>
-                            ) : loading ? (
-                                <><Spinner size="sm" animation="border" /> Adding...</>
-                            ) : (
-                                'Add Route'
-                            )}
+                            {searching ? 'Searching...' : 'Add Route'}
                         </Button>
                     </Form>
 
@@ -239,6 +235,8 @@ const TeamRoutesModal = ({ show, onHide, team, onAddRoute, onRemoveRoute, loadin
                 title={confirmModal.title}
                 message={confirmModal.message}
                 variant={confirmModal.variant}
+                confirmLabel={loading ? 'Removing...' : 'Remove'}
+                disabled={loading}
             />
         </>
     );

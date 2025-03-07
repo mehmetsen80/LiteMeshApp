@@ -9,38 +9,57 @@ import './styles.css';
 const ViewToken = () => {
   const { handleRefreshToken } = useAuth();
   const [loading, setLoading] = useState(false);
+
+  const getTokenExpiryInfo = (token) => {
+    try {
+      const decoded = jwtDecode(token);
+      const expiresIn = decoded.exp * 1000; // Convert to milliseconds
+      const currentTime = Date.now();
+      const timeUntilExpiry = expiresIn - currentTime;
+      
+      return {
+        expiryDate: new Date(expiresIn).toLocaleString(),
+        minutesRemaining: Math.floor(timeUntilExpiry / 60000),
+        isExpired: timeUntilExpiry <= 0
+      };
+    } catch (error) {
+      return {
+        expiryDate: 'Invalid token',
+        minutesRemaining: 0,
+        isExpired: true
+      };
+    }
+  };
+
   const [tokenInfo, setTokenInfo] = useState(() => {
     const authState = JSON.parse(localStorage.getItem('authState') || '{}');
+    const tokenExpiryInfo = getTokenExpiryInfo(authState.token);
+    
     return {
       accessToken: authState.token || 'Not set',
-      refreshToken: localStorage.getItem('refreshToken') || 'Not set',
+      refreshToken: authState.refreshToken || 'Not set',
       lastUpdated: new Date().toLocaleTimeString(),
       username: authState.user?.username || 'Unknown',
       isAuthenticated: !!authState.token,
-      tokenExpiry: authState.token ? getExpiryTime(authState.token) : 'Unknown'
+      tokenExpiry: tokenExpiryInfo.expiryDate,
+      minutesRemaining: tokenExpiryInfo.minutesRemaining,
+      isExpired: tokenExpiryInfo.isExpired
     };
   });
-
-  // Helper function to get token expiry time
-  function getExpiryTime(token) {
-    try {
-      const decoded = jwtDecode(token);
-      return new Date(decoded.exp * 1000).toLocaleString();
-    } catch (error) {
-      return 'Invalid token';
-    }
-  }
 
   useEffect(() => {
     const updateTokenInfo = () => {
       const authState = JSON.parse(localStorage.getItem('authState') || '{}');
+      const tokenExpiryInfo = getTokenExpiryInfo(authState.token);
       setTokenInfo({
         accessToken: authState.token || 'Not set',
-        refreshToken: localStorage.getItem('refreshToken') || 'Not set',
+        refreshToken: authState.refreshToken || 'Not set',
         lastUpdated: new Date().toLocaleTimeString(),
         username: authState.user?.username || 'Unknown',
         isAuthenticated: !!authState.token,
-        tokenExpiry: authState.token ? getExpiryTime(authState.token) : 'Unknown'
+        tokenExpiry: tokenExpiryInfo.expiryDate,
+        minutesRemaining: tokenExpiryInfo.minutesRemaining,
+        isExpired: tokenExpiryInfo.isExpired
       });
     };
 
@@ -53,10 +72,11 @@ const ViewToken = () => {
   }, []);
 
   useEffect(() => {
+    const authState = JSON.parse(localStorage.getItem('authState') || '{}');
     console.log('Button should be:', {
-      disabled: !localStorage.getItem('refreshToken'),
-      refreshTokenExists: !!localStorage.getItem('refreshToken'),
-      refreshTokenValue: localStorage.getItem('refreshToken')?.substring(0, 10) + '...'
+      disabled: !authState.refreshToken,
+      refreshTokenExists: !!authState.refreshToken,
+      refreshTokenValue: authState.refreshToken?.substring(0, 10) + '...'
     });
   }, []);
 
@@ -64,29 +84,34 @@ const ViewToken = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const success = await handleRefreshToken();
-      if (success) {
-        // Update the token info display after successful refresh
-        const authState = JSON.parse(localStorage.getItem('authState') || '{}');
-        setTokenInfo({
-          accessToken: authState.token || 'Not set',
-          refreshToken: localStorage.getItem('refreshToken') || 'Not set',
-          lastUpdated: new Date().toLocaleTimeString(),
-          username: authState.user?.username || 'Unknown',
-          isAuthenticated: !!authState.token,
-          tokenExpiry: authState.token ? getExpiryTime(authState.token) : 'Unknown'
-        });
-      }
+      await handleRefreshToken();
+      // Update token info after refresh
+      const authState = JSON.parse(localStorage.getItem('authState') || '{}');
+      const tokenExpiryInfo = getTokenExpiryInfo(authState.token);
+      setTokenInfo({
+        accessToken: authState.token || 'Not set',
+        refreshToken: authState.refreshToken || 'Not set',
+        lastUpdated: new Date().toLocaleTimeString(),
+        username: authState.user?.username || 'Unknown',
+        isAuthenticated: !!authState.token,
+        tokenExpiry: tokenExpiryInfo.expiryDate,
+        minutesRemaining: tokenExpiryInfo.minutesRemaining,
+        isExpired: tokenExpiryInfo.isExpired
+      });
     } catch (error) {
-      console.error('Failed to refresh token:', error);
+      console.error('Error refreshing token:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const simulateExpiredToken = () => {
-    const token = localStorage.getItem('accessToken');
+    console.log('Simulating expired token');
+    // Get current auth state
+    const authState = JSON.parse(localStorage.getItem('authState') || '{}');
+    const token = authState.token;
     if (!token) return;
+    console.log('Token:', token);
 
     try {
       const [header, payload, signature] = token.split('.');
@@ -103,15 +128,23 @@ const ViewToken = () => {
       // Reconstruct the token
       const modifiedToken = `${header}.${modifiedPayload}.${signature}`;
       
-      // Store the modified token
-      localStorage.setItem('accessToken', modifiedToken);
+      // Update the auth state with modified token
+      const updatedAuthState = {
+        ...authState,
+        token: modifiedToken
+      };
+      console.log('Updated auth state:', updatedAuthState);
+      // Store the modified auth state
+      localStorage.setItem('authState', JSON.stringify(updatedAuthState));
       
       // Update the token info display
-      const authState = JSON.parse(localStorage.getItem('authState') || '{}');
+      const tokenExpiryInfo = getTokenExpiryInfo(modifiedToken);
       setTokenInfo(prev => ({
         ...prev,
         accessToken: modifiedToken,
-        tokenExpiry: getExpiryTime(modifiedToken),
+        tokenExpiry: tokenExpiryInfo.expiryDate,
+        minutesRemaining: tokenExpiryInfo.minutesRemaining,
+        isExpired: tokenExpiryInfo.isExpired,
         lastUpdated: new Date().toLocaleTimeString()
       }));
 
@@ -145,7 +178,12 @@ const ViewToken = () => {
 
         <Form.Group className="mb-3">
           <Form.Label>Token Expiry</Form.Label>
-          <Form.Control type="text" value={tokenInfo.tokenExpiry} readOnly />
+          <Form.Control 
+            type="text" 
+            value={`${tokenInfo.tokenExpiry} (${tokenInfo.minutesRemaining} minutes remaining)`} 
+            readOnly 
+            className={tokenInfo.minutesRemaining < 5 ? 'text-danger' : ''}
+          />
         </Form.Group>
 
         <Form.Group className="mb-3">
@@ -173,7 +211,7 @@ const ViewToken = () => {
             type="submit"
             variant="primary"
             loading={loading}
-            disabled={loading || !localStorage.getItem('refreshToken')}
+            disabled={loading || !tokenInfo.refreshToken || tokenInfo.refreshToken === 'Not set'}
           >
             {loading ? 'Refreshing...' : 'Refresh Token'}
           </Button>

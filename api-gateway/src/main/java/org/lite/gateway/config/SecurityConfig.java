@@ -69,6 +69,9 @@ public class SecurityConfig {
     @Value("${cors.max-age}")
     private long maxAge;
 
+    @Value("${spring.security.oauth2.resourceserver.opaquetoken.client-id}")
+    private String clientId;
+
     private final DynamicRouteService dynamicRouteService;
     private final ReactiveClientRegistrationRepository customClientRegistrationRepository;
     private final ReactiveOAuth2AuthorizedClientService customAuthorizedClientService;
@@ -122,7 +125,7 @@ public class SecurityConfig {
         // Example: Hardcoded user with role
         UserDetails user = User.withUsername("example-cn")
                 .password("{noop}password")  // Password is not used in mTLS
-                .roles("USER", "ADMIN")
+                .roles("VIEW", "ADMIN")
                 .build();
 
         // A Map-based user details service
@@ -152,8 +155,8 @@ public class SecurityConfig {
             log.info("Incoming token: {}", userToken);
 
             OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
-                    .withClientRegistrationId("lite-mesh-gateway-client")
-                    .principal("lite-mesh-gateway-client")
+                    .withClientRegistrationId(clientId)
+                    .principal(clientId)
                     .build();
 
             return authorizedClientManager.authorize(authorizeRequest)
@@ -250,18 +253,16 @@ public class SecurityConfig {
         return authorizedClientManager;
     }
 
-    private  String getScopeKey(String path) {
-        // Regular expression to capture the dynamic prefix (e.g., "/inventory/", "/product/")
-        Pattern pattern = Pattern.compile("^/(\\w+)/");
+    private String getScopeKey(String path) {
+        // Updated regex to capture prefixes that may include hyphens
+        Pattern pattern = Pattern.compile("^/([\\w-]+)/");
         Matcher matcher = pattern.matcher(path);
 
         if (matcher.find()) {
-            // Extract the prefix (e.g., "/inventory/")
-            String prefix = matcher.group(0); // Full match, e.g., "/inventory/"
+            String prefix = matcher.group(0);
             return prefix + "**";
         }
 
-        // If no matching prefix, return original path with "**"
         return path + "**";
     }
 
@@ -337,7 +338,7 @@ public class SecurityConfig {
                                 if (resourceAccess != null) {
                                     // get the client access
                                     // 3rd step - check out the client roles
-                                    var clientAccess = resourceAccess.get("lite-mesh-gateway-client");
+                                    var clientAccess = resourceAccess.get(clientId);
                                     if (clientAccess instanceof Map<?,?>) {
                                         // get the client roles
                                         var clientRoles = ((Map<String, Object>) clientAccess).get("roles");

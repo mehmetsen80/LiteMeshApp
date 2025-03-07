@@ -15,7 +15,7 @@ import TeamDetailsModal from '../../components/teams/TeamDetailsModal';
 import TeamMembersModal from '../../components/teams/TeamMembersModal';
 import TeamRoutesModal from '../../components/teams/TeamRoutesModal';
 import TeamEditModal from '../../components/teams/TeamEditModal';
-import teamService from '../../services/teamService';
+import { teamService } from '../../services/teamService';
 import './styles.css';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -150,7 +150,12 @@ function Teams() {
       if (error) {
         throw new Error(error);
       }
+      
+      // Update selectedTeam with the latest data
       setSelectedTeam(data);
+      // Refresh the teams list
+      await fetchTeams();
+      
       showSuccessToast('Team member removed successfully');
     } catch (err) {
       showErrorToast(err.message || 'Failed to remove team member');
@@ -200,9 +205,10 @@ function Teams() {
       const { data, error } = await teamService.removeTeamRoute(selectedTeam.id, routeId);
       if (error) throw new Error(error);
       
-      setTeams(prev => prev.map(t => 
-        t.id === selectedTeam.id ? data : t
-      ));
+      // Update selectedTeam with the latest data
+      setSelectedTeam(data);
+      // Refresh the teams list
+      await fetchTeams();
       showSuccessToast('Route removed successfully');
     } catch (err) {
       showErrorToast(err.message || 'Failed to remove route');

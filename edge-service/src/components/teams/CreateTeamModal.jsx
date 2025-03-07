@@ -130,10 +130,10 @@ function CreateTeamModal({ show, onHide, onSubmit, loading }) {
               onChange={handleChange}
               placeholder="Enter team description"
               rows={3}
-              maxLength={300}
+              maxLength={500}
             />
             <Form.Text className="text-muted d-block mt-1 small">
-              {300 - (formData.description?.length || 0)} characters remaining
+              {500 - (formData.description?.length || 0)} characters remaining
             </Form.Text>
           </Form.Group>
         </Form>

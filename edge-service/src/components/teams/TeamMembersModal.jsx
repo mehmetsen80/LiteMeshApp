@@ -1,28 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form, Spinner, Table } from 'react-bootstrap';
+import { Modal, Form, Spinner, Table } from 'react-bootstrap';
 import AsyncSelect from 'react-select/async';
 import Select from 'react-select';
 import userService from '../../services/userService';
-import teamService from '../../services/teamService';
+import { teamService } from '../../services/teamService';
 import ConfirmationModal from '../common/ConfirmationModal';
+import Button from '../common/Button';
 
 const TeamMembersModal = ({ show, onHide, team, onAddMember, onRemoveMember, loading }) => {
     const [selectedUser, setSelectedUser] = useState(null);
-    const [role, setRole] = useState('MEMBER');
+    const [role, setRole] = useState('USER');
     const [error, setError] = useState('');
     const [searching, setSearching] = useState(false);
     const [members, setMembers] = useState([]);
     const [loadingMembers, setLoadingMembers] = useState(false);
-    const [confirmModal, setConfirmModal] = useState({
-        show: false,
-        title: '',
-        message: '',
-        onConfirm: () => {},
-        variant: 'danger'
-    });
+    const [showConfirmRemove, setShowConfirmRemove] = useState(false);
+    const [memberToRemove, setMemberToRemove] = useState(null);
 
     const roleOptions = [
-        { value: 'MEMBER', label: 'Member' },
+        { value: 'USER', label: 'User' },
         { value: 'ADMIN', label: 'Admin' }
     ];
 
@@ -57,13 +53,19 @@ const TeamMembersModal = ({ show, onHide, team, onAddMember, onRemoveMember, loa
     }, [team]);
 
     const fetchMembers = async () => {
+        if (!team?.id) return;
+
         try {
             setLoadingMembers(true);
-            const { data, error } = await teamService.getTeamMembers(team.id);
-            if (error) throw new Error(error);
-            setMembers(data);
+            const response = await teamService.getTeamMembers(team.id);
+            if (response.error) {
+                throw new Error(response.error);
+            }
+            setMembers(response.data || []);
         } catch (err) {
             console.error('Failed to fetch members:', err);
+            setError('Failed to load team members');
+            setMembers([]);
         } finally {
             setLoadingMembers(false);
         }
@@ -82,7 +84,7 @@ const TeamMembersModal = ({ show, onHide, team, onAddMember, onRemoveMember, loa
 
             // Clear form on success
             setSelectedUser(null);
-            setRole('MEMBER');
+            setRole('USER');
             setError('');
             await fetchMembers();
         } catch (err) {
@@ -92,22 +94,25 @@ const TeamMembersModal = ({ show, onHide, team, onAddMember, onRemoveMember, loa
         }
     };
 
+    const handleRemoveMember = async () => {
+        try {
+            const response = await onRemoveMember(memberToRemove.userId);
+            if (response?.error) {
+                throw new Error(response.error);
+            }
+            await fetchMembers(); // Refresh the list after successful removal
+            setShowConfirmRemove(false);
+            setMemberToRemove(null);
+            setError('');
+        } catch (err) {
+            console.error('Failed to remove member:', err);
+            setError(err.message || 'Failed to remove member');
+        }
+    };
+
     const confirmRemoveMember = (member) => {
-        setConfirmModal({
-            show: true,
-            title: 'Remove Member',
-            message: `Are you sure you want to remove ${member.username} from team "${team.name}"?`,
-            onConfirm: async () => {
-                try {
-                    await onRemoveMember(member.userId);
-                    await fetchMembers(); // Refresh the members list
-                    setConfirmModal(prev => ({ ...prev, show: false }));
-                } catch (err) {
-                    setError(err.message || 'Failed to remove member');
-                }
-            },
-            variant: 'warning'
-        });
+        setMemberToRemove(member);
+        setShowConfirmRemove(true);
     };
 
     return (
@@ -156,17 +161,13 @@ const TeamMembersModal = ({ show, onHide, team, onAddMember, onRemoveMember, loa
                         </Form.Group>
 
                         <Button 
-                            variant="primary" 
+                            variant="primary"
                             type="submit"
-                            disabled={loading || searching || !selectedUser}
+                            disabled={!selectedUser}
+                            loading={loading || searching}
+                            fullWidth
                         >
-                            {searching ? (
-                                <><Spinner size="sm" animation="border" /> Searching...</>
-                            ) : loading ? (
-                                <><Spinner size="sm" animation="border" /> Adding...</>
-                            ) : (
-                                'Add Member'
-                            )}
+                            Add Member
                         </Button>
                     </Form>
 
@@ -209,16 +210,9 @@ const TeamMembersModal = ({ show, onHide, team, onAddMember, onRemoveMember, loa
                                                 size="sm"
                                                 onClick={() => confirmRemoveMember(member)}
                                                 disabled={loading}
-                                                className="d-flex align-items-center gap-2"
+                                                loading={loading}
                                             >
-                                                {loading ? (
-                                                    <>
-                                                        <Spinner size="sm" animation="border" />
-                                                        Removing...
-                                                    </>
-                                                ) : (
-                                                    'Remove'
-                                                )}
+                                                Remove
                                             </Button>
                                         </td>
                                     </tr>
@@ -230,12 +224,19 @@ const TeamMembersModal = ({ show, onHide, team, onAddMember, onRemoveMember, loa
             </Modal>
 
             <ConfirmationModal
-                show={confirmModal.show}
-                onHide={() => setConfirmModal(prev => ({ ...prev, show: false }))}
-                onConfirm={confirmModal.onConfirm}
-                title={confirmModal.title}
-                message={confirmModal.message}
-                variant={confirmModal.variant}
+                show={showConfirmRemove}
+                onHide={() => {
+                    setShowConfirmRemove(false);
+                    setMemberToRemove(null);
+                }}
+                onConfirm={handleRemoveMember}
+                title="Remove Member"
+                message={memberToRemove ? 
+                    `Are you sure you want to remove ${memberToRemove.username} from team "${team.name}"?` 
+                    : ''
+                }
+                confirmLabel="Remove"
+                variant="danger"
             />
         </>
     );

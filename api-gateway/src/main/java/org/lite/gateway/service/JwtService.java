@@ -12,15 +12,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Base64;
+
+import java.util.*;
 
 import java.security.Key;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+
 import reactor.core.publisher.Mono;
-import java.util.Collections;
-import java.util.List;
 
 
 @Service
@@ -56,6 +53,7 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("typ", "Refresh");
         claims.put("sub", username);
+        claims.put("username", username);
         return generateToken(claims, username, true);
     }
 
@@ -167,10 +165,10 @@ public class JwtService {
     }
 
     // Helper method to get user roles
-    private List<String> getUserRoles(String username) {
+    private Set<String> getUserRoles(String username) {
         return userRepository.findByUsername(username)
             .map(User::getRoles)
-            .defaultIfEmpty(Collections.emptyList())
+            .defaultIfEmpty(Collections.emptySet())
             .block();  // Note: blocking call, consider restructuring if needed
     }
 } 

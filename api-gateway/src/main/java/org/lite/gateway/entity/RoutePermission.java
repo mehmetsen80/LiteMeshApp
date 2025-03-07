@@ -1,8 +1,7 @@
 package org.lite.gateway.entity;
 
 public enum RoutePermission {
-    VIEW,           // Can see the route exists
-    EXECUTE,        // Can make API calls
-    MANAGE,         // Can modify route settings
-    MONITOR        // Can view metrics and health
+    VIEW,           // Can view API endpoints and documentation
+    USE,        // Can make API calls to these endpoints
+    MANAGE         // Can configure and update these endpoints
 } 

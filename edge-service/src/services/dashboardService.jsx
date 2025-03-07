@@ -13,62 +13,16 @@ export const StatPeriod = {
   WEEK: 'from last week'
 };
 
-// Mock data for development
-const mockStats = [
-  {
-    id: 'active-routes',
-    icon: 'fa-route',
-    title: 'Active Routes',
-    value: '24',
-    trend: {
-      type: 'positive',
-      value: '12%',
-      period: 'from last week'
-    }
-  },
-  {
-    id: 'response-time',
-    icon: 'fa-tachometer-alt',
-    title: 'Avg Response Time',
-    value: '142ms',
-    trend: {
-      type: 'negative',
-      value: '8%',
-      period: 'from last hour'
-    }
-  },
-  {
-    id: 'requests-per-min',
-    icon: 'fa-chart-line',
-    title: 'Requests/min',
-    value: '1,284',
-    trend: {
-      type: 'positive',
-      value: '3%',
-      period: 'from last minute'
-    }
-  },
-  {
-    id: 'success-rate',
-    icon: 'fa-shield-alt',
-    title: 'Success Rate',
-    value: '99.8%',
-    trend: {
-      type: 'neutral',
-      value: '',
-      period: 'from last 5 minutes'
-    }
-  }
-];
+
 
 const statsService = {
   /**
    * Fetches dashboard statistics
    * @returns {Promise<Array>} Array of stat objects
    */
-  async getStats() {
+  async getStats(teamId) {
     try {
-      const response = await axiosInstance.get('/api/dashboard/stats');
+      const response = await axiosInstance.get(`/api/dashboard/stats?teamId=${teamId}`);
       return response.data.map(stat => ({
         id: this.getStatId(stat.title),
         icon: this.getIconForStat(stat.title),
@@ -82,7 +36,7 @@ const statsService = {
       }));
     } catch (error) {
       console.error('Error fetching stats:', error);
-      throw new Error('Failed to fetch statistics');
+      throw error;
     }
   },
 
@@ -151,9 +105,14 @@ const statsService = {
     };
   },
 
-  async getLatencyStats(timeRange = '24h') {
+  async getLatencyStats(teamId, timeRange = '24h') {
     try {
-      const response = await axiosInstance.get(`/api/dashboard/latency?timeRange=${timeRange}`);
+      const response = await axiosInstance.get('/api/dashboard/latency', {
+        params: {
+          teamId,
+          timeRange
+        }
+      });
       return (response.data || []).map(stat => ({
         ...stat,
         endpoint: `${stat.id?.method || 'Unknown'} ${stat.id?.path || '/'}`,
@@ -165,7 +124,7 @@ const statsService = {
       }));
     } catch (error) {
       console.error('Error fetching latency stats:', error);
-      throw new Error('Failed to fetch latency statistics');
+      throw error;
     }
   },
 
@@ -173,9 +132,9 @@ const statsService = {
    * Fetches service usage statistics
    * @returns {Promise<Array>} Array of service usage stats
    */
-  async getServiceUsage() {
+  async getServiceUsage(teamId) {
     try {
-      const response = await axiosInstance.get('/api/dashboard/service-usage');
+      const response = await axiosInstance.get(`/api/dashboard/service-usage?teamId=${teamId}`);
       return response.data.map(stat => ({
         service: stat.service || 'Unknown Service',
         requestCount: parseInt(stat.requestCount) || 0

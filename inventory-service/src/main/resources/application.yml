@@ -21,7 +21,7 @@ server:
     trust-store-type: JKS
     client-auth: want
   servlet:
-    context-path: /inventory
+    context-path: /inventory-service
 
 
 gateway:

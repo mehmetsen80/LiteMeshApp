@@ -4,17 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.lite.gateway.dto.ErrorCode;
 import org.lite.gateway.dto.RouteChangeDetails;
 import org.lite.gateway.dto.RouteExistenceRequest;
 import org.lite.gateway.dto.RouteExistenceResponse;
 import org.lite.gateway.dto.VersionComparisonResult;
-import org.lite.gateway.entity.ApiRoute;
-import org.lite.gateway.entity.ApiRouteVersion;
-import org.lite.gateway.entity.FilterConfig;
-import org.lite.gateway.entity.HealthCheckConfig;
-import org.lite.gateway.entity.RouteVersionMetadata;
-import org.lite.gateway.entity.HealthThresholds;
-import org.lite.gateway.entity.AlertRule;
+import org.lite.gateway.entity.*;
+import org.lite.gateway.enums.UserRole;
 import org.lite.gateway.exception.DuplicateRouteException;
 import org.lite.gateway.repository.ApiRouteRepository;
 import org.lite.gateway.repository.ApiRouteVersionRepository;
@@ -24,6 +21,11 @@ import org.lite.gateway.service.UserContextService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import org.lite.gateway.repository.TeamRouteRepository;
+import org.lite.gateway.repository.UserRepository;
+import org.lite.gateway.repository.TeamMemberRepository;
+import org.lite.gateway.exception.ResourceNotFoundException;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.util.*;
 
@@ -36,7 +38,9 @@ public class ApiRouteServiceImpl implements ApiRouteService {
     private final RouteVersionMetadataRepository metadataRepository;
     private final UserContextService userContextService;
     private final ApiRouteVersionRepository apiRouteVersionRepository;
-
+    private final TeamRouteRepository teamRouteRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final UserRepository userRepository;
     public Flux<ApiRoute> getAllRoutes() {
         return apiRouteRepository.findAll()
                 .doOnComplete(() -> log.info("Finished fetching all routes"))
@@ -246,15 +250,36 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                 });
     }
 
-    public Mono<Void> deleteRoute(String id) {
-        return apiRouteRepository.findById(id)
-                .flatMap(route -> {
-                    log.info("Deleting route: {}", route.getRouteIdentifier());
-                    return apiRouteRepository.delete(route);
-                })
-                .doOnSuccess(v -> log.info("Successfully deleted route with id: {}", id))
-                .doOnError(error ->
-                        log.error("Error deleting route {}: {}", id, error.getMessage()));
+    public Mono<Void> deleteRoute(String routeIdentifier, String teamId, String username) {
+        return userRepository.findByUsername(username)
+            .switchIfEmpty(Mono.error(new ResourceNotFoundException("User not found: " + username, ErrorCode.USER_NOT_FOUND)))
+            .flatMap(user -> teamMemberRepository.findByTeamIdAndUserIdAndRole(teamId, user.getId(), UserRole.valueOf("ADMIN"))
+                .switchIfEmpty(Mono.error(new AccessDeniedException(
+                    "You don't have administrator rights in this team to delete routes"
+                )))
+                .flatMap(teamMember -> apiRouteRepository.findByRouteIdentifier(routeIdentifier)
+                    .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                        "Route not found with identifier: " + routeIdentifier, 
+                        ErrorCode.ROUTE_NOT_FOUND
+                    )))
+                    .flatMap(route -> teamRouteRepository.findByRouteId(route.getId())
+                        .collectList()
+                        .flatMap(teamRoutes -> {
+                            if (!teamRoutes.isEmpty()) {
+                                String errorMessage = String.format(
+                                    "Cannot delete route. It is currently assigned to %d team(s). " +
+                                    "Please remove all team assignments before deletion.", 
+                                    teamRoutes.size()
+                                );
+                                return Mono.error(new IllegalStateException(errorMessage));
+                            }
+                            log.info("Route with identifier: {} (id: {}) is being deleted by user: {} (id: {}) in team: {}", 
+                                routeIdentifier, route.getId(), username, user.getId(), teamId);
+                            return apiRouteRepository.delete(route);
+                        })
+                    )
+                )
+            );
     }
 
     public Flux<ApiRoute> searchRoutes(String searchTerm, String method, Boolean healthCheckEnabled) {
@@ -468,7 +493,7 @@ public class ApiRouteServiceImpl implements ApiRouteService {
             RouteChangeDetails changeDetails,
             RouteVersionMetadata.ChangeType changeType) {
 
-        return userContextService.getCurrentUser()
+        return userContextService.getCurrentUsername()
                 .map(username -> RouteVersionMetadata.builder()
                         .routeIdentifier(route.getRouteIdentifier())
                         .version(route.getVersion())

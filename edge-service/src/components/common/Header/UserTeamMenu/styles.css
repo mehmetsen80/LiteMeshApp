@@ -1,0 +1,410 @@
+.team-name {
+  font-weight: 500;
+  margin-right: 8px;
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.separator {
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0 16px;
+}
+
+#user-team-dropdown {
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  border: none;
+}
+
+#user-team-dropdown:hover,
+#user-team-dropdown:focus,
+#user-team-dropdown:active {
+  background: none;
+  border: none;
+  box-shadow: none;
+}
+
+#user-team-dropdown::after {
+  color: var(--text-light);
+}
+
+.role-badge {
+  font-size: 0.85rem !important;
+  padding: 0.35em 0.75em !important;
+  margin-left: 6px;
+  border-radius: 14px;
+}
+
+.team-item {
+  display: flex;
+  width: 100%;
+}
+
+.team-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.team-header {
+  display: flex;
+  flex-direction: column;
+}
+
+.team-item-name {
+  font-weight: 500;
+  color: var(--text-color);
+  font-size: 0.95rem;
+}
+
+.team-item-org {
+  font-size: 0.8rem;
+  color: #6c757d;
+}
+
+.team-badges {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dropdown-menu {
+  min-width: 260px !important;
+  padding: 8px 0;
+  margin-top: 8px;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.dropdown-header {
+  font-weight: 600;
+  color: #6c757d;
+  padding: 8px 16px;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(237, 117, 52, 0.1);
+}
+
+.dropdown-item.active {
+  background-color: var(--primary-color) !important;
+  color: var(--text-light);
+}
+
+.dropdown-item.active .team-item-name,
+.dropdown-item.active .team-item-org,
+.dropdown-item.active .user-name,
+.dropdown-item.active .user-email {
+  color: var(--text-light) !important;
+}
+
+.dropdown-item.active .role-badge {
+  background-color: var(--text-light) !important;
+  color: var(--primary-color) !important;
+}
+
+.routes-wrapper {
+  display: flex;
+  align-items: center;
+  margin: 0 0.5rem;
+}
+
+.route-count {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.route-icon {
+  color: #6b7280;
+}
+
+.count-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 9999px;
+  min-width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+}
+
+/* Dropdown specific styles */
+.team-badges .routes-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+}
+
+/* Route list styles */
+.routes-list {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 5px;
+}
+
+.route-item {
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.route-item:last-child {
+  border-bottom: none;
+}
+
+.route-name {
+  font-weight: 500;
+  color: white;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.route-details {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+}
+
+.route-path {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.route-method {
+  font-size: 0.75rem;
+  padding: 0.25em 0.6em;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  border-radius: 4px;
+}
+
+/* Tippy tooltip styles */
+.tippy-box {
+  background-color: #333 !important;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 14px;
+  max-width: 400px !important;
+}
+
+.tippy-arrow {
+  color: #333 !important;
+}
+
+.tippy-content {
+  padding: 12px !important;
+}
+
+/* Add these modal styles */
+.modal-content {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+  border-bottom: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
+}
+
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+  padding: 1rem 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-title {
+  font-weight: 600;
+  color: #333;
+}
+
+/* Style the buttons to match your theme */
+.modal-footer .btn-secondary {
+  background-color: #6c757d;
+  border: none;
+}
+
+.modal-footer .btn-primary {
+  background-color: var(--primary-color);
+  border: none;
+}
+
+.current-team-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.team-name {
+  font-weight: 500;
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+.current-org-name {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+  padding: 0 8px;
+  min-width: 120px;
+}
+
+.user-info.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.user-info-section {
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.user-info-section .user-name {
+  font-weight: 500;
+  font-size: 1.1rem;
+  padding-left: 0.25rem;
+  color: #495057 !important;
+}
+
+.user-info-section .user-email {
+  font-size: 0.9rem;
+  padding-left: 0.25rem;
+  color: #6c757d !important;
+}
+
+.auth-type {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #495057;
+}
+
+.auth-type .badge {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  background-color: var(--primary-color) !important;
+  color: white !important;
+}
+
+.user-name {
+  font-weight: 500;
+  font-size: 1.1rem;
+  padding-left: 0.25rem;
+  color: var(--text-light) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  font-size: 0.75em;
+  padding: 0.25em 0.5em;
+}
+
+.user-email {
+  font-size: 0.9rem;
+  padding-left: 0.25rem;
+  color: rgba(255, 255, 255, 0.75) !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Update these colors to be dark */
+.user-info-section .user-name {
+  font-weight: 500;
+  font-size: 1.1rem;
+  padding-left: 0.25rem;
+  color: #495057 !important;  /* Changed to dark color */
+}
+
+.user-info-section .user-email {
+  font-size: 0.9rem;
+  padding-left: 0.25rem;
+  color: #6c757d !important;  /* Changed to muted dark color */
+}
+
+/* Add loading state styles */
+.dropdown-menu.loading {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Improve dropdown positioning */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  margin-top: 0.5rem;
+  z-index: 1000;
+}
+
+.routes-wrapper .routes-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+}
+
+.user-team-menu .current-team-info {
+    background-color: var(--primary-color);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    color: white;
+}
+
+.user-team-menu .team-name {
+    display: block;
+    color: white;
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.user-team-menu .current-org-name {
+    display: block;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+

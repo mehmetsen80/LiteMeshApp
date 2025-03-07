@@ -12,11 +12,15 @@ import org.springframework.data.mongodb.config.EnableReactiveMongoAuditing;
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.lang.NonNull;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
 import org.springframework.data.mapping.model.FieldNamingStrategy;
 import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.mongodb.ReactiveMongoDatabaseFactory;
+import org.springframework.data.mongodb.ReactiveMongoTransactionManager;
+
 
 @Configuration
 @EnableReactiveMongoRepositories(basePackages = "org.lite.gateway.repository")
@@ -60,6 +64,16 @@ public class MongoReactiveConfig extends AbstractReactiveMongoConfiguration {
         MappingMongoConverter converter = super.mappingMongoConverter(databaseFactory, customConversions, mappingContext);
         converter.setMapKeyDotReplacement("_");  // Replace dots with underscores in map keys
         return converter;
+    }
+
+    @Bean
+    public ReactiveTransactionManager transactionManager(ReactiveMongoDatabaseFactory factory) {
+        return new ReactiveMongoTransactionManager(factory);
+    }
+
+    @Bean
+    public TransactionalOperator transactionalOperator(ReactiveTransactionManager transactionManager) {
+        return TransactionalOperator.create(transactionManager);
     }
 
 //    @Bean

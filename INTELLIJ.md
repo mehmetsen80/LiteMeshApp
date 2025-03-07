@@ -36,3 +36,16 @@ Environmental Variables (EV):
 ```shell 
 CLIENT_KEY_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-keystore.jks;CLIENT_KEY_STORE_PASSWORD=123456;CLIENT_TRUST_STORE=/Users/mehmetsen/IdeaProjects/LiteMeshApp/keys/client-truststore.jks;CLIENT_TRUST_STORE_PASSWORD=123456
 ```
+
+
+## SETUP INITIAL SUPER ADMIN
+
+```shell
+curl -X POST http://localhost:7777/api/setup/init \
+-H "Content-Type: application/json" \
+-d '{
+    "username": "superadmin",
+    "email": "admin@yourdomain.com",
+    "password": "SecurePass123!"
+}'
+```

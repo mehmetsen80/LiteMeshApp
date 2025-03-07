@@ -2,10 +2,9 @@ package org.lite.gateway.controller;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lite.gateway.enums.UserRole;
 import org.lite.gateway.dto.TeamDTO;
 import org.lite.gateway.entity.Team;
-import org.lite.gateway.entity.TeamRole;
-import org.lite.gateway.entity.ApiRoute;
 import org.lite.gateway.service.TeamService;
 import org.lite.gateway.exception.TeamOperationException;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +22,7 @@ import org.springframework.web.server.ServerWebExchange;
 import jakarta.validation.Valid;
 
 import org.lite.gateway.dto.TeamRouteRequest;
+import org.lite.gateway.dto.TeamRouteDTO;
 
 @RestController
 @RequestMapping("/api/teams")
@@ -70,7 +70,7 @@ public class TeamsController {
     public Mono<ResponseEntity<?>> createTeam(
             @Valid @RequestBody Team team,
             ServerWebExchange exchange) {
-        return userContextService.getCurrentUser(exchange)
+        return userContextService.getCurrentUsername(exchange)
             .flatMap(username -> {
                 team.setCreatedBy(username);
                 team.setUpdatedBy(username);
@@ -85,14 +85,13 @@ public class TeamsController {
                         HttpStatus.BAD_REQUEST.value()
                     )));
             })
-            .onErrorResume(InvalidAuthenticationException.class, e -> {
-                return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ErrorResponse.fromErrorCode(
-                        ErrorCode.AUTHENTICATION_ERROR,
-                        e.getMessage(),
-                        HttpStatus.UNAUTHORIZED.value()
-                    )));
-            });
+            .onErrorResume(InvalidAuthenticationException.class,
+                    e -> Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ErrorResponse.fromErrorCode(
+                    ErrorCode.AUTHENTICATION_FAILED,
+                    e.getMessage(),
+                    HttpStatus.UNAUTHORIZED.value()
+                ))));
     }
 
     @PutMapping("/{id}")
@@ -100,7 +99,7 @@ public class TeamsController {
             @PathVariable String id,
             @Valid @RequestBody Team team,
             ServerWebExchange exchange) {
-        return userContextService.getCurrentUser(exchange)
+        return userContextService.getCurrentUsername(exchange)
             .flatMap(username -> {
                 team.setUpdatedBy(username);
                 return teamService.updateTeam(id, team);
@@ -119,7 +118,7 @@ public class TeamsController {
                 log.error("Authentication error: {}", e.getMessage());
                 return Mono.just(ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ErrorResponse.fromErrorCode(
-                        ErrorCode.AUTHENTICATION_ERROR,
+                        ErrorCode.AUTHENTICATION_FAILED,
                         e.getMessage(),
                         HttpStatus.UNAUTHORIZED.value()
                     )));
@@ -173,17 +172,7 @@ public class TeamsController {
     public Mono<ResponseEntity<?>> getTeamMembers(@PathVariable String teamId) {
         return teamService.getTeamMembers(teamId)
             .collectList()
-            .map(members -> {
-                if (members.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ErrorResponse.fromErrorCode(
-                            ErrorCode.TEAM_NOT_FOUND,
-                            String.format("Team with id %s not found", teamId),
-                            HttpStatus.NOT_FOUND.value()
-                        ));
-                }
-                return ResponseEntity.ok(members);
-            })
+            .<ResponseEntity<?>>map(ResponseEntity::ok)
             .onErrorResume(TeamOperationException.class, e ->
                 Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ErrorResponse.fromErrorCode(
@@ -199,14 +188,14 @@ public class TeamsController {
             @PathVariable String teamId,
             @RequestParam String username,
             @RequestParam String role) {
-        TeamRole teamRole;
+        UserRole userRole;
         try {
-            teamRole = TeamRole.valueOf(role.toUpperCase());
+            userRole = UserRole.valueOf(role.toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid role: " + role);
         }
         
-        return teamService.addMemberToTeam(teamId, username, teamRole)
+        return teamService.addMemberToTeam(teamId, username, userRole)
             .then(teamService.getTeamById(teamId))
             .map(ResponseEntity::ok);
     }
@@ -219,21 +208,27 @@ public class TeamsController {
             .then(teamService.getTeamById(teamId))
             .map(ResponseEntity::ok)
             .switchIfEmpty(Mono.error(new ResourceNotFoundException(
-                String.format("Team with id %s not found", teamId)
+                String.format("Team with id %s not found", teamId), ErrorCode.TEAM_NOT_FOUND
             )));
     }
 
     // Team Routes endpoints
     @GetMapping("/{teamId}/routes")
-    public Flux<ApiRoute> getTeamRoutes(@PathVariable String teamId) {
+    public Flux<TeamRouteDTO> getTeamRoutes(@PathVariable String teamId) {
         return teamService.getTeamRoutes(teamId);
+    }
+
+    @GetMapping("/routes/all")
+    public Flux<TeamRouteDTO> getAllTeamRoutes(ServerWebExchange exchange) {
+        return userContextService.getCurrentUsername(exchange)
+            .flatMapMany(teamService::getAllTeamRoutes);
     }
 
     @PostMapping("/route-assignment")
     public Mono<ResponseEntity<?>> assignRouteToTeam(
             @Valid @RequestBody TeamRouteRequest request,
             ServerWebExchange exchange) {
-        return userContextService.getCurrentUser(exchange)
+        return userContextService.getCurrentUsername(exchange)
             .flatMap(username -> teamService.addTeamRoute(
                 request.getTeamId(), 
                 request.getRouteId(), 
@@ -273,4 +268,19 @@ public class TeamsController {
                 String.format("Failed to fetch teams for user %s", userId), e
             )));
     }
+
+    @GetMapping("/user/current")
+    public Flux<TeamDTO> getCurrentUserTeams(ServerWebExchange exchange) {
+        return userContextService.getCurrentUsername(exchange)
+            .flatMapMany(username -> {
+                log.info("Fetching teams for username: {}", username);
+                return teamService.getTeamsByUsername(username)
+                    .doOnError(e -> log.error("Error fetching teams for user {}: {}", username, e.getMessage()))
+                    .switchIfEmpty(Flux.empty());
+            })
+            .onErrorResume(e -> {
+                log.error("Error in getCurrentUserTeams: {}", e.getMessage());
+                return Flux.empty();
+            });
+    }    
 } 

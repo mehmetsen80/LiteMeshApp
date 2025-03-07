@@ -42,10 +42,13 @@ public enum ErrorCode {
     UNAUTHORIZED("AUTH_4001", "Unauthorized access", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
     FORBIDDEN("AUTH_4002", "Forbidden operation", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
     INVALID_TOKEN("AUTH_4003", "Invalid or expired token", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
-    AUTHENTICATION_ERROR("AUTH_4004", "Authentication failed", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
+    AUTHENTICATION_FAILED("AUTH_4004", "Authentication failed", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
     MISSING_TOKEN("AUTH_4005", "No authentication token found", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
     INVALID_JWT_CLAIMS("AUTH_4006", "Invalid JWT claims", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
     TOKEN_EXPIRED("AUTH_4007", "Authentication token has expired", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
+    CODE_ALREADY_USED("AUTH_4008", "Code already used", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
+    INVALID_CODE("AUTH_4009", "Invalid code", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
+   
 
     // General System Errors (5000-5999)
     INTERNAL_ERROR("SYS_5001", "Internal server error", ErrorSeverity.CRITICAL, ErrorCategory.SYSTEM),
@@ -68,13 +71,10 @@ public enum ErrorCode {
     ORGANIZATION_OPERATION_ERROR("ORG_7004", "Organization operation failed", ErrorSeverity.ERROR, ErrorCategory.OPERATION),
     ORGANIZATION_DELETE_ERROR("ORG_7005", "Organization deletion failed", ErrorSeverity.ERROR, ErrorCategory.OPERATION),
     ORGANIZATION_ALREADY_EXISTS("ORG_7006", "Organization already exists", ErrorSeverity.ERROR, ErrorCategory.VALIDATION),
-    ORGANIZATION_UPDATE_ERROR("ORG_7007", "Failed to update organization", ErrorSeverity.ERROR, ErrorCategory.OPERATION),
+    ORGANIZATION_UPDATE_ERROR("ORG_7007", "Failed to update organization", ErrorSeverity.ERROR, ErrorCategory.OPERATION);
 
-    // New errors
-    CODE_ALREADY_USED("AUTH_4008", "Code already used", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
-    INVALID_CODE("AUTH_4009", "Invalid code", ErrorSeverity.ERROR, ErrorCategory.SECURITY),
-    AUTHENTICATION_FAILED("AUTH_4010", "Authentication failed", ErrorSeverity.ERROR, ErrorCategory.SECURITY);
-
+  
+    
     private final String code;
     private final String defaultMessage;
     private final ErrorSeverity severity;
@@ -92,10 +92,6 @@ public enum ErrorCode {
         this.defaultMessage = null;
         this.severity = null;
         this.category = null;
-    }
-
-    public String getCode() {
-        return code;
     }
 }
 

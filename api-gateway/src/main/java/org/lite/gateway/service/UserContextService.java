@@ -23,7 +23,7 @@ public class UserContextService {
     /**
      * Get current user from request headers (for controller endpoints)
      */
-    public Mono<String> getCurrentUser(ServerWebExchange exchange) {
+    public Mono<String> getCurrentUsername(ServerWebExchange exchange) {
         return ReactiveSecurityContextHolder.getContext()
             .flatMap(context -> {
                 String userToken = exchange.getRequest()
@@ -48,7 +48,7 @@ public class UserContextService {
                     .map(jwt -> {
                         String username = isKeycloakToken ? 
                             jwt.getClaimAsString("preferred_username") : 
-                            jwt.getClaimAsString("username");
+                            jwt.getClaimAsString("sub");
                         log.debug("Decoded token claims: {}", jwt.getClaims());
                         log.debug("Username from token: {}", username);
                         if (username == null || username.trim().isEmpty()) {
@@ -66,7 +66,7 @@ public class UserContextService {
     /**
      * Get current user from security context (for internal service calls)
      */
-    public Mono<String> getCurrentUser() {
+    public Mono<String> getCurrentUsername() {
         return ReactiveSecurityContextHolder.getContext()
             .map(context -> {
                 if (context.getAuthentication() == null) {
