@@ -191,24 +191,6 @@
   color: white;
 }
 
-.permission-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.0rem;
-}
-
-.permission-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 0.35rem 0.85rem;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: white;
-  letter-spacing: 0.5px;
-}
-
 .routes-header {
   display: flex;
   justify-content: flex-end;
@@ -309,34 +291,4 @@
 
 .team-info .text-muted {
   color: #6c757d;
-}
-
-.permission-badge {
-  display: inline-block;
-  padding: 0.25rem 0.5rem;
-  margin: 0.125rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: white;
-  text-transform: uppercase;
-}
-
-.route-breadcrumb-container {
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid #eee;
-  background-color: #f8f9fa;
-}
-
-.route-breadcrumb-container .breadcrumb {
-  background-color: transparent;
-  font-size: 0.9rem;
-}
-
-.route-breadcrumb-container .breadcrumb-item + .breadcrumb-item::before {
-  color: #6c757d;
-}
-
-.route-breadcrumb-container .breadcrumb-item.active {
-  color: #495057;
 } 

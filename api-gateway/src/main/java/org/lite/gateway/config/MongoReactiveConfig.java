@@ -16,8 +16,6 @@ import org.springframework.transaction.ReactiveTransactionManager;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
-import org.springframework.data.mapping.model.FieldNamingStrategy;
-import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.mongodb.ReactiveMongoDatabaseFactory;
 import org.springframework.data.mongodb.ReactiveMongoTransactionManager;
 
@@ -75,20 +73,4 @@ public class MongoReactiveConfig extends AbstractReactiveMongoConfiguration {
     public TransactionalOperator transactionalOperator(ReactiveTransactionManager transactionManager) {
         return TransactionalOperator.create(transactionManager);
     }
-
-//    @Bean
-//    public MongoMappingContext mongoMappingContext(MongoCustomConversions conversions) {
-//        MongoMappingContext mappingContext = new MongoMappingContext();
-//        mappingContext.setSimpleTypeHolder(conversions.getSimpleTypeHolder());
-//        mappingContext.setFieldNamingStrategy(new DotReplacementFieldNamingStrategy());
-//        return mappingContext;
-//    }
-//
-//    private static class DotReplacementFieldNamingStrategy implements FieldNamingStrategy {
-//        @Override
-//        public @NonNull String getFieldName(@NonNull PersistentProperty<?> property) {
-//            String name = property.getName();
-//            return name.replace(".", "_");
-//        }
-//    }
 }

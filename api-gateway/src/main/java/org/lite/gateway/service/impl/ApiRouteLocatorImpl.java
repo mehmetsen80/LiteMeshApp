@@ -54,7 +54,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     @Override
     public Flux<Route> getRoutes() {
         RouteLocatorBuilder.Builder routesBuilder = routeLocatorBuilder.routes();
-        return apiRouteService.getAllRoutes()
+        return apiRouteService.getAllRoutes(null)
                 .map(apiRoute -> routesBuilder.route(String.valueOf(apiRoute.getRouteIdentifier()),
                         predicateSpec -> setPredicateSpec(apiRoute, predicateSpec)))
                 .collectList()

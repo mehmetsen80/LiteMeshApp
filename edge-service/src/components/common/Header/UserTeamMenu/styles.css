@@ -38,35 +38,35 @@
   border-radius: 14px;
 }
 
-.team-item {
+.team-menu-item {
   display: flex;
   width: 100%;
 }
 
-.team-info {
+.team-menu-info {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
   width: 100%;
 }
 
-.team-header {
+.team-menu-header {
   display: flex;
   flex-direction: column;
 }
 
-.team-item-name {
+.team-menu-item-name {
   font-weight: 500;
   color: var(--text-color);
   font-size: 0.95rem;
 }
 
-.team-item-org {
+.team-menu-item-org {
   font-size: 0.8rem;
   color: #6c757d;
 }
 
-.team-badges {
+.team-menu-badges {
   display: flex;
   gap: 4px;
   align-items: center;
@@ -101,8 +101,8 @@
   color: var(--text-light);
 }
 
-.dropdown-item.active .team-item-name,
-.dropdown-item.active .team-item-org,
+.dropdown-item.active .team-menu-item-name,
+.dropdown-item.active .team-menu-item-org,
 .dropdown-item.active .user-name,
 .dropdown-item.active .user-email {
   color: var(--text-light) !important;
@@ -145,7 +145,7 @@
 }
 
 /* Dropdown specific styles */
-.team-badges .routes-badge {
+.team-menu-badges .routes-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
@@ -406,5 +406,15 @@
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.85rem;
     margin-top: 0.25rem;
+}
+
+/* Add specific styles for the AuthBadge within the user info section */
+.user-info-section .auth-type .badge {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.5rem;
+  background-color: var(--primary-color) !important;
+  color: white !important;
+  display: inline-flex;
+  align-items: center;
 }
 

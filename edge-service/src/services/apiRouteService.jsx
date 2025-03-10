@@ -1,9 +1,13 @@
 import axiosInstance from './axiosInstance';
 
 export const apiRouteService = {
-  async getAllRoutes() {
+  async getAllRoutes(teamId) {
     try {
-      const response = await axiosInstance.get('/api/routes');
+      const url = teamId 
+        ? `/api/routes?teamId=${teamId}`
+        : '/api/routes';
+        
+      const response = await axiosInstance.get(url);
       return response.data;
     } catch (error) {
       console.error('Error fetching routes:', error);
@@ -33,7 +37,9 @@ export const apiRouteService = {
 
   async updateRoute(routeIdentifier, routeData) {
     try {
-      const response = await axiosInstance.put(`/api/routes/${routeIdentifier}`, routeData);
+      // Ensure we're sending a clean, mutable copy of the data
+      const cleanData = JSON.parse(JSON.stringify(routeData));
+      const response = await axiosInstance.put(`/api/routes/${routeIdentifier}`, cleanData);
       return response.data;
     } catch (error) {
       console.error('Error updating route:', error);
@@ -41,9 +47,10 @@ export const apiRouteService = {
     }
   },
 
-  async deleteRoute(routeIdentifier, teamId) {
+  async deleteRoute(routeIdentifier) {
     try {
-      await axiosInstance.delete(`/api/routes/${routeIdentifier}?teamId=${teamId}`);
+      console.log('deleting route', routeIdentifier);
+      await axiosInstance.delete(`/api/routes/${routeIdentifier}`);
       return true;
     } catch (error) {
       console.error('Error deleting route:', error);
@@ -72,6 +79,7 @@ export const apiRouteService = {
   },
 
   getVersionMetadata: async (routeIdentifier) => {
+    console.log('getting version metadata', routeIdentifier);
     const response = await axiosInstance.get(`/api/routes/identifier/${routeIdentifier}/metadata`);
     return response.data;
   },

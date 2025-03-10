@@ -46,9 +46,9 @@ public class ApiRoutesController {
     private final TeamRouteRepository teamRouteRepository;
 
     @GetMapping
-    public Flux<ApiRoute> getAllRoutes() {
-        log.info("Fetching all API routes");
-        return apiRouteService.getAllRoutes();
+    public Flux<ApiRoute> getAllRoutes(@RequestParam(required = false) String teamId) {
+        log.info("Fetching API routes with teamId: {}", teamId);
+        return apiRouteService.getAllRoutes(teamId);
     }
 
     @GetMapping("/{id}")
@@ -121,7 +121,7 @@ public class ApiRoutesController {
 
     private Mono<ResponseEntity<?>> createRouteAndAssignTeam(ApiRoute route, User user) {
         return transactionalOperator.execute(tx -> 
-            apiRouteService.createRoute(route)
+            apiRouteService.createRoute(route, user)
                 .flatMap(createdRoute -> {
                     if (route.getTeamId() != null) {
                         TeamRoute teamRoute = TeamRoute.builder()
@@ -151,9 +151,10 @@ public class ApiRoutesController {
     @PutMapping("/{id}")
     public Mono<ResponseEntity<?>> updateRoute(
             @PathVariable String id,
-            @Valid @RequestBody ApiRoute route) {
+            @Valid @RequestBody ApiRoute route,
+            ServerWebExchange exchange) {
         
-        // Validate required fields
+        // Validate required fields first
         if (route.getRouteIdentifier() == null || route.getRouteIdentifier().trim().isEmpty()) {
             return Mono.just(ResponseEntity.badRequest()
                 .body(ErrorResponse.fromErrorCode(
@@ -182,7 +183,10 @@ public class ApiRoutesController {
         }
 
         route.setId(id);
-        return apiRouteService.updateRoute(route)
+        
+        // Get username first, then chain the update operation
+        return userContextService.getCurrentUsername(exchange)
+            .flatMap(username -> apiRouteService.updateRoute(route, username))
             .<ResponseEntity<?>>map(r -> ResponseEntity.ok().body(r))
             .onErrorResume(DuplicateRouteException.class, e -> 
                 Mono.just(ResponseEntity
@@ -198,11 +202,10 @@ public class ApiRoutesController {
     @DeleteMapping("/{id}")
     public Mono<ResponseEntity<Void>> deleteRoute(
         @PathVariable String id,
-        @RequestParam String teamId,
         ServerWebExchange exchange
     ) {
         return userContextService.getCurrentUsername(exchange)
-            .flatMap(username -> apiRouteService.deleteRoute(id, teamId, username))
+            .flatMap(username -> apiRouteService.deleteRoute(id, username))
             .then(Mono.just(ResponseEntity.noContent().build()));
     }
 
@@ -268,9 +271,13 @@ public class ApiRoutesController {
     @PostMapping("/identifier/{routeIdentifier}/rollback/{version}")
     public Mono<ResponseEntity<ApiRoute>> rollbackToVersion(
             @PathVariable String routeIdentifier,
-            @PathVariable Integer version) {
-        log.info("Rolling back route {} to version {}", routeIdentifier, version);
-        return apiRouteService.rollbackToVersion(routeIdentifier, version)
+            @PathVariable int version,
+            ServerWebExchange exchange) {
+        
+        return userContextService.getCurrentUsername(exchange)
+            .flatMap(username -> 
+                apiRouteService.rollbackToVersion(routeIdentifier, version, username)
+            )
             .map(ResponseEntity::ok)
             .defaultIfEmpty(ResponseEntity.notFound().build());
     }
@@ -301,5 +308,11 @@ public class ApiRoutesController {
         
         return apiRouteService.checkRouteExistence(request)
             .map(ResponseEntity::ok);
+    }
+
+    @GetMapping("/refresh/routes")
+    public Mono<ResponseEntity<String>> refreshRoutes() {
+        return apiRouteService.refreshRoutes()
+            .map(result -> ResponseEntity.ok(result));
     }
 }

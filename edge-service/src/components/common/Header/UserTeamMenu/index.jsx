@@ -99,13 +99,13 @@ const UserTeamMenu = () => {
                   onClick={() => handleTeamSwitch(team.id)}
                   active={currentTeam?.id === team.id}
                 >
-                  <div className="team-item">
-                    <div className="team-info">
-                      <div className="team-header">
-                        <span className="team-item-name">{team.name}</span>
-                        <span className="team-item-org">{team.organization?.name || 'No Organization'}</span>
+                  <div className="team-menu-item">
+                    <div className="team-menu-info">
+                      <div className="team-menu-header">
+                        <span className="team-menu-item-name">{team.name}</span>
+                        <span className="team-menu-item-org">{team.organization?.name || 'No Organization'}</span>
                       </div>
-                      <div className="team-badges">
+                      <div className="team-menu-badges">
                         <Tippy
                           content={renderRoutesList(team.routes)}
                           interactive={true}
@@ -135,11 +135,11 @@ const UserTeamMenu = () => {
           <Dropdown.Header>User Information</Dropdown.Header>
           <div className="user-info-section">
             <div className="auth-type">
-              <AuthBadge authType={user?.authType} />
+              <AuthBadge authType={user?.authType || 'oauth2'} />
             </div>
             <div className="user-name">
               {user?.username}
-              <RoleBadge user={user} />
+              <RoleBadge user={user || { role: user?.authorities?.[0] }} />
             </div>
             <div className="user-email">{user?.email}</div>
           </div>

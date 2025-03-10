@@ -20,7 +20,7 @@ export const TeamProvider = ({ children }) => {
   const [userTeams, setUserTeams] = useState([]);
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { user, isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const fetchUserTeams = useCallback(async () => {
     if (!isAuthenticated) {
@@ -31,17 +31,24 @@ export const TeamProvider = ({ children }) => {
     }
 
     try {
+      console.log('Fetching user teams...'); // Debug log
       const response = await teamService.getUserTeams();
-      setUserTeams(response.data || []);
+      const teams = response.data || [];
+      setUserTeams(teams);
       
-      // Restore logic to set the current team based on savedTeamId
-      const savedTeamId = localStorage.getItem('currentTeamId');
-      if (savedTeamId && response.data.some(team => team.id === savedTeamId)) {
-        const team = response.data.find(t => t.id === savedTeamId);
-        setCurrentTeam(team);
-      } else if (response.data.length > 0) {
-        setCurrentTeam(response.data[0]);
-        localStorage.setItem('currentTeamId', response.data[0].id);
+      if (teams.length > 0) {
+        const savedTeamId = localStorage.getItem('currentTeamId');
+        let teamToSet;
+
+        if (savedTeamId && teams.some(team => team.id === savedTeamId)) {
+          teamToSet = teams.find(t => t.id === savedTeamId);
+        } else {
+          teamToSet = teams[0];
+          localStorage.setItem('currentTeamId', teams[0].id);
+        }
+
+        console.log('Setting current team to:', teamToSet); // Debug log
+        setCurrentTeam(teamToSet);
       }
     } catch (error) {
       console.error('Failed to fetch user teams:', error);
@@ -50,7 +57,25 @@ export const TeamProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    console.log('Auth state changed:', isAuthenticated); // Debug log
+    if (isAuthenticated) {
+      fetchUserTeams();
+    }
+  }, [isAuthenticated, fetchUserTeams]);
+
+  // Add a debug effect to monitor state changes
+  useEffect(() => {
+    console.log('Current team state:', currentTeam);
+    console.log('User teams state:', userTeams);
+  }, [currentTeam, userTeams]);
+
   const fetchAllTeams = useCallback(async () => {
+    // Add check for login page
+    if (window.location.pathname === '/login') {
+      return;
+    }
+
     try {
       const response = await teamService.getAllTeams();
       if (response.error) {
@@ -64,9 +89,8 @@ export const TeamProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    fetchUserTeams();
     fetchAllTeams();
-  }, [fetchUserTeams, fetchAllTeams]);
+  }, [fetchAllTeams]);
 
   const switchTeam = useCallback((teamId) => {
     const team = userTeams.find(t => t.id === teamId);

@@ -13,7 +13,6 @@ import ProtectedRoute from '../components/common/ProtectedRoute';
 import Organizations from '../pages/Organizations';
 import ApiRoutes from '../pages/ApiRoutes';
 import ViewRoute from '../pages/ApiRoutes/ViewRoute';
-import EditRoute from '../pages/ApiRoutes/EditRoute';
 import Home from '../pages/Home';
 import ViewToken from '../pages/ViewToken';
 import NonProdGuard from '../components/guards/NonProdGuard';
@@ -60,7 +59,6 @@ const AppRoutes = () => {
         />
         <Route path="/api-routes" element={<ApiRoutes />} />
         <Route path="/api-routes/:routeId" element={<ViewRoute />} />
-        <Route path="/api-routes/:routeId/edit" element={<EditRoute />} />
         <Route 
           path="/view-token" 
           element={

@@ -15,27 +15,6 @@ import { HiPlus, HiShieldCheck, HiClock, HiRefresh, HiLightningBolt, HiTrash } f
 import ConfirmationModal from '../../common/ConfirmationModal';
 import { isSuperAdmin, hasAdminAccess } from '../../../utils/roleUtils';
 
-const PERMISSION_COLORS = {
-  VIEW: '#2196f3',  // Blue
-  USE: '#ff9800',   // Orange
-  MANAGE: '#4caf50' // Green
-};
-
-const PERMISSION_INFO = {
-  VIEW: {
-    description: "Can view API endpoints and documentation",
-    color: "#2196f3" // Blue
-  },
-  USE: {
-    description: "Can make API calls to these endpoints",
-    color: "#ff9800" // Orange
-  },
-  MANAGE: {
-    description: "Can configure and update these endpoints",
-    color: "#4caf50" // Green
-  }
-};
-
 const FILTER_INFO = {
   RedisRateLimiter: {
     description: "Limits the number of requests using Redis as a rate limiter",
@@ -65,65 +44,53 @@ export const ApiRoutesDisplay = () => {
   const navigate = useNavigate();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [routeToDelete, setRouteToDelete] = useState(null);
+  const [isFetching, setIsFetching] = useState(false);
 
   const canManageRoutes = (isSuperAdmin(user) || hasAdminAccess(user, currentTeam));
 
-  const getFilterIcon = (filterName) => {
-    switch (filterName) {
-      case 'CircuitBreaker':
-        return <HiShieldCheck />;
-      case 'TimeLimiter':
-        return <HiClock />;
-      case 'Retry':
-        return <HiRefresh />;
-      case 'RedisRateLimiter':
-        return <HiLightningBolt />;
-      default:
-        return null;
+  const fetchRoutes = async () => {
+    if (isFetching) {
+      console.log('Fetch already in progress, skipping...');
+      return;
+    }
+
+    try {
+      setIsFetching(true);
+      setLoading(true);
+      let response;
+      
+      if (isSuperAdmin(user) && !currentTeam) {
+        console.log('Fetching all routes');
+        // SUPER_ADMIN without team selected - fetch all routes
+        response = await apiRouteService.getAllRoutes();
+      } else if (currentTeam?.id) {
+        // Team selected - fetch team-specific routes
+        console.log('currentTeam', currentTeam);
+        response = await apiRouteService.getAllRoutes(currentTeam.id);
+      } else {
+        setRoutes([]);
+        return;
+      }
+     
+      setRoutes(response || []);
+    } catch (err) {
+      console.error('Error loading routes:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setIsFetching(false);
     }
   };
 
   useEffect(() => {
-    if (!teamLoading) {
+    if (!teamLoading && !isFetching) {
       if (!currentTeam && !isSuperAdmin(user)) {
         navigate('/dashboard');
         return;
       }
       fetchRoutes();
     }
-  }, [currentTeam, teamLoading, user]);
-
-  const fetchRoutes = async () => {
-    try {
-      setLoading(true);
-      let response;
-      
-      if (isSuperAdmin(user) && !currentTeam) {
-        // SUPER_ADMIN without team selected - fetch all team routes
-        response = await teamService.getAllTeamRoutes();
-      } else if (currentTeam?.id) {
-        // Team selected - fetch team-specific routes
-        response = await teamService.getTeamRoutes(currentTeam.id);
-      } else {
-        setRoutes([]);
-        return;
-      }
-
-      // Handle both response formats
-      if (response.success) {
-        setRoutes(response.data || []);
-      } else if (response.error) {
-        throw new Error(response.error);
-      } else {
-        setRoutes([]);
-      }
-    } catch (err) {
-      console.error('Error loading routes:', err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [teamLoading, currentTeam, user]);
 
   const handleCreateRoute = async (routeData) => {
     try {      
@@ -154,13 +121,15 @@ export const ApiRoutesDisplay = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!currentTeam?.id) {
+    // Skip team check for SUPER_ADMIN without team selected
+    if (!isSuperAdmin(user) && !currentTeam?.id) {
       showErrorToast('No team selected');
       return;
     }
 
     try {
-      await apiRouteService.deleteRoute(routeToDelete, currentTeam.id);
+      console.log('deleting route', routeToDelete, currentTeam?.id);
+      await apiRouteService.deleteRoute(routeToDelete, currentTeam?.id);
       showSuccessToast('Route deleted successfully');
       fetchRoutes();
     } catch (err) {
@@ -231,23 +200,26 @@ export const ApiRoutesDisplay = () => {
     <div className="routes-container">
       <Card className="mb-4 mx-1 p-0">
         <Card.Header className="d-flex justify-content-between align-items-center bg-light">
-          <Breadcrumb className="bg-light mb-0">
-            <Breadcrumb.Item 
-              linkAs={Link} 
-              linkProps={{ to: '/organizations' }}
-            >
-              {currentTeam?.organization?.name || 'Organization'}
-            </Breadcrumb.Item>
-            <Breadcrumb.Item 
-              linkAs={Link} 
-              linkProps={{ to: '/teams' }}
-            >
-              {currentTeam?.name || 'All Teams'}
-            </Breadcrumb.Item>
-            <Breadcrumb.Item active>
-              API Routes
-            </Breadcrumb.Item>
-          </Breadcrumb>
+           
+              <Breadcrumb className="bg-light mb-0">
+                <Breadcrumb.Item 
+                  linkAs={Link} 
+                  linkProps={{ to: '/organizations' }}
+                >
+                  {currentTeam?.organization?.name || 'Organization'}
+                </Breadcrumb.Item>
+                <Breadcrumb.Item 
+                  linkAs={Link} 
+                  linkProps={{ to: '/teams' }}
+                >
+                  {currentTeam?.name || 'All Teams'}
+                </Breadcrumb.Item>
+                <Breadcrumb.Item active>
+                  API Routes
+                </Breadcrumb.Item>
+            </Breadcrumb>
+           
+          
           {canManageRoutes && (
             isSuperAdmin(user) ? (
               <Button 
@@ -323,26 +295,6 @@ export const ApiRoutesDisplay = () => {
                 </div>
               </div>
 
-              <div className="route-breadcrumb-container">
-                <Breadcrumb className="mb-0 p-0">
-                  <Breadcrumb.Item
-                    linkAs={Link}
-                    linkProps={{ to: `/organizations/${route.team?.organizationId}` }}
-                  >
-                    {route.team?.organizationName || 'Organization'}
-                  </Breadcrumb.Item>
-                  <Breadcrumb.Item
-                    linkAs={Link}
-                    linkProps={{ to: `/teams/${route.team?.teamId}` }}
-                  >
-                    {route.team?.teamName || 'Team'}
-                  </Breadcrumb.Item>
-                  <Breadcrumb.Item active>
-                    {route.routeIdentifier}
-                  </Breadcrumb.Item>
-                </Breadcrumb>
-              </div>
-
               <div className="route-details" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '0', width: '100%' }}>
                 {/* First Row: PATH and VERSION */}
                 <div className="detail-row" style={{ 
@@ -403,27 +355,6 @@ export const ApiRoutesDisplay = () => {
                 </div>
               </div>
 
-              <div className="permission-tags">
-                      {route.permissions.map((permission, index) => (
-                        <OverlayTrigger
-                          key={index}
-                          placement="top"
-                          overlay={
-                            <Tooltip id={`permission-${permission}-${index}`}>
-                              {PERMISSION_INFO[permission]?.description || permission}
-                            </Tooltip>
-                          }
-                        >
-                          <span 
-                            className={`permission-badge ${permission.toLowerCase()}`}
-                            style={{ backgroundColor: PERMISSION_INFO[permission]?.color }}
-                          >
-                            {permission}
-                          </span>
-                        </OverlayTrigger>
-                      ))}
-                    </div>
-
               <div className="route-filters">
                 <div className="filters-header">
                   <span>Resiliency Filters</span>
@@ -454,7 +385,7 @@ export const ApiRoutesDisplay = () => {
               </div>
 
               <div className="route-actions">
-                {(canManageRoutes && route.permissions.includes('MANAGE')) && (
+                {canManageRoutes && (
                   <Button 
                     variant="danger"
                     size="sm"

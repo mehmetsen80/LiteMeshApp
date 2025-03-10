@@ -324,7 +324,7 @@ public class TeamServiceImpl implements TeamService {
         return Mono.zip(
             apiRouteRepository.findById(teamRoute.getRouteId())
                 .defaultIfEmpty(new ApiRoute()),
-            userRepository.findById(teamRoute.getAssignedBy())
+            userRepository.findByUsername(teamRoute.getAssignedBy())
                 .map(User::getUsername)
                 .defaultIfEmpty("Unknown User"),
             teamRepository.findById(teamRoute.getTeamId())
@@ -394,9 +394,11 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Mono<TeamDTO> removeTeamRoute(String teamId, String routeId) {
-        return removeRouteFromTeam(teamId, routeId)
-            .then(teamRepository.findById(teamId))
-            .flatMap(this::convertToDTO);
+        return transactionalOperator.transactional(
+            removeRouteFromTeam(teamId, routeId)
+                .then(teamRepository.findById(teamId))
+                .flatMap(this::convertToDTO)
+        );
     }
 
     @Override

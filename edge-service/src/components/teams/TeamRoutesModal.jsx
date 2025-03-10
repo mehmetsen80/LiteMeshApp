@@ -100,14 +100,14 @@ const TeamRoutesModal = ({ show, onHide, team, onAddRoute, onRemoveRoute, loadin
             label: `${route.path} (${route.routeIdentifier}) - v${route.version}`
         }));
 
-    const confirmRemoveRoute = (route) => {
+    const confirmRemoveRoute = (teamRoute) => {
         setConfirmModal({
             show: true,
             title: 'Remove Route',
-            message: `Are you sure you want to remove route "${route.path}" (${route.routeIdentifier}) from team "${team.name}"?`,
+            message: `Are you sure you want to remove route "${teamRoute.path}" (${teamRoute.routeIdentifier}) from team "${teamRoute.team.teamName}"?`,
             onConfirm: async () => {
                 try {
-                    await onRemoveRoute(route.id);
+                    await onRemoveRoute(teamRoute.routeId);
                     await fetchRoutes(); // Refresh the routes list
                     setConfirmModal(prev => ({ ...prev, show: false }));
                 } catch (err) {

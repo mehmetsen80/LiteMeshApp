@@ -37,8 +37,14 @@ public class ApiRoute{
         healthCheck.setAlertRules(createDefaultAlertRules());
         this.healthCheck = healthCheck;
         
-        // Initialize empty collections
-        //this.permissions = new HashSet<>();
+        // Don't initialize filters here anymore
+        this.filters = new ArrayList<>();
+    }
+
+    // Add setter for routeIdentifier that updates filters
+    public void setRouteIdentifier(String routeIdentifier) {
+        this.routeIdentifier = routeIdentifier;
+        // Update filters with new routeIdentifier
         this.filters = createDefaultFilters();
     }
 
@@ -100,6 +106,7 @@ public class ApiRoute{
         // Circuit Breaker
         FilterConfig circuitBreaker = new FilterConfig();
         circuitBreaker.setName("CircuitBreaker");
+        // Now routeIdentifier will be available
         circuitBreaker.setArgs(Map.of(
             "name", this.routeIdentifier + "CircuitBreaker",
             "fallbackUri", "/fallback/" + this.routeIdentifier,
