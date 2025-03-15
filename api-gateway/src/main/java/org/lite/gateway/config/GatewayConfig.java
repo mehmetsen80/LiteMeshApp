@@ -1,5 +1,6 @@
 package org.lite.gateway.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.lite.gateway.service.MetricService;
 import org.lite.gateway.service.ApiRouteService;
@@ -21,11 +22,12 @@ public class GatewayConfig implements WebFluxConfigurer {
     @Bean
     public RouteLocator routeLocator(RouteLocatorBuilder routeLocationBuilder,
                                      ApiRouteService apiRouteService,
-                                    ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory,
-                                    RedisTemplate<String, String> redisTemplate,
-                                    MetricService metricService) {
+                                     ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory,
+                                     RedisTemplate<String, String> redisTemplate,
+                                     MetricService metricService,
+                                     ObjectMapper objectMapper) {
         return new ApiRouteLocatorImpl(routeLocationBuilder,
-                apiRouteService, reactiveResilience4JCircuitBreakerFactory, redisTemplate, metricService);
+                apiRouteService, reactiveResilience4JCircuitBreakerFactory, redisTemplate, metricService, objectMapper);
     }
 
     @Bean

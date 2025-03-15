@@ -1,17 +1,56 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useTeam } from '../../../contexts/TeamContext';
 import statsService from '../../../services/dashboardService';
 import './styles.css';
 
+const DEFAULT_STATS = [
+  {
+    id: 'active-routes',
+    title: 'Active Routes',
+    value: '0',
+    icon: 'fa-route',
+    trend: { type: 'neutral', value: '0', period: 'since last week' }
+  },
+  {
+    id: 'response-time',
+    title: 'Avg Response Time',
+    value: '0ms',
+    icon: 'fa-clock',
+    trend: { type: 'neutral', value: '0ms', period: 'since last hour' }
+  },
+  {
+    id: 'requests-per-min',
+    title: 'Requests/min',
+    value: '0',
+    icon: 'fa-exchange-alt',
+    trend: { type: 'neutral', value: '0', period: 'since last minute' }
+  },
+  {
+    id: 'success-rate',
+    title: 'Success Rate',
+    value: '0%',
+    icon: 'fa-check-circle',
+    trend: { type: 'neutral', value: '0%', period: 'since last 5 min' }
+  }
+];
+
 const StatsSection = ({ refreshInterval = 30000 }) => {
-  const [stats, setStats] = useState([]);
+  const [stats, setStats] = useState(DEFAULT_STATS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { currentTeam } = useTeam();
 
   const fetchStats = async () => {
+    if (!currentTeam?.id) {
+      setStats(DEFAULT_STATS);
+      setLoading(false);
+      return;
+    }
+    
     try {
-      const response = await statsService.getStats();
+      const response = await statsService.getStats(currentTeam.id);
       setStats(response);
       setError(null);
     } catch (err) {
@@ -26,7 +65,7 @@ const StatsSection = ({ refreshInterval = 30000 }) => {
     fetchStats();
     const interval = setInterval(fetchStats, refreshInterval);
     return () => clearInterval(interval);
-  }, [refreshInterval]);
+  }, [refreshInterval, currentTeam?.id]);
 
   const getStatDescription = (stat) => {
     const descriptions = {

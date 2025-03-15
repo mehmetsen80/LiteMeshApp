@@ -35,6 +35,9 @@ build/
 /.idea/
 /logs/
 /.kube/mongodb/data/**
+/.kube/mongodb/data1/**
+/.kube/mongodb/data2/**
+/.kube/mongodb/data3/**
 /.kube/postgres/data/**
 /.kube/pgadmin/data/**
 /.kube/redis/data/**

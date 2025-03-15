@@ -181,7 +181,7 @@
 
 .main-content {
   padding: 20px;
-  background-color: white;
+  background-color: #f8f9fa;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   min-height: calc(100vh - 120px);
@@ -231,4 +231,24 @@
   grid-template-columns: 1fr;
   gap: 2rem;  /* Increase gap between charts */
   margin: 2rem 0;  /* Add margin above and below the charts section */
+}
+
+.no-team-alert {
+  max-width: 600px;
+  margin: 2rem auto;
+  text-align: center;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.no-team-alert .alert-heading {
+  color: #0c5460;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.no-team-alert p {
+  color: #0c5460;
+  font-size: 1.1rem;
+  margin-bottom: 0;
 }

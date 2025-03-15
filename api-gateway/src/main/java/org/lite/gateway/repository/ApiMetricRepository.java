@@ -10,8 +10,6 @@ import org.lite.gateway.dto.ServiceUsageAggregation;
 import org.lite.gateway.dto.TimeSeriesStats;
 import org.lite.gateway.dto.EndpointStats;
 import org.lite.gateway.dto.EndpointTimeSeriesStats;
-import org.lite.gateway.dto.EndpointErrorStats;
-import org.lite.gateway.dto.EndpointTrafficStats;
 import org.lite.gateway.dto.EndpointLatencyStats;
 import org.lite.gateway.entity.ApiMetric;
 import org.springframework.data.mongodb.repository.Query;
@@ -20,6 +18,7 @@ import org.springframework.data.mongodb.repository.Aggregation;
 
 import java.time.LocalDateTime;
 import java.time.Instant;
+import java.util.List;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -47,9 +46,40 @@ public interface ApiMetricRepository extends ReactiveMongoRepository<ApiMetric, 
 
     @Aggregation(pipeline = {
         "{ $match: { " +
-        "    timestamp: { $gte: ?0 }," +
-        "    responseTime: { $exists: true, $ne: null }" +
+        "    routeIdentifier: { $in: ?0 }, " +
+        "    timestamp: { $gte: ?1 } " +
         "} }",
+        "{ $group: { _id: null, avgDuration: { $avg: '$duration' } } }",
+        "{ $project: { _id: 0, avgDuration: 1 } }"
+    })
+    Mono<Double> getAverageResponseTime(List<String> routeIds, Instant cutoff);
+
+    @Aggregation(pipeline = {
+        "{ $match: { " +
+        "    routeIdentifier: { $in: ?0 }, " +
+        "    timestamp: { $gte: ?1 } " +
+        "} }",
+        "{ $group: { _id: null, count: { $sum: 1 } } }",
+        "{ $project: { _id: 0, requestsPerMinute: { $divide: ['$count', 5] } } }"
+    })
+    Mono<Double> getRequestsPerMinute(List<String> routeIds, Instant cutoff);
+
+    @Aggregation(pipeline = {
+        "{ $match: { " +
+        "    routeIdentifier: { $in: ?0 }, " +
+        "    timestamp: { $gte: ?1 } " +
+        "} }",
+        "{ $group: { " +
+        "    _id: null, " +
+        "    successCount: { $sum: { $cond: ['$success', 1, 0] } }, " +
+        "    total: { $sum: 1 } " +
+        "} }",
+        "{ $project: { _id: 0, successRate: { $divide: ['$successCount', '$total'] } } }"
+    })
+    Mono<Double> getSuccessRate(List<String> routeIds, Instant cutoff);
+
+    @Aggregation(pipeline = {
+        "{ $match: { timestamp: { $gte: ?0 } } }",
         "{ $group: { " +
         "    _id: null," +
         "    avgTime: { $avg: '$responseTime' }" +
@@ -58,10 +88,7 @@ public interface ApiMetricRepository extends ReactiveMongoRepository<ApiMetric, 
     Mono<Double> getAverageResponseTime(Instant cutoff);
 
     @Aggregation(pipeline = {
-        "{ $match: { " +
-        "    timestamp: { $gte: ?0 }," +
-        "    timestamp: { $exists: true, $ne: null }" +
-        "} }",
+        "{ $match: { timestamp: { $gte: ?0 }, 'statusCode': { $gte: 200, $lt: 300 } } }",
         "{ $group: { " +
         "    _id: null," +
         "    count: { $sum: 1 }," +
@@ -197,60 +224,8 @@ public interface ApiMetricRepository extends ReactiveMongoRepository<ApiMetric, 
 
     @Aggregation(pipeline = {
         "{ $match: { " +
-        "    timestamp: { $gte: ?0 }," +
-        "    statusCode: { $gte: 400 }" +
-        "} }",
-        "{ $group: { " +
-        "    _id: { " +
-        "      service: '$toService'," +
-        "      path: '$path'," +
-        "      method: '$method'," +
-        "      statusCode: '$statusCode'" +
-        "    }," +
-        "    count: { $sum: 1 }," +
-        "    avgResponseTime: { $avg: '$responseTime' }" +
-        "} }",
-        "{ $sort: { 'count': -1 } }"
-    })
-    Flux<EndpointErrorStats> getEndpointErrorStats(Instant cutoff);
-
-    @Aggregation(pipeline = {
-        "{ $match: { timestamp: { $gte: ?0 } } }",
-        "{ $group: { " +
-        "    _id: { " +
-        "      service: '$toService'," +
-        "      path: '$path'," +
-        "      method: '$method'," +
-        "      hour: { $dateTrunc: { date: '$timestamp', unit: 'hour' } }" +
-        "    }," +
-        "    requestCount: { $sum: 1 }," +
-        "    peakRps: { " +
-        "      $max: { " +
-        "        $divide: [" +
-        "          { $size: { " +
-        "            $filter: { " +
-        "              input: '$timestamp'," +
-        "              as: 'ts'," +
-        "              cond: { " +
-        "                $and: [" +
-        "                  { $gte: ['$$ts', { $subtract: ['$timestamp', 1000] }] }," +
-        "                  { $lt: ['$$ts', { $add: ['$timestamp', 1000] }] }" +
-        "                ]" +
-        "              }" +
-        "            }" +
-        "          } }," +
-        "          2" +
-        "        ]" +
-        "      }" +
-        "    }" +
-        "} }",
-        "{ $sort: { '_id.hour': 1 } }"
-    })
-    Flux<EndpointTrafficStats> getEndpointTrafficStats(Instant cutoff);
-
-    @Aggregation(pipeline = {
-        "{ $match: { " +
-        "    timestamp: { $gte: ?0 }," +
+        "    routeIdentifier: { $in: ?0 }, " +
+        "    timestamp: { $gte: ?1 }, " +
         "    duration: { $exists: true, $ne: null }" +
         "} }",
         "{ $group: { " +
@@ -281,7 +256,7 @@ public interface ApiMetricRepository extends ReactiveMongoRepository<ApiMetric, 
         "} }",
         "{ $sort: { 'p95': -1 } }"
     })
-    Flux<EndpointLatencyStats> getEndpointLatencyStats(Instant cutoff);
+    Flux<EndpointLatencyStats> getEndpointLatencyStats(List<String> routeIds, Instant cutoff);
 
     @Aggregation(pipeline = {
         "{ $match: { timestamp: { $gte: ?0 } } }",
@@ -353,11 +328,12 @@ public interface ApiMetricRepository extends ReactiveMongoRepository<ApiMetric, 
     Flux<ApiMetric> findByTimestampAfter(Instant cutoff);
 
     @Aggregation(pipeline = {
-        "{ $group: { _id: '$toService', requestCount: { $sum: 1 } } }",
-        "{ $unionWith: { coll: 'apiRoutes', pipeline: [{ $project: { _id: '$serviceId' } }] } }",
-        "{ $group: { _id: '$_id', requestCount: { $sum: { $ifNull: ['$requestCount', 0] } } } }",
-        "{ $match: { _id: { $ne: null } } }"
+        "{ $match: { routeIdentifier: { $in: ?0 } } }",
+        "{ $group: { _id: '$routeIdentifier', requestCount: { $sum: 1 } } }"
     })
-    Flux<ServiceUsageAggregation> getServiceUsageStats();
+    Flux<ServiceUsageAggregation> getServiceUsageStats(List<String> routeIdentifiers);
+
+    @Query(value = "{ 'routeIdentifier': { $in: ?0 }, 'timestamp': { $gte: ?1 } }", count = true)
+    Mono<Long> countMetrics(List<String> routeIds, Instant cutoff);
 }
 

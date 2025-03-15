@@ -7,7 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import AppRoutes from './routes/AppRoutes';
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import ViewToken from './pages/ViewToken';
+import { TeamProvider } from './contexts/TeamContext';
+import { EnvironmentProvider } from './contexts/EnvironmentContext';
 
 function RouteLogger() {
   const location = useLocation();
@@ -21,19 +22,23 @@ function RouteLogger() {
 
 function App() {
   return (
-    <Router>
-      <div>
-        <RouteLogger />
-        <AuthProvider>
-          <div style={{ display: 'none' }}>
-            Current route: {window.location.pathname}
-            Search: {window.location.search}
-          </div>
-          <AppRoutes />
-          <ToastContainer />
-        </AuthProvider>
-      </div>
-    </Router>
+    <EnvironmentProvider>
+      <Router>
+        <div>
+          <RouteLogger />
+          <AuthProvider>
+            <TeamProvider>
+              <div style={{ display: 'none' }}>
+                Current route: {window.location.pathname}
+                Search: {window.location.search}
+              </div>
+              <AppRoutes />
+              <ToastContainer />
+            </TeamProvider>
+          </AuthProvider>
+        </div>
+      </Router>
+    </EnvironmentProvider>
   );
 }
 

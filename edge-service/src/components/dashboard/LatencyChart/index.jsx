@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Form, Alert, Row, Col } from 'react-bootstrap';
 import { Line } from 'react-chartjs-2';
 import {
@@ -13,6 +13,7 @@ import {
   defaults
 } from 'chart.js';
 import statsService from '../../../services/dashboardService';
+import { useTeam } from '../../../contexts/TeamContext';
 import './styles.css';
 
 // Register ChartJS components
@@ -43,38 +44,57 @@ const TIME_RANGES = {
   '90d': 'Last 90 Days'
 };
 
+const DEFAULT_LATENCY_DATA = [
+  {
+    id: { method: 'GET', path: '/api/*', service: 'all' },
+    p50: 0,
+    p75: 0,
+    p90: 0,
+    p95: 0,
+    p99: 0
+  }
+];
+
 const LatencyChart = () => {
-  const [latencyStats, setLatencyStats] = useState([]);
-  const [selectedTimeRange, setSelectedTimeRange] = useState('30d');
-  const [selectedService, setSelectedService] = useState('all');
-  const [services, setServices] = useState(['all']);
-  const [loading, setLoading] = useState(true);
+  const [latencyData, setLatencyData] = useState(DEFAULT_LATENCY_DATA);
+  const [loading, setLoading] = useState(false); // Start with false to show chart immediately
   const [error, setError] = useState(null);
+  const [timeRange, setTimeRange] = useState('30d');
+  const { currentTeam } = useTeam();
+
+  const fetchLatencyStats = useCallback(async () => {
+    if (!currentTeam?.id) {
+      setLatencyData(DEFAULT_LATENCY_DATA);
+      return;
+    }
+    
+    try {
+      setLoading(true);
+      const data = await statsService.getLatencyStats(currentTeam.id, timeRange);
+      setLatencyData(data.length > 0 ? data : DEFAULT_LATENCY_DATA);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load latency statistics');
+      console.error('Error fetching latency stats:', err);
+      setLatencyData(DEFAULT_LATENCY_DATA);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentTeam?.id, timeRange]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const data = await statsService.getLatencyStats(selectedTimeRange);
-        setLatencyStats(data);
-        setError(null);
-      } catch (err) {
-        setError('Failed to load latency statistics');
-        console.error('Error loading latency stats:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [selectedTimeRange]); // Add selectedTimeRange as dependency
+    fetchLatencyStats();
+    const intervalId = setInterval(fetchLatencyStats, 5 * 60 * 1000);
+    return () => clearInterval(intervalId);
+  }, [fetchLatencyStats]);
 
   // Get unique services
-  const uniqueServices = ['all', ...new Set(latencyStats.map(stat => stat.id.service))];
+  const uniqueServices = ['all', ...new Set(latencyData.map(stat => stat.id.service))];
 
   // Filter stats by selected service
-  const filteredStats = selectedService === 'all' 
-    ? latencyStats 
-    : latencyStats.filter(stat => stat.id.service === selectedService);
+  const filteredStats = 'all' === 'all' 
+    ? latencyData 
+    : latencyData.filter(stat => stat.id.service === 'all');
 
   // Prepare data for Chart.js
   const chartData = {
@@ -212,12 +232,15 @@ const LatencyChart = () => {
       <Card.Header>
         <Row className="align-items-center">
           <Col>
-            <h3 className="chart-title">API Latency Distribution</h3>
+            <h3 className="chart-title">
+              API Latency Distribution
+              {loading && <small className="text-muted ms-2">(Updating...)</small>}
+            </h3>
           </Col>
           <Col xs="auto">
             <Form.Select 
-              value={selectedTimeRange}
-              onChange={e => setSelectedTimeRange(e.target.value)}
+              value={timeRange}
+              onChange={e => setTimeRange(e.target.value)}
               className="me-2"
             >
               {Object.entries(TIME_RANGES).map(([value, label]) => (
@@ -227,26 +250,18 @@ const LatencyChart = () => {
               ))}
             </Form.Select>
           </Col>
-          <Col xs="auto">
-            <Form.Select 
-              value={selectedService}
-              onChange={e => setSelectedService(e.target.value)}
-            >
-              {uniqueServices.map(service => (
-                <option key={service} value={service}>
-                  {service === 'all' ? 'All Services' : service}
-                </option>
-              ))}
-            </Form.Select>
-          </Col>
         </Row>
       </Card.Header>
       <Card.Body>
+        {error && (
+          <Alert variant="danger" className="mb-3">
+            {error}
+          </Alert>
+        )}
         <div style={{ height: '400px' }}>
           <Line 
             options={options} 
             data={chartData} 
-            key={selectedService}
           />
         </div>
         <div className="mt-4 latency-info">

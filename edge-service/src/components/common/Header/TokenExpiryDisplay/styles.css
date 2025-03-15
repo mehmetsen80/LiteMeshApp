@@ -1,0 +1,24 @@
+.token-expiry-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+  font-size: 0.9rem;
+}
+
+.token-expiry-display.expired {
+  background-color: rgba(220, 53, 69, 0.2);
+  color: #ffc107;
+}
+
+.expiry-label {
+  opacity: 0.9;
+}
+
+.expiry-time {
+  font-weight: 500;
+  font-family: monospace;
+} 

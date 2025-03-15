@@ -157,4 +157,20 @@
 .tooltip a {
   position: relative;
   z-index: 10000;
+}
+
+.route-team-info {
+  padding: 0.5rem;
+  background-color: var(--bs-light);
+  border-radius: 0.25rem;
+}
+
+/* Remove any .team-name styles if they exist here */
+
+/* Add specific button hover styles */
+.modal-footer .btn-primary:hover,
+.modal-footer .btn-primary:active,
+.modal-footer .btn-primary:focus {
+  background-color: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
 } 

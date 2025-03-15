@@ -186,6 +186,12 @@ const ServiceHealthDashboard = () => {
                     />
                 ))}
             </div>
+            {loading && connectionStatus === 'connecting' && (
+                <Alert severity="info">Services loading...</Alert>
+            )}
+            {connectionStatus === 'connected' && services.length === 0 && !loading && (
+                <Alert severity="info">No services found. Please check if services are registered with the API Gateway.</Alert>
+            )}
             {selectedService && (
                 <AnalysisSummaryDialog
                     open={dialogOpen}
@@ -195,12 +201,6 @@ const ServiceHealthDashboard = () => {
                     loading={analysisLoading}
                     error={analysisError}
                 />
-            )}
-            {loading && connectionStatus === 'connecting' && (
-                <Alert severity="info">Services loading...</Alert>
-            )}
-            {connectionStatus === 'connected' && services.length === 0 && (
-                <Alert severity="info">Loading services...</Alert>
             )}
         </div>
     );

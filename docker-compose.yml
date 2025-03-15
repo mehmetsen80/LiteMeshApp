@@ -90,27 +90,93 @@ services:
     networks:
       - lite-mesh-network
 
-  # mongodb
-  mongodb-service:
+#  # mongodb
+#  mongodb-service:
+#    build:
+#      context: .
+#      dockerfile: ./.kube/mongodb/Dockerfile
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: root
+#      MONGO_INITDB_ROOT_PASSWORD: mongopw
+#      MONGO_GATEWAY_URL: mongodb-service
+#    ports:
+#      - "27017:27017"
+#    volumes:
+#      - ./.kube/mongodb/data/:/data/db
+#    networks:
+#      - lite-mesh-network
+
+# mongodb nodes
+  mongodb1:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
     build:
       context: .
       dockerfile: ./.kube/mongodb/Dockerfile
-#    healthcheck:
-#      test: echo 'db.runCommand({serverStatus:1}).ok' | mongosh admin -u $MONGO_INITDB_ROOT_USERNAME -p $MONGO_INITDB_ROOT_PASSWORD --quiet | grep 1
-#      interval: 10s
-#      timeout: 10s
-#      retries: 3
-#      start_period: 20s
+    container_name: mongodb1
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: mongopw
-      MONGO_GATEWAY_URL: mongodb-service
+      MONGO_REPLICA_SET_NAME: rs0
     ports:
       - "27017:27017"
     volumes:
-      - ./.kube/mongodb/data/:/data/db
+      - ./.kube/mongodb/data1/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
     networks:
       - lite-mesh-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27017 -keyFile /data/mongo-keyfile
+
+  mongodb2:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb2
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27018:27018"
+    volumes:
+      - ./.kube/mongodb/data2/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - lite-mesh-network
+    command: mongod  --bind_ip_all  --replSet rs0 --port 27018 -keyFile /data/mongo-keyfile
+
+  mongodb3:
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    build:
+      context: .
+      dockerfile: ./.kube/mongodb/Dockerfile
+    container_name: mongodb3
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: mongopw
+      MONGO_REPLICA_SET_NAME: rs0
+    ports:
+      - "27019:27019"
+    volumes:
+      - ./.kube/mongodb/data3/:/data/db
+      - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
+    networks:
+      - lite-mesh-network
+    command: mongod --bind_ip_all --replSet rs0 --port 27019 -keyFile /data/mongo-keyfile
+
+
 
   # redis
   redis-service:

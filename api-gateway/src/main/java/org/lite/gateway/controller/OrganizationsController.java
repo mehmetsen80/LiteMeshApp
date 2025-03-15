@@ -47,7 +47,7 @@ public class OrganizationsController {
     public Mono<ResponseEntity<?>> createOrganization(
             @Valid @RequestBody Organization organization,
             ServerWebExchange exchange) {
-        return userContextService.getCurrentUser(exchange)
+        return userContextService.getCurrentUsername(exchange)
             .flatMap(username -> {
                 organization.setCreatedBy(username);
                 organization.setUpdatedBy(username);
@@ -79,7 +79,7 @@ public class OrganizationsController {
             @PathVariable String id,
             @Valid @RequestBody Organization organization,
             ServerWebExchange exchange) {
-        return userContextService.getCurrentUser(exchange)
+        return userContextService.getCurrentUsername(exchange)
             .flatMap(username -> {
                 organization.setUpdatedBy(username);
                 organization.setUpdatedAt(LocalDateTime.now());

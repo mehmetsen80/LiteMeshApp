@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ErrorResponse.fromErrorCode(
                 ErrorCode.INTERNAL_ERROR,
-                "An unexpected error occurred",
+                ex.getMessage(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value()
             )));
     }
@@ -66,10 +66,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException.class)
     public Mono<ResponseEntity<ErrorResponse>> handleResourceNotFoundException(ResourceNotFoundException ex) {
         log.error("Resource not found: {}", ex.getMessage(), ex);
+        
+        // Determine the appropriate error code based on the error message
+        ErrorCode errorCode;
+        String message = ex.getMessage().toLowerCase();
+        
+        if (message.contains("team")) {
+            errorCode = ErrorCode.TEAM_NOT_FOUND;
+        } else if (message.contains("route")) {
+            errorCode = ErrorCode.ROUTE_NOT_FOUND;
+        } else if (message.contains("user")) {
+            errorCode = ErrorCode.USER_NOT_FOUND;
+        } else if (message.contains("organization")) {
+            errorCode = ErrorCode.ORGANIZATION_NOT_FOUND;
+        } else if (message.contains("member")) {
+            errorCode = ErrorCode.MEMBER_NOT_FOUND;
+        } else {
+            // If we can't determine the specific resource type, use a generic system error
+            errorCode = ErrorCode.VALIDATION_ERROR;
+        }
+
         return Mono.just(ResponseEntity
             .status(HttpStatus.NOT_FOUND)
             .body(ErrorResponse.fromErrorCode(
-                ErrorCode.TEAM_NOT_FOUND,
+                errorCode,
                 ex.getMessage(),
                 HttpStatus.NOT_FOUND.value()
             )));

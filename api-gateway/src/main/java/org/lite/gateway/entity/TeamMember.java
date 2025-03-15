@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.Builder;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.lite.gateway.enums.UserRole;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
@@ -28,7 +29,7 @@ public class TeamMember {
     private String userId;
     @Transient
     private String username;
-    private TeamRole role;
+    private UserRole role;
     private TeamMemberStatus status;
     
     @Builder.Default

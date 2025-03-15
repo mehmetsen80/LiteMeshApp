@@ -7,7 +7,8 @@ import {
   HiUsers, 
   HiTemplate, 
   HiRefresh, 
-  HiTrash 
+  HiTrash, 
+  HiKey 
 } from 'react-icons/hi';
 import { Spinner, OverlayTrigger, Tooltip, Table } from 'react-bootstrap';
 import CreateTeamModal from '../../components/teams/CreateTeamModal';
@@ -15,7 +16,8 @@ import TeamDetailsModal from '../../components/teams/TeamDetailsModal';
 import TeamMembersModal from '../../components/teams/TeamMembersModal';
 import TeamRoutesModal from '../../components/teams/TeamRoutesModal';
 import TeamEditModal from '../../components/teams/TeamEditModal';
-import teamService from '../../services/teamService';
+import TeamApiKeysModal from '../../components/teams/TeamApiKeysModal';
+import { teamService } from '../../services/teamService';
 import './styles.css';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import ConfirmationModal from '../../components/common/ConfirmationModal';
@@ -32,6 +34,7 @@ function Teams() {
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [showRoutesModal, setShowRoutesModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showApiKeysModal, setShowApiKeysModal] = useState(false);
   const [confirmModal, setConfirmModal] = useState({
     show: false,
     title: '',
@@ -150,7 +153,12 @@ function Teams() {
       if (error) {
         throw new Error(error);
       }
+      
+      // Update selectedTeam with the latest data
       setSelectedTeam(data);
+      // Refresh the teams list
+      await fetchTeams();
+      
       showSuccessToast('Team member removed successfully');
     } catch (err) {
       showErrorToast(err.message || 'Failed to remove team member');
@@ -200,9 +208,10 @@ function Teams() {
       const { data, error } = await teamService.removeTeamRoute(selectedTeam.id, routeId);
       if (error) throw new Error(error);
       
-      setTeams(prev => prev.map(t => 
-        t.id === selectedTeam.id ? data : t
-      ));
+      // Update selectedTeam with the latest data
+      setSelectedTeam(data);
+      // Refresh the teams list
+      await fetchTeams();
       showSuccessToast('Route removed successfully');
     } catch (err) {
       showErrorToast(err.message || 'Failed to remove route');
@@ -258,6 +267,54 @@ function Teams() {
     }
   };
 
+  const handleCreateApiKey = async (apiKeyData) => {
+    try {
+      setOperationLoading(true);
+      const { data, error } = await teamService.createApiKey(apiKeyData);
+      if (error) throw new Error(error);
+      
+      // Show single toast with the key
+      if (data && data.key) {
+        showSuccessToast(
+          <div>
+            API key created successfully
+            <br />
+            <small className="text-monospace">Key: {data.key}</small>
+          </div>,
+          { autoClose: false }
+        );
+      }
+
+      setShowApiKeysModal(false);
+      
+      // Refresh the API keys list in the modal
+      if (selectedTeam) {
+        const updatedTeam = { ...selectedTeam };
+        setSelectedTeam(updatedTeam);
+      }
+    } catch (err) {
+      showErrorToast(err.message || 'Failed to create API key');
+    } finally {
+      setOperationLoading(false);
+    }
+  };
+
+  // First, add this helper function to group teams by organization
+  const groupTeamsByOrganization = (teams) => {
+    return teams.reduce((groups, team) => {
+      const orgId = team.organization?.id || 'uncategorized';
+      const orgName = team.organization?.name || 'Uncategorized';
+      if (!groups[orgId]) {
+        groups[orgId] = {
+          name: orgName,
+          teams: []
+        };
+      }
+      groups[orgId].teams.push(team);
+      return groups;
+    }, {});
+  };
+
   return (
     <div className="teams-container">
       <div className="card mb-4 border-0 mx-0">
@@ -300,6 +357,30 @@ function Teams() {
                 <span className="visually-hidden">Loading...</span>
               </Spinner>
             </div>
+          ) : teams.length === 0 ? (
+            <div className="no-teams-message text-center py-5">
+              <h4>No Teams Found</h4>
+              <p className="text-muted">
+                Create your first team to start managing members and API routes.
+              </p>
+              <Button 
+                variant="primary" 
+                onClick={() => setShowCreateModal(true)}
+                className="mt-3"
+                disabled={operationLoading}
+              >
+                {operationLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <HiPlus /> Create Your First Team
+                  </>
+                )}
+              </Button>
+            </div>
           ) : (
             <div className="table-responsive">
               <Table hover striped responsive>
@@ -312,99 +393,122 @@ function Teams() {
                     <th>Edit</th>
                     <th>Members</th>
                     <th>Routes</th>
+                    <th>API Keys</th>
                     <th>Status Action</th>
                     <th>Delete</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {teams.map(team => (
-                    <tr 
-                      key={team.id} 
-                      className={team.status === 'INACTIVE' ? 'table-secondary' : ''}
-                    >
-                      <td>{team.name}</td>
-                      <td>{team.organization?.name || '-'}</td>
-                      <td>
-                        <span className={`badge ${team.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}`}>
-                          {team.status}
-                        </span>
-                      </td>
-                      <td>
-                        <button 
-                          className="btn btn-sm btn-outline-primary action-button"
-                          onClick={() => {
-                            setSelectedTeam(team);
-                            setShowDetailsModal(true);
-                          }}
+                  {Object.entries(groupTeamsByOrganization(teams)).map(([orgId, org]) => (
+                    <React.Fragment key={orgId}>
+                      <tr className="table-group-header">
+                        <td colSpan="10" className="bg-light">
+                          <strong>{org.name}</strong>
+                        </td>
+                      </tr>
+                      {org.teams.map(team => (
+                        <tr 
+                          key={team.id} 
+                          className={team.status === 'INACTIVE' ? 'table-secondary' : ''}
                         >
-                          <HiEye className="me-1" /> View
-                        </button>
-                      </td>
-                      <td>
-                        <button 
-                          className="btn btn-sm btn-outline-secondary action-button"
-                          onClick={() => {
-                            setSelectedTeam(team);
-                            setShowEditModal(true);
-                          }}
-                          disabled={team.status === 'INACTIVE'}
-                        >
-                          <HiPencil className="me-1" /> Edit
-                        </button>
-                      </td>
-                      <td>
-                        <button 
-                          className="btn btn-sm btn-outline-secondary action-button"
-                          onClick={() => {
-                            setSelectedTeam(team);
-                            setShowMembersModal(true);
-                          }}
-                        >
-                          <HiUsers className="me-1" /> Members ({team.members?.length || 0})
-                        </button>
-                      </td>
-                      <td>
-                        <button 
-                          className="btn btn-sm btn-outline-info action-button"
-                          onClick={() => {
-                            setSelectedTeam(team);
-                            setShowRoutesModal(true);
-                          }}
-                        >
-                          <HiTemplate className="me-1" /> Routes ({team.routes?.length || 0})
-                        </button>
-                      </td>
-                      <td>
-                        <button 
-                          className="btn btn-sm btn-outline-warning action-button status-action-button"
-                          onClick={() => confirmToggleStatus(team)}
-                          disabled={operationLoading}
-                        >
-                          <HiRefresh className="me-1" />
-                          {team.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
-                        </button>
-                      </td>
-                      <td>
-                        <OverlayTrigger
-                          placement="top"
-                          overlay={
-                            <Tooltip id={`delete-tooltip-${team.id}`}>
-                              {!canDeleteTeam(team) ? getDeleteButtonTooltip(team) : 'Delete this team'}
-                            </Tooltip>
-                          }
-                        >
-                          <span className="d-inline-block">
+                          <td>{team.name}</td>
+                          <td>{team.organization?.name || '-'}</td>
+                          <td>
+                            <span className={`badge ${team.status === 'ACTIVE' ? 'bg-success' : 'bg-secondary'}`}>
+                              {team.status}
+                            </span>
+                          </td>
+                          <td>
                             <button 
-                              className="btn btn-sm btn-outline-danger action-button"
-                              onClick={() => confirmDelete(team)}
-                              disabled={operationLoading || !canDeleteTeam(team)}
+                              className="btn btn-sm btn-outline-primary action-button"
+                              onClick={() => {
+                                setSelectedTeam(team);
+                                setShowDetailsModal(true);
+                              }}
                             >
-                              <HiTrash className="me-1" /> Delete
+                              <HiEye className="me-1" /> View
                             </button>
-                          </span>
-                        </OverlayTrigger>
-                      </td>
-                    </tr>
+                          </td>
+                          <td>
+                            <button 
+                              className="btn btn-sm btn-outline-secondary action-button"
+                              onClick={() => {
+                                setSelectedTeam(team);
+                                setShowEditModal(true);
+                              }}
+                              disabled={team.status === 'INACTIVE'}
+                            >
+                              <HiPencil className="me-1" /> Edit
+                            </button>
+                          </td>
+                          <td>
+                            <button 
+                              className="btn btn-sm btn-outline-secondary action-button"
+                              onClick={() => {
+                                setSelectedTeam(team);
+                                setShowMembersModal(true);
+                              }}
+                            >
+                              <HiUsers className="me-1" /> Members ({team.members?.length || 0})
+                            </button>
+                          </td>
+                          <td>
+                            <button 
+                              className="btn btn-sm btn-outline-info action-button"
+                              onClick={() => {
+                                setSelectedTeam(team);
+                                setShowRoutesModal(true);
+                              }}
+                            >
+                              <HiTemplate className="me-1" /> Routes ({team.routes?.length || 0})
+                            </button>
+                          </td>
+                          <td>
+                            <button 
+                              className="btn btn-sm btn-outline-purple action-button"
+                              onClick={() => {
+                                setSelectedTeam(team);
+                                setShowApiKeysModal(true);
+                              }}
+                              disabled={team.status === 'INACTIVE'}
+                            >
+                              <HiKey className="me-1" /> 
+                              {team.apiKey ? 'View API Key' : 'Generate API Key'}
+                            </button>
+                          </td>
+                          <td>
+                            <button 
+                              className="btn btn-sm btn-outline-warning action-button status-action-button"
+                              onClick={() => confirmToggleStatus(team)}
+                              disabled={operationLoading}
+                            >
+                              <HiRefresh className="me-1" />
+                              {team.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+                            </button>
+                          </td>
+                          <td>
+                            <OverlayTrigger
+                              placement="top"
+                              overlay={
+                                <Tooltip id={`delete-tooltip-${team.id}`}>
+                                  {!canDeleteTeam(team) ? getDeleteButtonTooltip(team) : 'Delete this team'}
+                                </Tooltip>
+                              }
+                            >
+                              <span className="d-inline-block">
+                                <button 
+                                  className="btn btn-sm btn-outline-danger action-button"
+                                  onClick={() => confirmDelete(team)}
+                                  disabled={operationLoading || !canDeleteTeam(team)}
+                                >
+                                  <HiTrash className="me-1" /> Delete
+                                </button>
+                              </span>
+                            </OverlayTrigger>
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </Table>
@@ -454,6 +558,14 @@ function Teams() {
         onSubmit={handleEditTeam}
         loading={operationLoading}
         team={selectedTeam}
+      />
+
+      <TeamApiKeysModal
+        show={showApiKeysModal}
+        onHide={() => setShowApiKeysModal(false)}
+        team={selectedTeam}
+        onCreateApiKey={handleCreateApiKey}
+        loading={operationLoading}
       />
 
       <ConfirmationModal

@@ -3,9 +3,7 @@ package org.lite.gateway.controller;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.lite.gateway.dto.LoginRequest;
-import org.lite.gateway.dto.RegisterRequest;
-import org.lite.gateway.dto.AuthResponse;
+import org.lite.gateway.dto.*;
 import org.lite.gateway.service.UserService;
 import org.lite.gateway.service.KeycloakService;
 import org.lite.gateway.service.JwtService;
@@ -13,12 +11,12 @@ import org.lite.gateway.service.UserContextService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
-import org.lite.gateway.dto.RefreshTokenRequest;
 import org.springframework.http.HttpStatus;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
+import reactor.core.scheduler.Schedulers;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -44,11 +42,36 @@ public class AuthController {
     @PostMapping("/register")
     public Mono<ResponseEntity<AuthResponse>> register(@RequestBody RegisterRequest request) {
         return userService.register(request)
+            .doOnSuccess(response -> log.info("Registration successful for user: {}", request.getUsername()))
+            .doOnError(e -> log.error("Registration failed: {}", e.getMessage()))
             .map(ResponseEntity::ok)
-            .onErrorResume(e -> Mono.just(ResponseEntity.badRequest()
-                .body(AuthResponse.builder()
-                    .message(e.getMessage())
-                    .build())));
+            .onErrorResume(e -> {
+                log.error("Error during registration", e);
+                return Mono.just(ResponseEntity.badRequest()
+                    .body(AuthResponse.builder()
+                        .success(false)
+                        .message(e.getMessage())
+                        .build()));
+            })
+            .subscribeOn(Schedulers.boundedElastic());
+    }
+
+    @PostMapping("/sso/callback")
+    public Mono<ResponseEntity<Object>> handleCallback(@RequestBody KeycloakCallbackRequest request) {
+        log.info("Received SSO callback with code: {}", request.code());
+        return keycloakService.handleCallback(request.code())
+                .doOnSuccess(response -> log.info("SSO callback successful: {}", response))
+                .doOnError(error -> log.error("SSO callback failed", error))
+                .<ResponseEntity<Object>>map(ResponseEntity::ok)
+                .onErrorResume(e -> {
+                    log.error("Error processing SSO callback", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(ErrorResponse.builder()
+                                    .code("AUTHENTICATION_ERROR")
+                                    .message(e.getMessage())
+                                    .details(Map.of("status", HttpStatus.BAD_REQUEST.value()))
+                                    .build()));
+                });
     }
 
     @PostMapping("/refresh")

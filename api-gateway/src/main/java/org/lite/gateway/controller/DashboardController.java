@@ -21,17 +21,20 @@ public class DashboardController {
     private final DashboardService dashboardService;
 
     @GetMapping("/stats")
-    public Flux<StatDTO> getDashboardStats() {
-        return dashboardService.getDashboardStats();
+    public Flux<StatDTO> getDashboardStats(@RequestParam String teamId) {
+        return dashboardService.getDashboardStats(teamId);
     }
 
     @GetMapping("/latency")
-    public Flux<EndpointLatencyStats> getLatencyStats(@RequestParam(defaultValue = "30d") String timeRange) {
-        return dashboardService.getLatencyStats(timeRange);
+    public Flux<EndpointLatencyStats> getLatencyStats(
+        @RequestParam String teamId,
+        @RequestParam(defaultValue = "30d") String timeRange
+    ) {
+        return dashboardService.getLatencyStats(teamId, timeRange);
     }
 
     @GetMapping("/service-usage")
-    public Flux<ServiceUsageStats> getServiceUsage() {
-        return dashboardService.getServiceUsage();
+    public Flux<ServiceUsageStats> getServiceUsage(@RequestParam String teamId) {
+        return dashboardService.getServiceUsage(teamId);
     }
 } 

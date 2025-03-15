@@ -1,16 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Button, Form, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Modal, Form, Spinner, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { HiQuestionMarkCircle } from 'react-icons/hi';
+import Button from '../../common/Button';
 import './styles.css';
+import { useTeam } from '../../../contexts/TeamContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { isSuperAdmin } from '../../../utils/roleUtils';
+
 
 const CreateApiRouteModal = ({ show, onHide, onSubmit }) => {
+  const { currentTeam, teams, userTeams } = useTeam();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     routeIdentifier: '',
     path: '',
     uri: '',
     scope: '',
-    method: 'GET'
+    method: 'GET',
+    teamId: currentTeam?.id
   });
   const [validated, setValidated] = useState(false);
   const [showMethodDropdown, setShowMethodDropdown] = useState(false);
@@ -71,6 +79,42 @@ const CreateApiRouteModal = ({ show, onHide, onSubmit }) => {
     };
   }, [showMethodDropdown]);
 
+  const getTeamsByOrganization = () => {
+    console.log('user:', user);
+    console.log('isSuperAdmin:', isSuperAdmin(user));
+    console.log('teams from context:', teams);
+    console.log('userTeams from context:', userTeams);
+    
+    const teamsToShow = isSuperAdmin(user) ? teams : userTeams;
+    console.log('teamsToShow', teamsToShow);
+    
+    if (!teamsToShow) return [];
+    
+    const groupedTeams = teamsToShow.reduce((acc, team) => {
+      const orgName = team.organization?.name || 'Unassigned';
+      if (!acc[orgName]) {
+        acc[orgName] = [];
+      }
+      acc[orgName].push(team);
+      return acc;
+    }, {});
+
+    return Object.entries(groupedTeams).map(([orgName, orgTeams]) => ({
+      organization: orgName,
+      teams: orgTeams
+    }));
+  };
+
+  const isFormValid = () => {
+    return (
+      formData.teamId &&
+      formData.routeIdentifier?.trim() &&
+      formData.path?.trim() &&
+      formData.uri?.trim() &&
+      formData.scope?.trim()
+    );
+  };
+
   return (
     <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
@@ -78,6 +122,30 @@ const CreateApiRouteModal = ({ show, onHide, onSubmit }) => {
       </Modal.Header>
       <Modal.Body>
         <Form noValidate validated={validated} onSubmit={handleSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Select Team</Form.Label>
+            <Form.Select
+              name="teamId"
+              value={formData.teamId || ''}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select a team...</option>
+              {getTeamsByOrganization().map(({ organization, teams }) => (
+                <optgroup key={organization} label={organization}>
+                  {teams.map(team => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </Form.Select>
+            <Form.Control.Feedback type="invalid">
+              Please select a team
+            </Form.Control.Feedback>
+          </Form.Group>
+
           <Form.Group className="mb-3">
             <Form.Label className="d-flex align-items-center gap-2">
               Route Identifier
@@ -220,7 +288,12 @@ const CreateApiRouteModal = ({ show, onHide, onSubmit }) => {
           </Button>
         </div>
         <div>
-          <Button variant="primary" type="submit" disabled={loading} onClick={handleSubmit}>
+          <Button 
+            variant="primary" 
+            type="submit" 
+            disabled={loading || !isFormValid()} 
+            onClick={handleSubmit}
+          >
             {loading ? (
               <>
                 <Spinner

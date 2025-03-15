@@ -106,4 +106,95 @@
 .table-responsive .table td,
 .table-responsive .table th {
   padding: 0.5rem;
+}
+
+.no-teams-message {
+  padding: 2rem;
+}
+
+.no-teams-message h4 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.no-teams-message p {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.no-teams-message .btn {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.table-group-header td {
+  background-color: var(--bs-gray-100) !important;
+  font-weight: 500;
+  padding: 0.75rem 1rem !important;
+  border-bottom: 2px solid var(--bs-gray-300) !important;
+}
+
+.table-group-header + tr td {
+  border-top: none !important;
+}
+
+/* Custom purple button */
+.btn-outline-purple {
+  color: #6f42c1 !important;
+  border-color: #6f42c1 !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-purple:hover:not(:disabled) {
+  color: #fff !important;
+  background-color: #6f42c1 !important;
+  border-color: #6f42c1 !important;
+}
+
+.btn-outline-purple:focus {
+  box-shadow: 0 0 0 0.25rem rgba(111, 66, 193, 0.25) !important;
+}
+
+.btn-outline-purple:active {
+  color: #fff !important;
+  background-color: #6f42c1 !important;
+  border-color: #6f42c1 !important;
+}
+
+.btn-outline-purple:disabled {
+  color: #6f42c1 !important;
+  background-color: transparent !important;
+  opacity: 0.65 !important;
+}
+
+/* Make sure the icon inherits the button text color */
+.btn-outline-purple .hi-key {
+  color: inherit !important;
+}
+
+/* Custom indigo button */
+.btn-outline-indigo {
+  color: #4263eb;
+  border-color: #4263eb;
+}
+
+.btn-outline-indigo:hover:not(:disabled) {
+  color: #fff;
+  background-color: #4263eb;
+  border-color: #4263eb;
+}
+
+/* If using btn-outline-dark, you might want to customize it */
+.btn-outline-dark:hover:not(:disabled) {
+  color: #fff;
+  background-color: #212529;
+  border-color: #212529;
+}
+
+/* Disabled state for all variants */
+.btn-outline-purple:disabled,
+.btn-outline-indigo:disabled,
+.btn-outline-dark:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 } 

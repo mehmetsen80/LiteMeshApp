@@ -4,17 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.lite.gateway.dto.ErrorCode;
 import org.lite.gateway.dto.RouteChangeDetails;
 import org.lite.gateway.dto.RouteExistenceRequest;
 import org.lite.gateway.dto.RouteExistenceResponse;
 import org.lite.gateway.dto.VersionComparisonResult;
-import org.lite.gateway.entity.ApiRoute;
-import org.lite.gateway.entity.ApiRouteVersion;
-import org.lite.gateway.entity.FilterConfig;
-import org.lite.gateway.entity.HealthCheckConfig;
-import org.lite.gateway.entity.RouteVersionMetadata;
-import org.lite.gateway.entity.HealthThresholds;
-import org.lite.gateway.entity.AlertRule;
+import org.lite.gateway.entity.*;
 import org.lite.gateway.exception.DuplicateRouteException;
 import org.lite.gateway.repository.ApiRouteRepository;
 import org.lite.gateway.repository.ApiRouteVersionRepository;
@@ -24,6 +20,12 @@ import org.lite.gateway.service.UserContextService;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import org.lite.gateway.repository.TeamRouteRepository;
+import org.lite.gateway.repository.UserRepository;
+import org.lite.gateway.repository.TeamMemberRepository;
+import org.lite.gateway.exception.ResourceNotFoundException;
+import org.lite.gateway.service.DynamicRouteService;
+import org.lite.gateway.config.GatewayRoutesRefresher;
 
 import java.util.*;
 
@@ -36,11 +38,24 @@ public class ApiRouteServiceImpl implements ApiRouteService {
     private final RouteVersionMetadataRepository metadataRepository;
     private final UserContextService userContextService;
     private final ApiRouteVersionRepository apiRouteVersionRepository;
-
-    public Flux<ApiRoute> getAllRoutes() {
-        return apiRouteRepository.findAll()
-                .doOnComplete(() -> log.info("Finished fetching all routes"))
-                .doOnError(error -> log.error("Error fetching routes: {}", error.getMessage()));
+    private final TeamRouteRepository teamRouteRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final UserRepository userRepository;
+    private final DynamicRouteService dynamicRouteService;
+    private final GatewayRoutesRefresher gatewayRoutesRefresher;
+    
+    public Flux<ApiRoute> getAllRoutes(String teamId) {
+        if (teamId == null) {
+            return apiRouteRepository.findAll()
+                    .doOnComplete(() -> log.info("Finished fetching all routes"))
+                    .doOnError(error -> log.error("Error fetching routes: {}", error.getMessage()));
+        }
+        
+        return teamRouteRepository.findByTeamId(teamId)
+                .map(TeamRoute::getRouteId)
+                .flatMap(apiRouteRepository::findById)
+                .doOnComplete(() -> log.info("Finished fetching routes for teamId: {}", teamId))
+                .doOnError(error -> log.error("Error fetching routes for teamId {}: {}", teamId, error.getMessage()));
     }
 
     public Mono<ApiRoute> getRouteById(String id) {
@@ -69,7 +84,7 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                                 routeIdentifier, error.getMessage()));
     }
 
-    public Mono<ApiRoute> createRoute(ApiRoute route) {
+    public Mono<ApiRoute> createRoute(ApiRoute route, User user) {
         return Mono.just(route)
                 .flatMap(this::checkDuplicates)
                 .flatMap(apiRouteRepository::save)
@@ -80,7 +95,7 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                 .flatMap(savedRoute -> {
                     Mono<RouteChangeDetails> detailsMono = generateChangeDetails(null, savedRoute, "Initial route creation");
                     return detailsMono.flatMap(details ->
-                            saveVersionMetadata(savedRoute, details, RouteVersionMetadata.ChangeType.CREATE)
+                            saveVersionMetadata(savedRoute, details, RouteVersionMetadata.ChangeType.CREATE, user.getUsername())
                     );
                 })
                 .doOnSuccess(savedRoute ->
@@ -112,44 +127,34 @@ public class ApiRouteServiceImpl implements ApiRouteService {
             .switchIfEmpty(Mono.just(route));
     }
 
-    public Mono<ApiRoute> updateRoute(ApiRoute route) {
+    public Mono<ApiRoute> updateRoute(ApiRoute route, String username) {
         return apiRouteRepository.findByRouteIdentifier(route.getRouteIdentifier())
                 .flatMap(existingRoute -> {
-                    // Preserve immutable fields
+                    // Only preserve these essential fields
                     route.setId(existingRoute.getId());
-                    route.setRouteIdentifier(existingRoute.getRouteIdentifier());
-                    route.setUri(existingRoute.getUri());
-                    route.setPath(existingRoute.getPath());
-                   
-                    // Handle mutable fields
-                    if (route.getMethod() == null || route.getMethod().isEmpty()) {
-                        route.setMethod(existingRoute.getMethod());
-                    }
-                    if (route.getScope() == null) {
-                        route.setScope(existingRoute.getScope());
-                    }
-                    if (route.getMaxCallsPerDay() == null) {
-                        route.setMaxCallsPerDay(existingRoute.getMaxCallsPerDay());
-                    }
+                    route.setCreatedAt(existingRoute.getCreatedAt());
+                    route.setVersion(existingRoute.getVersion() + 1);
+                    route.setUpdatedAt(System.currentTimeMillis());
 
-                    // Handle filters
+                    // Don't overwrite the incoming filter values
                     if (route.getFilters() != null) {
                         route.getFilters().forEach(filter -> {
-                            // Handle CircuitBreaker special cases
+                            // Only for CircuitBreaker, ensure required fields exist
                             if ("CircuitBreaker".equals(filter.getName()) && filter.getArgs() != null) {
-                                existingRoute.getFilters().stream()
-                                    .filter(ef -> "CircuitBreaker".equals(ef.getName()))
-                                    .findFirst()
-                                    .ifPresent(existingFilter -> {
-                                        // Preserve recordFailurePredicate and HttpResponsePredicate
-                                        if (existingFilter.getArgs().containsKey("recordFailurePredicate")) {
-                                            filter.getArgs().put("recordFailurePredicate", 
-                                                existingFilter.getArgs().get("recordFailurePredicate"));
-                                        }
-                                    });
+                                Map<String, String> args = new HashMap<>(filter.getArgs());
+                                if (!args.containsKey("recordFailurePredicate")) {
+                                    args.put("recordFailurePredicate", "HttpResponsePredicate");
+                                }
+                                if (!args.containsKey("name")) {
+                                    args.put("name", route.getRouteIdentifier() + "CircuitBreaker");
+                                }
+                                if (!args.containsKey("fallbackUri")) {
+                                    args.put("fallbackUri", "/fallback/" + route.getRouteIdentifier());
+                                }
+                                filter.setArgs(args);
                             }
                             
-                            // Validate and convert numeric values for all filters
+                            // Validate filter args
                             if (filter.getArgs() != null) {
                                 validateAndConvertFilterArgs(filter);
                             }
@@ -157,10 +162,6 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                     } else {
                         route.setFilters(existingRoute.getFilters());
                     }
-                   
-                    route.setVersion(existingRoute.getVersion() + 1);
-                    route.setCreatedAt(existingRoute.getCreatedAt());
-                    route.setUpdatedAt(System.currentTimeMillis());
 
                     // Handle health check
                     if (route.getHealthCheck() != null) {
@@ -169,13 +170,16 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                         route.setHealthCheck(existingRoute.getHealthCheck());
                     }
 
-                    return saveVersionIfNotExists(existingRoute)
-                            .then(saveVersionIfNotExists(route))
-                            .then(apiRouteRepository.save(route))
+                    // First save the existing route version if it doesn't exist
+                    return apiRouteRepository.save(route)
+                            .flatMap(savedRoute -> 
+                                saveVersionIfNotExists(savedRoute)
+                                    .thenReturn(savedRoute)
+                            )
                             .flatMap(savedRoute -> {
                                 Mono<RouteChangeDetails> detailsMono = generateChangeDetails(existingRoute, savedRoute, "Route configuration updated");
                                 return detailsMono.flatMap(details ->
-                                        saveVersionMetadata(savedRoute, details, RouteVersionMetadata.ChangeType.UPDATE)
+                                        saveVersionMetadata(savedRoute, details, RouteVersionMetadata.ChangeType.UPDATE, username)
                                 );
                             });
                 })
@@ -227,34 +231,49 @@ public class ApiRouteServiceImpl implements ApiRouteService {
         }
     }
 
-    private Mono<ApiRouteVersion> saveVersionIfNotExists(ApiRoute route) {
-        return apiRouteVersionRepository
-                .findByRouteIdentifierAndVersion(route.getRouteIdentifier(), route.getVersion())
-                .hasElement()
-                .flatMap(versionExists -> {
-                    if (!versionExists) {
-                        ApiRouteVersion version = ApiRouteVersion.builder()
-                                .routeId(route.getId())
-                                .routeIdentifier(route.getRouteIdentifier())
-                                .version(route.getVersion())
-                                .routeData(route)
-                                .createdAt(System.currentTimeMillis())
-                                .build();
-                        return apiRouteVersionRepository.save(version);
-                    }
-                    return Mono.empty();
-                });
+    private Mono<Void> saveVersionIfNotExists(ApiRoute route) {
+        return apiRouteVersionRepository.findByRouteIdentifierAndVersion(route.getRouteIdentifier(), route.getVersion())
+            .hasElement()
+            .flatMap(exists -> {
+                if (!exists) {
+                    ApiRouteVersion version = ApiRouteVersion.builder()
+                        .routeId(route.getId())
+                        .routeIdentifier(route.getRouteIdentifier())
+                        .version(route.getVersion())
+                        .routeData(route)
+                        .createdAt(System.currentTimeMillis())
+                        .build();
+                    return apiRouteVersionRepository.save(version).then();
+                }
+                return Mono.empty();
+            });
     }
 
-    public Mono<Void> deleteRoute(String id) {
-        return apiRouteRepository.findById(id)
-                .flatMap(route -> {
-                    log.info("Deleting route: {}", route.getRouteIdentifier());
-                    return apiRouteRepository.delete(route);
-                })
-                .doOnSuccess(v -> log.info("Successfully deleted route with id: {}", id))
-                .doOnError(error ->
-                        log.error("Error deleting route {}: {}", id, error.getMessage()));
+    public Mono<Void> deleteRoute(String routeIdentifier, String username) {
+        return userRepository.findByUsername(username)
+            .switchIfEmpty(Mono.error(new ResourceNotFoundException("User not found: " + username, ErrorCode.USER_NOT_FOUND)))
+            .flatMap(user -> apiRouteRepository.findByRouteIdentifier(routeIdentifier)
+                .switchIfEmpty(Mono.error(new ResourceNotFoundException(
+                    "Route not found with identifier: " + routeIdentifier, 
+                    ErrorCode.ROUTE_NOT_FOUND
+                )))
+                .flatMap(route -> teamRouteRepository.findByRouteId(route.getId())
+                    .collectList()
+                    .flatMap(teamRoutes -> {
+                        if (!teamRoutes.isEmpty()) {
+                            String errorMessage = String.format(
+                                "Cannot delete route. It is currently assigned to %d team(s). " +
+                                "Please remove all team assignments before deletion.", 
+                                teamRoutes.size()
+                            );
+                            return Mono.error(new IllegalStateException(errorMessage));
+                        }
+                        log.info("Route with identifier: {} (id: {}) is being deleted by user: {} (id: {})}",
+                            routeIdentifier, route.getId(), username, user.getId());
+                        return apiRouteRepository.delete(route);
+                    })
+                )
+            );
     }
 
     public Flux<ApiRoute> searchRoutes(String searchTerm, String method, Boolean healthCheckEnabled) {
@@ -307,7 +326,7 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                         }));
     }
 
-    public Mono<ApiRoute> rollbackToVersion(String routeIdentifier, Integer version) {
+    public Mono<ApiRoute> rollbackToVersion(String routeIdentifier, Integer version, String username) {
         return getSpecificVersion(routeIdentifier, version)
                 .flatMap(oldVersion -> {
                     ApiRoute rollbackRoute = cloneRoute(oldVersion);
@@ -323,10 +342,11 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                                             .flatMap(details -> saveVersionMetadata(
                                                     route,
                                                     details,
-                                                    RouteVersionMetadata.ChangeType.ROLLBACK
+                                                    RouteVersionMetadata.ChangeType.ROLLBACK,
+                                                    username
                                             ))
                             )
-                            .flatMap(this::updateRoute);
+                            .flatMap(route -> updateRoute(route, username));
                 })
                 .doOnSuccess(route -> log.info("Successfully rolled back route {} to version {}",
                         routeIdentifier, version))
@@ -462,26 +482,25 @@ public class ApiRouteServiceImpl implements ApiRouteService {
         }
     }
 
-    //TODO: change the getCurrentUser to get the user from the token
     private Mono<ApiRoute> saveVersionMetadata(
             ApiRoute route,
             RouteChangeDetails changeDetails,
-            RouteVersionMetadata.ChangeType changeType) {
+            RouteVersionMetadata.ChangeType changeType,
+            String username) {
 
-        return userContextService.getCurrentUser()
-                .map(username -> RouteVersionMetadata.builder()
-                        .routeIdentifier(route.getRouteIdentifier())
-                        .version(route.getVersion())
-                        .changeReason(changeDetails.getSummary())
-                        .changeDescription(changeDetails.getDescription())
-                        .changedFields(changeDetails.getChangedFields())
-                        .changedBy(username)
-                        .timestamp(System.currentTimeMillis())
-                        .changeType(changeType)
-                        .build()
-                )
-                .flatMap(metadataRepository::save)
-                .thenReturn(route);
+        return Mono.just(RouteVersionMetadata.builder()
+                .routeIdentifier(route.getRouteIdentifier())
+                .version(route.getVersion())
+                .changeReason(changeDetails.getSummary())
+                .changeDescription(changeDetails.getDescription())
+                .changedFields(changeDetails.getChangedFields())
+                .changedBy(username)
+                .timestamp(System.currentTimeMillis())
+                .changeType(changeType)
+                .build()
+            )
+            .flatMap(metadataRepository::save)
+            .thenReturn(route);
     }
 
     public Flux<RouteVersionMetadata> getVersionMetadata(String routeIdentifier) {
@@ -571,10 +590,7 @@ public class ApiRouteServiceImpl implements ApiRouteService {
         }
 
         if (healthCheck.getAlertRules() != null) {
-            List<AlertRule> sanitizedRules = new ArrayList<>();
-            healthCheck.getAlertRules().forEach(rule -> {
-                sanitizedRules.add(rule);
-            });
+            List<AlertRule> sanitizedRules = new ArrayList<>(healthCheck.getAlertRules());
             healthCheck.setAlertRules(sanitizedRules);
         }
         
@@ -594,5 +610,19 @@ public class ApiRouteServiceImpl implements ApiRouteService {
                 thresholds.setTimeoutThreshold(thresholds.getTimeoutThreshold());
             }
         }
+    }
+
+    public Mono<String> refreshRoutes() {
+        return getAllRoutes(null)
+            .collectList()
+            .doOnSuccess(list -> {
+                list.forEach(apiRoute -> {
+                    dynamicRouteService.addPath(apiRoute);
+                    dynamicRouteService.addScope(apiRoute);
+                    gatewayRoutesRefresher.refreshRoutes();
+                    log.info("Refreshed Path: {}", apiRoute.getPath());
+                });
+            })
+            .thenReturn("Routes reloaded successfully");
     }
 }

@@ -67,4 +67,14 @@
 
 .edit-toggle-btn i {
   margin-right: 0.5rem;
+}
+
+.modal-footer {
+  display: flex;
+  padding: 1rem 1.5rem;
+}
+
+.modal-footer .w-100 {
+  display: flex;
+  justify-content: space-between;
 } 

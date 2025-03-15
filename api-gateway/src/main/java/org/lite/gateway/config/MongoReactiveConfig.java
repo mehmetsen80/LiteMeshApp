@@ -12,11 +12,13 @@ import org.springframework.data.mongodb.config.EnableReactiveMongoAuditing;
 import org.springframework.data.mongodb.repository.config.EnableReactiveMongoRepositories;
 import org.springframework.data.mongodb.core.ReactiveMongoTemplate;
 import org.springframework.lang.NonNull;
+import org.springframework.transaction.ReactiveTransactionManager;
+import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.data.mongodb.core.mapping.MongoMappingContext;
 import org.springframework.data.mongodb.core.convert.MongoCustomConversions;
-import org.springframework.data.mapping.model.FieldNamingStrategy;
-import org.springframework.data.mapping.PersistentProperty;
 import org.springframework.data.mongodb.ReactiveMongoDatabaseFactory;
+import org.springframework.data.mongodb.ReactiveMongoTransactionManager;
+
 
 @Configuration
 @EnableReactiveMongoRepositories(basePackages = "org.lite.gateway.repository")
@@ -62,19 +64,13 @@ public class MongoReactiveConfig extends AbstractReactiveMongoConfiguration {
         return converter;
     }
 
-//    @Bean
-//    public MongoMappingContext mongoMappingContext(MongoCustomConversions conversions) {
-//        MongoMappingContext mappingContext = new MongoMappingContext();
-//        mappingContext.setSimpleTypeHolder(conversions.getSimpleTypeHolder());
-//        mappingContext.setFieldNamingStrategy(new DotReplacementFieldNamingStrategy());
-//        return mappingContext;
-//    }
-//
-//    private static class DotReplacementFieldNamingStrategy implements FieldNamingStrategy {
-//        @Override
-//        public @NonNull String getFieldName(@NonNull PersistentProperty<?> property) {
-//            String name = property.getName();
-//            return name.replace(".", "_");
-//        }
-//    }
+    @Bean
+    public ReactiveTransactionManager transactionManager(ReactiveMongoDatabaseFactory factory) {
+        return new ReactiveMongoTransactionManager(factory);
+    }
+
+    @Bean
+    public TransactionalOperator transactionalOperator(ReactiveTransactionManager transactionManager) {
+        return TransactionalOperator.create(transactionManager);
+    }
 }

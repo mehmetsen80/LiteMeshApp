@@ -51,71 +51,90 @@ function Login() {
       </Link>      
       <div className="auth-form-section">
         <div className="auth-card">
-          <div className="auth-header">
-            <h2>Welcome Back</h2>
-            <p className="text-muted">Please sign in to continue</p>
-          </div>
-          
-          <Button 
-            variant="secondary"
-            fullWidth
-            onClick={handleSSOLogin}
-          >
-            <HiLockClosed />
-            Sign in with SSO
-          </Button>
-          
-          <div className="separator my-3">
-            <span className="separator-text">OR</span>
-          </div>
-
-          {error && (
-            <Alert variant="danger">{error}</Alert>
-          )}
-
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                autoComplete="email"
-                placeholder="Enter your email"
-                disabled={loading}
-              />
-            </Form.Group>
-
-            <Form.Group className="mb-4">
-              <Form.Label>Password</Form.Label>
-              <Form.Control
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                autoComplete="current-password"
-                placeholder="Enter your password"
-                disabled={loading}
-              />
-            </Form.Group>
-
+          <div className={loading ? 'opacity-50' : ''}>
+            <div className="auth-header">
+              <h2>Welcome Back</h2>
+              <p className="text-muted">Please sign in to continue</p>
+            </div>
+            
             <Button 
-              type="submit"
-              variant="primary"
+              variant="secondary"
               fullWidth
-              loading={loading}
+              onClick={handleSSOLogin}
+              disabled={loading}
             >
-              Sign In
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                  Signing in with SSO...
+                </>
+              ) : (
+                <>
+                  <HiLockClosed />
+                  Sign in with SSO
+                </>
+              )}
             </Button>
-          </Form>
+            
+            <div className="separator my-3">
+              <span className="separator-text">OR</span>
+            </div>
 
-          <div className="mt-4 text-center">
-            <p className="mb-0">
-              Don't have an account? <Link to="/register" className="primary-link">Register</Link>
-            </p>
+            {error && (
+              <Alert variant="danger">{error}</Alert>
+            )}
+
+            <Form onSubmit={handleSubmit}>
+              <Form.Group className="mb-3">
+                <Form.Label>Email</Form.Label>
+                <Form.Control
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  autoComplete="email"
+                  placeholder="Enter your email"
+                  disabled={loading}
+                />
+              </Form.Group>
+
+              <Form.Group className="mb-4">
+                <Form.Label>Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  disabled={loading}
+                />
+              </Form.Group>
+
+              <Button 
+                type="submit"
+                variant="primary"
+                fullWidth
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </Form>
+
+            <div className="mt-4 text-center">
+              <p className="mb-0">
+                Don't have an account? <Link to="/register" className="primary-link">Register</Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

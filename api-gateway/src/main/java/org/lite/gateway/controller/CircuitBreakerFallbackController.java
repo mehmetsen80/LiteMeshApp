@@ -11,7 +11,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 public class CircuitBreakerFallbackController {
 
-    // i.e "fallbackUri": "/fallback/inventory" or fallbackUri": "/fallback/product" in mongodb
+    // i.e "fallbackUri": "/fallback/inventory-service" or fallbackUri": "/fallback/product-service" in mongodb
     // This handles fallback for any service that fails
     @GetMapping("/fallback/{serviceName}")
     public Mono<String> serviceFallback(@PathVariable String serviceName,

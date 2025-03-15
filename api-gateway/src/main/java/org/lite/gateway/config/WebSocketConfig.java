@@ -33,10 +33,9 @@ public class WebSocketConfig {
         .multicast()
         .onBackpressureBuffer(1024, false);
     private final Map<String, WebSocketSession> sessions = new ConcurrentHashMap<>();
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Bean
-    public MessageChannel messageChannel() {
+    public MessageChannel messageChannel(ObjectMapper objectMapper) {
         return new AbstractMessageChannel() {
             @Override
             protected boolean sendInternal(@NonNull Message<?> message, long timeout) {

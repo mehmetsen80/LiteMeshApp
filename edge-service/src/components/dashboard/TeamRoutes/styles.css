@@ -1,0 +1,160 @@
+.team-routes-card {
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.team-routes-card .card-header {
+  background-color: #f8f9fa;  /* Bootstrap's bg-light color */
+  border-bottom: 1px solid #e3e3e3;
+  padding: 1rem 1.5rem;
+}
+
+.team-routes-card .card-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #333;
+}
+
+.team-routes-card .breadcrumb a {
+  color: var(--primary-color);  /* Using our app's primary color variable */
+  text-decoration: none;
+}
+
+.team-routes-card .breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+.team-routes-table {
+  padding: 0;
+  margin: 0;
+}
+
+.team-routes-table th {
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.method-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.method-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.method-badge.get {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.method-badge.post {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.method-badge.put {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.method-badge.delete {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.status-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.status-badge.active {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.inactive {
+  background-color: #f5f5f5;
+  color: #757575;
+}
+
+.view-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.no-routes {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.error-card {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.permission-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.permission-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: white;
+  cursor: help; /* Indicates there's a tooltip */
+}
+
+.permission-badge.view {
+  background-color: #2196f3;
+}
+
+.permission-badge.use {
+  background-color: #ff9800;
+}
+
+.permission-badge.manage {
+  background-color: #4caf50;
+}
+
+.team-routes-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.team-routes-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--heading-primary);
+  font-weight: 600;
+}
+
+.team-routes-subtitle {
+  color: #6c757d;  /* A muted dark gray that provides good contrast */
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.version-badge {
+  background-color: #ffffff !important;  /* Light gray background */
+  color: #666 !important;  /* Darker gray text */
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: monospace;  /* For better version number display */
+} 

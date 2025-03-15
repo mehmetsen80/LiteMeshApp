@@ -1,5 +1,6 @@
 package org.lite.gateway.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     private final ReactiveResilience4JCircuitBreakerFactory reactiveResilience4JCircuitBreakerFactory;
     private final RedisTemplate<String, String> redisTemplate;
     private final MetricService metricService;
+    private final ObjectMapper objectMapper;
 
     private ApplicationContext applicationContext;
     private Map<String, FilterService> filterServiceMap;
@@ -45,7 +47,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     public void init() {
         this.filterServiceMap = Map.of(
                 "CircuitBreaker", new CircuitBreakerFilterService(reactiveResilience4JCircuitBreakerFactory),
-                "RedisRateLimiter", new RedisRateLimiterFilterService(applicationContext, redisTemplate),
+                "RedisRateLimiter", new RedisRateLimiterFilterService(applicationContext, redisTemplate, objectMapper),
                 "TimeLimiter", new TimeLimiterFilterService(),
                 "Retry", new RetryFilterService()
         );
@@ -54,7 +56,7 @@ public class ApiRouteLocatorImpl implements RouteLocator, ApplicationContextAwar
     @Override
     public Flux<Route> getRoutes() {
         RouteLocatorBuilder.Builder routesBuilder = routeLocatorBuilder.routes();
-        return apiRouteService.getAllRoutes()
+        return apiRouteService.getAllRoutes(null)
                 .map(apiRoute -> routesBuilder.route(String.valueOf(apiRoute.getRouteIdentifier()),
                         predicateSpec -> setPredicateSpec(apiRoute, predicateSpec)))
                 .collectList()

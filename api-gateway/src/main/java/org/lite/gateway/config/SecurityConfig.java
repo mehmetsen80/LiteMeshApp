@@ -3,13 +3,13 @@ package org.lite.gateway.config;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lite.gateway.filter.ApiKeyAuthenticationFilter;
 import org.lite.gateway.service.DynamicRouteService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authorization.AuthorizationDecision;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -21,7 +21,6 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -37,12 +36,10 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import java.util.ArrayList;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -69,9 +66,13 @@ public class SecurityConfig {
     @Value("${cors.max-age}")
     private long maxAge;
 
+    @Value("${spring.security.oauth2.resourceserver.opaquetoken.client-id}")
+    private String clientId;
+
     private final DynamicRouteService dynamicRouteService;
     private final ReactiveClientRegistrationRepository customClientRegistrationRepository;
     private final ReactiveOAuth2AuthorizedClientService customAuthorizedClientService;
+    private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -92,7 +93,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity, AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
+    public SecurityWebFilterChain jwtSecurityFilterChain(ServerHttpSecurity serverHttpSecurity, 
+            AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
         serverHttpSecurity
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
@@ -107,6 +109,8 @@ public class SecurityConfig {
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
                         .jwtDecoder(keycloakJwtDecoder())))
+                .addFilterBefore(apiKeyAuthenticationFilter, 
+                        SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchange -> exchange
                         .anyExchange()
                         .access(this::dynamicPathAuthorization))
@@ -122,7 +126,7 @@ public class SecurityConfig {
         // Example: Hardcoded user with role
         UserDetails user = User.withUsername("example-cn")
                 .password("{noop}password")  // Password is not used in mTLS
-                .roles("USER", "ADMIN")
+                .roles("VIEW", "ADMIN")
                 .build();
 
         // A Map-based user details service
@@ -152,8 +156,8 @@ public class SecurityConfig {
             log.info("Incoming token: {}", userToken);
 
             OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
-                    .withClientRegistrationId("lite-mesh-gateway-client")
-                    .principal("lite-mesh-gateway-client")
+                    .withClientRegistrationId(clientId)
+                    .principal(clientId)
                     .build();
 
             return authorizedClientManager.authorize(authorizeRequest)
@@ -250,23 +254,22 @@ public class SecurityConfig {
         return authorizedClientManager;
     }
 
-    private  String getScopeKey(String path) {
-        // Regular expression to capture the dynamic prefix (e.g., "/inventory/", "/product/")
-        Pattern pattern = Pattern.compile("^/(\\w+)/");
+    private String getScopeKey(String path) {
+        // Updated regex to capture prefixes that may include hyphens
+        Pattern pattern = Pattern.compile("^/([\\w-]+)/");
         Matcher matcher = pattern.matcher(path);
 
         if (matcher.find()) {
-            // Extract the prefix (e.g., "/inventory/")
-            String prefix = matcher.group(0); // Full match, e.g., "/inventory/"
+            String prefix = matcher.group(0);
             return prefix + "**";
         }
 
-        // If no matching prefix, return original path with "**"
         return path + "**";
     }
 
     private Mono<AuthorizationDecision> dynamicPathAuthorization(Mono<Authentication> authenticationMono, AuthorizationContext authorizationContext) {
         String path = authorizationContext.getExchange().getRequest().getPath().toString();
+        log.info("Security check for path: {}", path);
         log.info("Checking authorization for path: {} with method: {}", path, 
             authorizationContext.getExchange().getRequest().getMethod());
 
@@ -309,7 +312,8 @@ public class SecurityConfig {
                                 && !path.startsWith("/routes/")
                                 && !path.startsWith("/api/")
                                 && !path.startsWith("/health/")
-                                && !path.startsWith("/fallback/")){
+                                && !path.startsWith("/fallback/")
+                                && !path.startsWith("/linq")){
                             boolean hasClientReadScope = scope != null && scopes.contains(scope);//does the client itself has the scope
                             if (!hasClientReadScope){
                                 if(scope == null) {
@@ -337,7 +341,7 @@ public class SecurityConfig {
                                 if (resourceAccess != null) {
                                     // get the client access
                                     // 3rd step - check out the client roles
-                                    var clientAccess = resourceAccess.get("lite-mesh-gateway-client");
+                                    var clientAccess = resourceAccess.get(clientId);
                                     if (clientAccess instanceof Map<?,?>) {
                                         // get the client roles
                                         var clientRoles = ((Map<String, Object>) clientAccess).get("roles");

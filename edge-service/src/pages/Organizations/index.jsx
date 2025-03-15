@@ -16,13 +16,8 @@ function Organizations() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [operationLoading, setOperationLoading] = useState(false);
   const [selectedOrganization, setSelectedOrganization] = useState(null);
-  const [confirmModal, setConfirmModal] = useState({
-    show: false,
-    title: '',
-    message: '',
-    onConfirm: () => {},
-    variant: 'danger'
-  });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [organizationToDelete, setOrganizationToDelete] = useState(null);
 
   useEffect(() => {
     fetchOrganizations();
@@ -84,7 +79,8 @@ function Organizations() {
       if (error) throw new Error(error);
       
       await fetchOrganizations();
-      setConfirmModal(prev => ({ ...prev, show: false }));
+      setShowDeleteModal(false);
+      setOrganizationToDelete(null);
       toast.success('Organization deleted successfully');
     } catch (err) {
       toast.error(err.message || 'Failed to delete organization');
@@ -94,13 +90,13 @@ function Organizations() {
   };
 
   const confirmDelete = (org) => {
-    setConfirmModal({
-      show: true,
-      title: 'Confirm Delete',
-      message: `Are you sure you want to delete "${org.name}"? This action cannot be undone.`,
-      onConfirm: () => handleDeleteOrganization(org.id),
-      variant: 'danger'
-    });
+    setOrganizationToDelete(org);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteModal(false);
+    setOrganizationToDelete(null);
   };
 
   const canDeleteOrganization = (org) => {
@@ -157,8 +153,28 @@ function Organizations() {
 
         <div className="card-body">
           {organizations.length === 0 ? (
-            <div className="text-center mt-4">
-              <p>No organizations found. Create your first organization to get started.</p>
+            <div className="no-organizations-message text-center py-5">
+              <h4>No Organizations Found</h4>
+              <p className="text-muted">
+                Create your first organization to start managing teams and API routes.
+              </p>
+              <Button 
+                variant="primary" 
+                onClick={() => setShowCreateModal(true)}
+                className="mt-3"
+                disabled={operationLoading}
+              >
+                {operationLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <HiPlus /> Create Your First Organization
+                  </>
+                )}
+              </Button>
             </div>
           ) : (
             <Table hover responsive>
@@ -242,14 +258,17 @@ function Organizations() {
       />
 
       <ConfirmationModal
-        show={confirmModal.show}
-        title={confirmModal.title}
-        message={confirmModal.message}
-        onConfirm={confirmModal.onConfirm}
-        onCancel={() => setConfirmModal(prev => ({ ...prev, show: false }))}
-        onHide={() => setConfirmModal(prev => ({ ...prev, show: false }))}
-        variant={confirmModal.variant}
-        loading={operationLoading}
+        show={showDeleteModal}
+        onHide={handleDeleteCancel}
+        onConfirm={() => {
+          handleDeleteOrganization(organizationToDelete.id);
+          setShowDeleteModal(false);
+          setOrganizationToDelete(null);
+        }}
+        title="Confirm Delete"
+        message={`Are you sure you want to delete "${organizationToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        
       />
     </div>
   );

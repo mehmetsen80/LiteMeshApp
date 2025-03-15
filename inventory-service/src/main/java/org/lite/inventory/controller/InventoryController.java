@@ -77,7 +77,7 @@ public class InventoryController {
     // Method to call Product Service from Inventory Service
     @GetMapping(value = "/callProduct", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<GreetingResponse> callProductService(){
-        String url = gatewayBaseUrl + "/product/greet";
+        String url = gatewayBaseUrl + "/product-service/greet";
         try {
             GreetingResponse response = restTemplate.getForObject(url, GreetingResponse.class);
             log.info("Response from Product Service: {}", response);

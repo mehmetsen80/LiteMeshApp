@@ -9,4 +9,6 @@ public interface TeamRouteRepository extends ReactiveMongoRepository<TeamRoute, 
     Flux<TeamRoute> findByTeamId(String teamId);
     Mono<TeamRoute> findByTeamIdAndRouteId(String teamId, String routeId);
     Mono<Void> deleteByTeamIdAndRouteId(String teamId, String routeId);
+    Flux<TeamRoute> findByRouteId(String routeId);
+    Mono<TeamRoute> findByRouteIdAndTeamId(String routeId, String teamId);
 } 
