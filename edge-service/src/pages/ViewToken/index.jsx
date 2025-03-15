@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Form } from 'react-bootstrap';
 import { useAuth } from '../../contexts/AuthContext';
-import authService from '../../services/authService';
 import { jwtDecode } from 'jwt-decode';
 import Button from '../../components/common/Button';
 import './styles.css';

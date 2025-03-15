@@ -4,9 +4,13 @@ import { HiQuestionMarkCircle } from 'react-icons/hi';
 import Button from '../../common/Button';
 import './styles.css';
 import { useTeam } from '../../../contexts/TeamContext';
+import { useAuth } from '../../../contexts/AuthContext';
+import { isSuperAdmin } from '../../../utils/roleUtils';
+
 
 const CreateApiRouteModal = ({ show, onHide, onSubmit }) => {
-  const { currentTeam, teams } = useTeam();
+  const { currentTeam, teams, userTeams } = useTeam();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     routeIdentifier: '',
@@ -76,9 +80,17 @@ const CreateApiRouteModal = ({ show, onHide, onSubmit }) => {
   }, [showMethodDropdown]);
 
   const getTeamsByOrganization = () => {
-    if (!teams) return [];
+    console.log('user:', user);
+    console.log('isSuperAdmin:', isSuperAdmin(user));
+    console.log('teams from context:', teams);
+    console.log('userTeams from context:', userTeams);
     
-    const groupedTeams = teams.reduce((acc, team) => {
+    const teamsToShow = isSuperAdmin(user) ? teams : userTeams;
+    console.log('teamsToShow', teamsToShow);
+    
+    if (!teamsToShow) return [];
+    
+    const groupedTeams = teamsToShow.reduce((acc, team) => {
       const orgName = team.organization?.name || 'Unassigned';
       if (!acc[orgName]) {
         acc[orgName] = [];

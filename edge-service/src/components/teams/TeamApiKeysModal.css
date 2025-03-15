@@ -1,0 +1,25 @@
+.api-key-block {
+  background-color: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.api-key-block:hover {
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.api-key-block code {
+  word-break: break-all;
+  font-size: 0.9rem;
+}
+
+.action-button {
+  color: #6c757d;
+  border-left: 1px solid #dee2e6;
+  margin: 0;
+  transition: all 0.2s ease;
+}
+
+.action-button:hover {
+  background-color: rgba(0,0,0,0.05);
+} 

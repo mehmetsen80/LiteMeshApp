@@ -11,7 +11,6 @@ import org.lite.gateway.dto.RouteExistenceRequest;
 import org.lite.gateway.dto.RouteExistenceResponse;
 import org.lite.gateway.dto.VersionComparisonResult;
 import org.lite.gateway.entity.*;
-import org.lite.gateway.enums.UserRole;
 import org.lite.gateway.exception.DuplicateRouteException;
 import org.lite.gateway.repository.ApiRouteRepository;
 import org.lite.gateway.repository.ApiRouteVersionRepository;
@@ -25,11 +24,8 @@ import org.lite.gateway.repository.TeamRouteRepository;
 import org.lite.gateway.repository.UserRepository;
 import org.lite.gateway.repository.TeamMemberRepository;
 import org.lite.gateway.exception.ResourceNotFoundException;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.lite.gateway.service.DynamicRouteService;
 import org.lite.gateway.config.GatewayRoutesRefresher;
-import org.springframework.beans.BeanUtils;
 
 import java.util.*;
 

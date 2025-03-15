@@ -58,4 +58,40 @@
 .form-select:disabled {
   background-color: #e9ecef;
   cursor: not-allowed;
+}
+
+.no-organizations-message h5 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.no-organizations-message p {
+  color: var(--text-muted);
+}
+
+.no-organizations-message .btn {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
+}
+
+.no-organizations-message .btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.no-organizations-message .btn-primary:hover {
+  background-color: var(--primary-color-dark);
+  border-color: var(--primary-color-dark);
+}
+
+.create-org-button.btn-primary,
+.create-org-button.btn-primary:hover,
+.create-org-button.btn-primary:active,
+.create-org-button.btn-primary:focus {
+  background-color: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+.create-org-button.btn-primary:hover {
+  opacity: 0.9;
 } 

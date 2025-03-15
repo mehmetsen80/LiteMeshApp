@@ -153,8 +153,28 @@ function Organizations() {
 
         <div className="card-body">
           {organizations.length === 0 ? (
-            <div className="text-center mt-4">
-              <p>No organizations found. Create your first organization to get started.</p>
+            <div className="no-organizations-message text-center py-5">
+              <h4>No Organizations Found</h4>
+              <p className="text-muted">
+                Create your first organization to start managing teams and API routes.
+              </p>
+              <Button 
+                variant="primary" 
+                onClick={() => setShowCreateModal(true)}
+                className="mt-3"
+                disabled={operationLoading}
+              >
+                {operationLoading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <HiPlus /> Create Your First Organization
+                  </>
+                )}
+              </Button>
             </div>
           ) : (
             <Table hover responsive>

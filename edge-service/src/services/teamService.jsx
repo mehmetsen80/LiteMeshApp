@@ -5,10 +5,16 @@ export const teamService = {
   getAllTeams: async () => {
     try {
       const response = await axiosInstance.get('/api/teams');
-      return { data: response.data };
+      return {
+        success: true,
+        data: response.data  // The API is returning the array directly
+      };
     } catch (error) {
-      console.error('Error fetching teams:', error);
-      return { error: error.message };
+      console.error('Error fetching all teams:', error);
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to fetch all teams'
+      };
     }
   },
 
@@ -180,4 +186,47 @@ export const teamService = {
       };
     }
   },
+
+  createApiKey: async (apiKeyData) => {
+    try {
+      const response = await axiosInstance.post('/api/keys', {
+        name: apiKeyData.name,
+        teamId: apiKeyData.teamId,
+        expiresInDays: apiKeyData.expiresInDays  // This will be null for infinite
+      });
+      return { data: response.data };
+    } catch (error) {
+      return { error: error.response?.data?.message || error.message };
+    }
+  },
+
+  getTeamApiKeys: async (teamId) => {
+    try {
+      console.log('Making API call for teamId:', teamId);
+      const response = await axiosInstance.get(`/api/keys`, {
+        params: { teamId }
+      });
+      return { data: response.data };
+    } catch (error) {
+      return { error: error.response?.data?.message || error.message };
+    }
+  },
+
+  revokeApiKey: async (keyId) => {
+    try {
+      await axiosInstance.post(`/api/keys/${keyId}/revoke`);
+      return { success: true };
+    } catch (error) {
+      return { error: error.response?.data?.message || error.message };
+    }
+  },
+
+  removeApiKey: async (keyId) => {
+    try {
+      await axiosInstance.delete(`/api/keys/${keyId}`);
+      return { success: true };
+    } catch (error) {
+      return { error: error.response?.data?.message || error.message };
+    }
+  }
 }; 

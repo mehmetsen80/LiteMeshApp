@@ -114,95 +114,103 @@ function Register() {
       </Link>
       <div className="auth-form-section">
         <div className="auth-card">
-          <div className="auth-header">
-            <h2>Create Account</h2>
-            <p className="text-muted">Join us to monitor your microservices</p>
-          </div>
+          <div className={loading ? 'opacity-50' : ''}>
+            <div className="auth-header">
+              <h2>Create Account</h2>
+              <p className="text-muted">Join us to monitor your microservices</p>
+            </div>
 
-          {error && (
-            <Alert variant="danger">{error}</Alert>
-          )}
+            {error && (
+              <Alert variant="danger">{error}</Alert>
+            )}
 
-          <Form onSubmit={handleSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Username</Form.Label>
-              <Form.Control
-                type="text"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                placeholder="Enter username"
-                disabled={loading}
-              />
-              {usernameError && (
-                <Form.Text className="text-danger">
-                  {usernameError}
-                </Form.Text>
-              )}
-            </Form.Group>
+            <Form onSubmit={handleSubmit}>
+              <Form.Group className="mb-3">
+                <Form.Label>Username</Form.Label>
+                <Form.Control
+                  type="text"
+                  name="username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter username"
+                  disabled={loading}
+                />
+                {usernameError && (
+                  <Form.Text className="text-danger">
+                    {usernameError}
+                  </Form.Text>
+                )}
+              </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Email</Form.Label>
-              <Form.Control
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                required
-                placeholder="Enter email"
-                disabled={loading}
-              />
-            </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Email</Form.Label>
+                <Form.Control
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter email"
+                  disabled={loading}
+                />
+              </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Password</Form.Label>
-              <Form.Control
-                type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="Enter password"
-                disabled={loading}
-              />
-              {formData.password && (
-                <div className="password-strength-container">
-                  <div className={`password-strength ${passwordStrength.isStrong ? 'strong' : 'weak'}`}>
-                    {passwordStrength.error || (passwordStrength.isStrong ? 'Password is strong' : 'Password is weak')}
+              <Form.Group className="mb-3">
+                <Form.Label>Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  required
+                  placeholder="Enter password"
+                  disabled={loading}
+                />
+                {formData.password && (
+                  <div className="password-strength-container">
+                    <div className={`password-strength ${passwordStrength.isStrong ? 'strong' : 'weak'}`}>
+                      {passwordStrength.error || (passwordStrength.isStrong ? 'Password is strong' : 'Password is weak')}
+                    </div>
                   </div>
-                </div>
-              )}
-            </Form.Group>
+                )}
+              </Form.Group>
 
-            <Form.Group className="mb-4">
-              <Form.Label>Confirm Password</Form.Label>
-              <Form.Control
-                type="password"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                placeholder="Confirm password"
-                disabled={loading}
-              />
-            </Form.Group>
+              <Form.Group className="mb-4">
+                <Form.Label>Confirm Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  placeholder="Confirm password"
+                  disabled={loading}
+                />
+              </Form.Group>
 
-            <Button 
-              type="submit"
-              variant="primary"
-              fullWidth
-              loading={loading}
-              disabled={loading || usernameError || !passwordStrength.isStrong}
-            >
-              Create Account
-            </Button>
-          </Form>
+              <Button 
+                type="submit"
+                variant="primary"
+                fullWidth
+                disabled={loading || usernameError || !passwordStrength.isStrong}
+              >
+                {loading ? (
+                  <>
+                    <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true" />
+                    Creating Account...
+                  </>
+                ) : (
+                  'Create Account'
+                )}
+              </Button>
+            </Form>
 
-          <div className="mt-4 text-center">
-            <p className="mb-0">
-              Already have an account? <Link to="/login" className="primary-link">Login</Link>
-            </p>
+            <div className="mt-4 text-center">
+              <p className="mb-0">
+                Already have an account? <Link to="/login" className="primary-link">Login</Link>
+              </p>
+            </div>
           </div>
         </div>
       </div>

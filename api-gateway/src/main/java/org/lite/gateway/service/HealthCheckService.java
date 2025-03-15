@@ -42,18 +42,21 @@ public class HealthCheckService {
     private final AlertService alertService;
     private final EurekaClient eurekaClient;
     private final Map<String, ServiceDTO> serviceHealthCache = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper;
 
     public HealthCheckService(
             ApiRouteRepository apiRouteRepository, 
             WebClient.Builder webClientBuilder,
             MetricsAggregator metricsAggregator,
             AlertService alertService,
-            EurekaClient eurekaClient) {
+            EurekaClient eurekaClient,
+            ObjectMapper objectMapper) {
         this.apiRouteRepository = apiRouteRepository;
         this.webClientBuilder = webClientBuilder;
         this.metricsAggregator = metricsAggregator;
         this.alertService = alertService;
         this.eurekaClient = eurekaClient;
+        this.objectMapper = objectMapper;
     }
 
     public Flux<ApiRoute> getHealthCheckEnabledRoutes() {
@@ -167,7 +170,6 @@ public class HealthCheckService {
 
         String healthEndpoint = getHealthEndpoint(route);
         long startTime = System.currentTimeMillis();
-        ObjectMapper mapper = new ObjectMapper();
         
         return webClientBuilder.build()
             .get()
@@ -178,7 +180,7 @@ public class HealthCheckService {
             .bodyToMono(String.class)
             .map(responseBody -> {
                 try {
-                    Map<String, Object> healthData = mapper.readValue(responseBody, Map.class);
+                    Map<String, Object> healthData = objectMapper.readValue(responseBody, Map.class);
                     long responseTime = System.currentTimeMillis() - startTime;
                     
                     Map<String, Object> metrics = (Map<String, Object>) healthData.getOrDefault("metrics", new HashMap<>());

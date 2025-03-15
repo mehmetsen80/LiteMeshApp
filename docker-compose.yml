@@ -128,7 +128,7 @@ services:
       - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
     networks:
       - lite-mesh-network
-    command: mongod --replSet rs0 --bind_ip_all -keyFile /data/mongo-keyfile
+    command: mongod --bind_ip_all --replSet rs0 --port 27017 -keyFile /data/mongo-keyfile
 
   mongodb2:
     deploy:
@@ -145,13 +145,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongopw
       MONGO_REPLICA_SET_NAME: rs0
     ports:
-      - "27018:27017"
+      - "27018:27018"
     volumes:
       - ./.kube/mongodb/data2/:/data/db
       - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
     networks:
       - lite-mesh-network
-    command: mongod --replSet rs0 --bind_ip_all -keyFile /data/mongo-keyfile
+    command: mongod  --bind_ip_all  --replSet rs0 --port 27018 -keyFile /data/mongo-keyfile
 
   mongodb3:
     deploy:
@@ -168,13 +168,13 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: mongopw
       MONGO_REPLICA_SET_NAME: rs0
     ports:
-      - "27019:27017"
+      - "27019:27019"
     volumes:
       - ./.kube/mongodb/data3/:/data/db
       - ./.kube/mongodb/mongo-keyfile:/data/mongo-keyfile
     networks:
       - lite-mesh-network
-    command: mongod --replSet rs0 --bind_ip_all -keyFile /data/mongo-keyfile
+    command: mongod --bind_ip_all --replSet rs0 --port 27019 -keyFile /data/mongo-keyfile
 
 
 

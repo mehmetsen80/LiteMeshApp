@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { teamService } from '../services/teamService';
+import { isSuperAdmin } from '../utils/roleUtils';
 
 // Create the context
 const TeamContext = createContext(null);
@@ -16,11 +17,26 @@ export const useTeam = () => {
 
 // Export the provider component
 export const TeamProvider = ({ children }) => {
-  const [currentTeam, setCurrentTeam] = useState(null);
-  const [userTeams, setUserTeams] = useState([]);
+  const { user, isAuthenticated } = useAuth();
   const [teams, setTeams] = useState([]);
+  const [userTeams, setUserTeams] = useState([]);
+  const [currentTeam, setCurrentTeam] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { isAuthenticated, user } = useAuth();
+
+  const fetchAllTeams = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      const response = await teamService.getAllTeams();
+      console.log('fetchAllTeams response:', response);
+      if (response.success) {
+        console.log('Setting teams with:', response.data);
+        setTeams(response.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching all teams:', error);
+    }
+  }, [isAuthenticated]);
 
   const fetchUserTeams = useCallback(async () => {
     if (!isAuthenticated) {
@@ -64,33 +80,20 @@ export const TeamProvider = ({ children }) => {
     }
   }, [isAuthenticated, fetchUserTeams]);
 
+  useEffect(() => {
+    console.log('Effect running, user:', user);
+    console.log('isAuthenticated:', isAuthenticated);
+    if (isAuthenticated && user && isSuperAdmin(user)) {
+      console.log('Calling fetchAllTeams');
+      fetchAllTeams();
+    }
+  }, [isAuthenticated, user, fetchAllTeams]);
+
   // Add a debug effect to monitor state changes
   useEffect(() => {
     console.log('Current team state:', currentTeam);
     console.log('User teams state:', userTeams);
   }, [currentTeam, userTeams]);
-
-  const fetchAllTeams = useCallback(async () => {
-    // Add check for login page
-    if (window.location.pathname === '/login') {
-      return;
-    }
-
-    try {
-      const response = await teamService.getAllTeams();
-      if (response.error) {
-        console.error('Error fetching all teams:', response.error);
-        return;
-      }
-      setTeams(response.data);
-    } catch (error) {
-      console.error('Error fetching all teams:', error);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAllTeams();
-  }, [fetchAllTeams]);
 
   const switchTeam = useCallback((teamId) => {
     const team = userTeams.find(t => t.id === teamId);

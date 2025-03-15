@@ -111,7 +111,8 @@ eureka:
     secure-port: ${server.port}
 
 server:
-  port: ${GATEWAY_API_PORT:7777}
+  host: ${GATEWAY_API_HOST:localhost}  # Default to "localhost" unless overridden
+  port: ${GATEWAY_API_PORT:7777}       # Default to 7777 unless overridden
   http2:
     enabled: true
   use-forwarded-headers: true

@@ -353,18 +353,6 @@ export const AuthProvider = ({ children }) => {
 
   const handleSSOCallback = useCallback(async (code) => {
     try {
-      // Get and validate state parameter
-      const params = new URLSearchParams(window.location.search);
-      const receivedState = params.get('state');
-      const storedStateData = JSON.parse(sessionStorage.getItem('oauth_state') || '{}');
-      
-      // Validate state parameter
-      if (!receivedState || receivedState !== storedStateData.value) {
-        console.error('Invalid state parameter');
-        navigate('/login');
-        return false;
-      }
-
       // Clear state after validation
       sessionStorage.removeItem('oauth_state');
 
@@ -389,7 +377,7 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('lastLoginTime', new Date().toISOString());
           navigate('/dashboard');
         }, 100);
-        
+
         return true;
       }
 
@@ -403,7 +391,7 @@ export const AuthProvider = ({ children }) => {
           const realm = process.env.REACT_APP_KEYCLOAK_REALM;
           const clientId = process.env.REACT_APP_KEYCLOAK_CLIENT_ID;
           const redirectUri = encodeURIComponent(window.location.origin + '/callback');
-          
+
           // Generate new state with timestamp
           const state = Math.random().toString(36).substring(7);
           const timestamp = Date.now();

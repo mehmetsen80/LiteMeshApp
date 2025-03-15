@@ -25,4 +25,5 @@ public class TeamDTO {
     private List<TeamRouteDTO> routes;
     private OrganizationDTO organization;
     private List<String> roles;
+    private ApiKeyDTO apiKey;
 } 

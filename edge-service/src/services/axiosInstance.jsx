@@ -1,5 +1,6 @@
 import axios from 'axios';
 import authService from './authService';
+import { jwtDecode } from 'jwt-decode';
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_GATEWAY_URL || 'https://localhost:7777',
@@ -15,7 +16,24 @@ axiosInstance.interceptors.request.use(
   (config) => {
     const authData = JSON.parse(localStorage.getItem('authState') || '{}');
     if (authData.token) {
-      config.headers.Authorization = `Bearer ${authData.token}`;
+      try {
+        const decoded = jwtDecode(authData.token);
+        const currentTime = Date.now() / 1000;
+        
+        if (decoded.exp < currentTime) {
+          // Token is expired
+          authService.logout();
+          window.location.href = '/login';
+          return Promise.reject('Token expired');
+        }
+        
+        config.headers.Authorization = `Bearer ${authData.token}`;
+      } catch (error) {
+        // Invalid token
+        authService.logout();
+        window.location.href = '/login';
+        return Promise.reject('Invalid token');
+      }
     }
 
     return config;

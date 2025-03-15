@@ -19,8 +19,10 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Set;
+import java.time.ZoneId;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +33,7 @@ public class TeamServiceImpl implements TeamService {
     private final TeamMemberRepository teamMemberRepository;
     private final TeamRouteRepository teamRouteRepository;
     private final ApiRouteRepository apiRouteRepository;
+    private final ApiKeyRepository apiKeyRepository;
     private final UserService userService;
     private final OrganizationRepository organizationRepository;
     private final UserRepository userRepository;
@@ -113,21 +116,34 @@ public class TeamServiceImpl implements TeamService {
             )
             .collectList();
 
+        Mono<ApiKeyDTO> apiKeyMono = apiKeyRepository
+            .findByTeamId(team.getId())
+            .map(apiKey -> ApiKeyDTO.builder()
+                .name(apiKey.getName())
+                .key(apiKey.getKey())
+                .createdBy(apiKey.getCreatedBy())
+                .createdAt(apiKey.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDateTime())
+                .build());
+
         return Mono.zip(membersListMono, routesListMono, orgMono)
-            .map(tuple -> TeamDTO.builder()
-                .id(team.getId())
-                .name(team.getName())
-                .description(team.getDescription())
-                .status(team.getStatus())
-                .createdAt(team.getCreatedAt())
-                .updatedAt(team.getUpdatedAt())
-                .createdBy(team.getCreatedBy())
-                .updatedBy(team.getUpdatedBy())
-                .members(tuple.getT1())
-                .routes(tuple.getT2())
-                .organization(tuple.getT3())
-                .build()
-            );
+            .flatMap(tuple -> {
+                TeamDTO.TeamDTOBuilder builder = TeamDTO.builder()
+                    .id(team.getId())
+                    .name(team.getName())
+                    .description(team.getDescription())
+                    .status(team.getStatus())
+                    .createdAt(team.getCreatedAt())
+                    .updatedAt(team.getUpdatedAt())
+                    .createdBy(team.getCreatedBy())
+                    .updatedBy(team.getUpdatedBy())
+                    .members(tuple.getT1())
+                    .routes(tuple.getT2())
+                    .organization(tuple.getT3());
+
+                return apiKeyMono
+                    .map(apiKey -> builder.apiKey(apiKey).build())
+                    .defaultIfEmpty(builder.apiKey(null).build());
+            });
     }
 
     private TeamMemberDTO convertToMemberDTO(TeamMember member, User user) {

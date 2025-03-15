@@ -63,4 +63,23 @@
 .btn-primary:hover {
   background-color: #0a0459;
   border-color: #0a0459;
+}
+
+.no-organizations-message {
+  padding: 2rem;
+}
+
+.no-organizations-message h4 {
+  margin-bottom: 1rem;
+  color: var(--text-color);
+}
+
+.no-organizations-message p {
+  color: var(--text-muted);
+  margin-bottom: 1.5rem;
+}
+
+.no-organizations-message .btn {
+  padding: 0.5rem 1rem;
+  font-weight: 500;
 } 

@@ -34,11 +34,11 @@ public class DynamicRouteService {
         add("/favicon.ico");
         add("/fallback/**");
         add("/actuator/**");
+        add("/linq");
     }};
 
     private final Map<String, String> clientScopes = new ConcurrentHashMap<>();
 
-    private final PathMatcher pathMatcher = new AntPathMatcher();
     private final RedisTemplate<String, String> redisTemplate;
     private final ChannelTopic routesTopic;
 

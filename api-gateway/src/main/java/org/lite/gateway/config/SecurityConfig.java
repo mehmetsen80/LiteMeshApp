@@ -3,13 +3,13 @@ package org.lite.gateway.config;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.lite.gateway.filter.ApiKeyAuthenticationFilter;
 import org.lite.gateway.service.DynamicRouteService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authorization.AuthorizationDecision;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
@@ -21,7 +21,6 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.oauth2.client.*;
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository;
-import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -37,12 +36,10 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import java.util.ArrayList;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -75,6 +72,7 @@ public class SecurityConfig {
     private final DynamicRouteService dynamicRouteService;
     private final ReactiveClientRegistrationRepository customClientRegistrationRepository;
     private final ReactiveOAuth2AuthorizedClientService customAuthorizedClientService;
+    private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -95,7 +93,8 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity serverHttpSecurity, AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
+    public SecurityWebFilterChain jwtSecurityFilterChain(ServerHttpSecurity serverHttpSecurity, 
+            AuthorizedClientServiceReactiveOAuth2AuthorizedClientManager authorizedClientManager) {
         serverHttpSecurity
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
@@ -110,6 +109,8 @@ public class SecurityConfig {
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
                         .jwtDecoder(keycloakJwtDecoder())))
+                .addFilterBefore(apiKeyAuthenticationFilter, 
+                        SecurityWebFiltersOrder.AUTHENTICATION)
                 .authorizeExchange(exchange -> exchange
                         .anyExchange()
                         .access(this::dynamicPathAuthorization))
@@ -268,6 +269,7 @@ public class SecurityConfig {
 
     private Mono<AuthorizationDecision> dynamicPathAuthorization(Mono<Authentication> authenticationMono, AuthorizationContext authorizationContext) {
         String path = authorizationContext.getExchange().getRequest().getPath().toString();
+        log.info("Security check for path: {}", path);
         log.info("Checking authorization for path: {} with method: {}", path, 
             authorizationContext.getExchange().getRequest().getMethod());
 
@@ -310,7 +312,8 @@ public class SecurityConfig {
                                 && !path.startsWith("/routes/")
                                 && !path.startsWith("/api/")
                                 && !path.startsWith("/health/")
-                                && !path.startsWith("/fallback/")){
+                                && !path.startsWith("/fallback/")
+                                && !path.startsWith("/linq")){
                             boolean hasClientReadScope = scope != null && scopes.contains(scope);//does the client itself has the scope
                             if (!hasClientReadScope){
                                 if(scope == null) {

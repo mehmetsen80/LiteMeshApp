@@ -27,12 +27,12 @@ public class RedisRateLimiterFilterService implements FilterService{
 
     private final ApplicationContext applicationContext;
     private final RedisTemplate<String, String> redisTemplate;
+    private final ObjectMapper objectMapper;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
-    public RedisRateLimiterFilterService(ApplicationContext applicationContext, RedisTemplate<String, String> redisTemplate){
+    public RedisRateLimiterFilterService(ApplicationContext applicationContext, RedisTemplate<String, String> redisTemplate, ObjectMapper objectMapper){
         this.applicationContext = applicationContext;
         this.redisTemplate = redisTemplate;
+        this.objectMapper = objectMapper;
     }
 
     @Override
